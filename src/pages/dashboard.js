@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Button from "@/components/Button";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Dashboard() {
@@ -27,8 +26,6 @@ export default function Dashboard() {
         <title>Dashboard | Buffs</title>
         <meta name="description" content="Dashboard da plataforma Buffs" />
       </Head>
-      
-      <Navbar />
       
       <div style={{ padding: "20px" }}>
         <h1>Dashboard - Teste</h1>

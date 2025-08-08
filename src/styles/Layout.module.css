@@ -1,0 +1,22 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* altura da navbar vem do Navbar.module.css (.container height: 60px) */
+.content {
+  display: block;
+  width: 100%;
+  padding: 20px;
+  margin-top: 60px;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 16px;
+    margin-top: 60px;
+  }
+}
+
+

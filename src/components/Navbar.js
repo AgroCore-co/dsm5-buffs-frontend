@@ -16,7 +16,7 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className={styles.navbar}>
+    <nav className={styles.navbar} role="navigation" aria-label="Principal">
       <div className={styles.container}>
         {/* Logo */}
         <div className={styles.logo}>
