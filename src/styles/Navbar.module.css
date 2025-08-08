@@ -1,0 +1,137 @@
+.navbar {
+  background-color: #FFCF78;
+  padding: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 60px;
+  height: 60px;
+  position: relative;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  left: 30px;
+  z-index: 10;
+}
+
+.logoImage {
+  height: 32px;
+  width: auto;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.logoImage:hover {
+  transform: scale(1.05);
+}
+
+.navItems {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.navItem {
+  padding: 18px 20px;
+  color: #2d3436;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+  height: 60px;
+  display: flex;
+  align-items: center;
+}
+
+.navItem:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #2d3436;
+}
+
+.navItem.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-bottom-color: #2d3436;
+  font-weight: 600;
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  right: 30px;
+  z-index: 10;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.avatar:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 40px;
+  }
+  
+  .logo {
+    left: 25px;
+  }
+  
+  .userProfile {
+    right: 25px;
+  }
+  
+  .navItem {
+    padding: 18px 15px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 30px;
+  }
+  
+  .logo {
+    left: 20px;
+  }
+  
+  .userProfile {
+    right: 20px;
+  }
+  
+  .logoImage {
+    height: 28px;
+  }
+  
+  .navItems {
+    display: none;
+  }
+}
