@@ -1,4 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+.loginPage {
+  background-color: var(--color-background) !important;
+}
 
 .container {
     display: flex;
@@ -6,6 +8,7 @@
     height: 100vh;
     min-height: 100vh;
     overflow: hidden;
+    background-color: var(--color-background) !important;
 }
 
 /* Seção da imagem */
@@ -34,14 +37,14 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background-color: #FEF5E5;
+    background-color: var(--color-background-secondary) !important;
     overflow-y: auto;
     min-height: 100vh;
 }
 
 .title {
     font-size: clamp(1.5rem, 4vw, 2rem);
-    color: #333;
+    color: var(--color-text-primary) !important;
     margin-bottom: 0.5rem;
     font-weight: 600;
     text-align: center;
@@ -49,7 +52,7 @@
 
 .description {
     font-size: clamp(0.875rem, 2.5vw, 1rem);
-    color: #555;
+    color: var(--color-text-secondary) !important;
     margin-bottom: 1.5rem;
     text-align: center;
     line-height: 1.5;
@@ -72,10 +75,10 @@
 .input {
     width: 100%;
     padding: 12px 40px 12px 12px;
-    border: 1.2px solid #333;
+    border: 1.2px solid var(--color-border-primary);
     border-radius: 8px;
     font-size: 16px;
-    color: #333;
+    color: var(--color-text-primary) !important;
     background: transparent;
     outline: none;
     transition: all 0.3s ease;
@@ -83,12 +86,12 @@
 }
 
 .input:focus {
-    border-color: #FFCF78;
+    border-color: var(--color-border-focus);
     box-shadow: 0 0 0 3px rgba(255, 207, 120, 0.1);
 }
 
 .input:invalid:not(:placeholder-shown) {
-    border-color: #ff4444;
+    border-color: var(--color-border-error);
 }
 
 /* Estilo do rótulo */
@@ -98,7 +101,7 @@
     top: 50%;
     transform: translateY(-50%);
     font-size: 16px;
-    color: #666;
+    color: var(--color-text-tertiary) !important;
     padding: 0 4px;
     pointer-events: none;
     transition: all 0.3s ease;
@@ -110,8 +113,8 @@
 .input:not(:placeholder-shown) + .label {
     top: 0;
     font-size: 12px;
-    background: #FEF5E5;
-    color: #333;
+    background: var(--color-background-secondary) !important;
+    color: var(--color-text-primary) !important;
     font-weight: 500;
 }
 
@@ -120,14 +123,14 @@
     display: block; 
     margin-top: 1rem;
     font-size: 0.9rem;
-    color: #43310B;
+    color: var(--color-link-primary) !important;
     text-decoration: none;
     text-align: center;
     transition: color 0.3s ease;
 }
 
 .forgotPassword:hover {
-    color: #FFCF78;
+    color: var(--color-link-hover) !important;
     text-decoration: underline;
 }
 
@@ -266,40 +269,5 @@
     .loginButton,
     .icon {
         transition: none;
-    }
-}
-
-/* Suporte para modo escuro */
-@media (prefers-color-scheme: dark) {
-    .formSection {
-        background-color: #1a1a1a;
-    }
-
-    .title {
-        color: #fff;
-    }
-
-    .description {
-        color: #ccc;
-    }
-
-    .input {
-        color: #fff;
-        border-color: #444;
-        background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .input:focus {
-        border-color: #FFCF78;
-    }
-
-    .label {
-        color: #ccc;
-    }
-
-    .input:focus + .label,
-    .input:not(:placeholder-shown) + .label {
-        background: #1a1a1a;
-        color: #fff;
     }
 }

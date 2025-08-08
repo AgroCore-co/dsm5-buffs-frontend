@@ -1,26 +1,67 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Cores principais da paleta */
+  --color-primary: #FFCF78;
+  --color-primary-hover: #F2B84D;
+  --color-primary-light: #FCA90F;
+  --color-primary-dark: #CE7D0A;
+  
+  /* Cores de fundo */
+  --color-background: #F8FCFA;
+  --color-background-secondary: #F8FCFA;
+  --color-background-dark: #404040;
+  
+  /* Cores de texto */
+  --color-text-primary: #43310B;
+  --color-text-secondary: #404040;
+  --color-text-tertiary: #838181;
+  --color-text-light: #F8FCFA;
+  --color-text-dark: #43310B;
+  
+  /* Cores de borda */
+  --color-border-primary: #B0B0B0;
+  --color-border-focus: #FFCF78;
+  --color-border-error: #E90000;
+  
+  /* Cores de link */
+  --color-link-primary: #43310B;
+  --color-link-hover: #FFCF78;
+  
+  /* Cores de estado */
+  --color-success: #9DFFBE;
+  --color-error: #E90000;
+  --color-warning: #FCA90F;
+  --color-info: #B0B0B0;
+  
+  /* Variáveis para compatibilidade com o tema */
+  --background: var(--color-background);
+  --foreground: var(--color-text-dark);
+  
+  /* Fonte */
+  --font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-family);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--color-background) !important;
+  color: var(--color-text-dark) !important;
+  font-family: var(--font-family);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Força fundo branco na página de login */
+body[data-page="login"] {
+  background-color: var(--color-background) !important;
+  color-scheme: light !important;
+}
+
+body[data-page="login"] html {
+  background-color: var(--color-background) !important;
 }

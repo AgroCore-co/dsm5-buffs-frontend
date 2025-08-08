@@ -2,20 +2,23 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* altura da navbar vem do Navbar.module.css (.container height: 60px) */
 .content {
   display: block;
   width: 100%;
-  padding: 20px;
-  margin-top: 60px;
+  height: calc(100vh - 64px);
+  margin-top: 64px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 @media (max-width: 768px) {
   .content {
-    padding: 16px;
-    margin-top: 60px;
+    height: calc(100vh - 64px);
+    margin-top: 64px;
   }
 }
 

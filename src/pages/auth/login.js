@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import styles from "@/styles/Login.module.css";
 import Button from "@/components/Button";
@@ -13,6 +13,15 @@ export default function Login() {
     email: "",
     password: "",
   });
+
+  // Força fundo branco na página de login
+  useEffect(() => {
+    document.body.setAttribute('data-page', 'login');
+    
+    return () => {
+      document.body.removeAttribute('data-page');
+    };
+  }, []);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -55,7 +64,7 @@ export default function Login() {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${styles.loginPage}`}>
       <div className={styles.imageSection}>
         <img
           src="/images/bg2.png"
