@@ -141,7 +141,7 @@ export default function Lactacao() {
         {/* Header - Dashboard de Lactação */}
         <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard de Lactação 🥛</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard de Lactação </h1>
             <p className="text-gray-600 text-lg">
               Monitore a produção de leite e gerencie o controle individual de lactação.
             </p>

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { FiMaximize, FiMinimize } from "react-icons/fi";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
@@ -6,6 +7,7 @@ const Navbar = () => {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const navItems = [
     { label: "Página inicial", path: "/dashboard" },
@@ -24,6 +26,64 @@ const Navbar = () => {
   const toggleUserMenu = () => {
     setIsUserMenuOpen(!isUserMenuOpen);
   };
+
+  // Alterna o modo de tela cheia com fallbacks para diferentes navegadores
+  const toggleFullscreen = () => {
+    if (typeof document === 'undefined') return;
+
+    const doc = document;
+    const docEl = doc.documentElement;
+
+    const isCurrentlyFullscreen = !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+
+    if (!isCurrentlyFullscreen) {
+      if (docEl.requestFullscreen) docEl.requestFullscreen();
+      else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+      else if (docEl.mozRequestFullScreen) docEl.mozRequestFullScreen();
+      else if (docEl.msRequestFullscreen) docEl.msRequestFullscreen();
+    } else {
+      if (doc.exitFullscreen) doc.exitFullscreen();
+      else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+      else if (doc.mozCancelFullScreen) doc.mozCancelFullScreen();
+      else if (doc.msExitFullscreen) doc.msExitFullscreen();
+    }
+  };
+
+  // Mantém o estado sincronizado quando o usuário sai/entra em tela cheia fora do botão
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const updateFullscreenStatus = () => {
+      const doc = document;
+      const isFs = !!(
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
+      );
+      setIsFullscreen(isFs);
+    };
+
+    document.addEventListener('fullscreenchange', updateFullscreenStatus);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenStatus);
+    document.addEventListener('mozfullscreenchange', updateFullscreenStatus);
+    document.addEventListener('MSFullscreenChange', updateFullscreenStatus);
+
+    // Estado inicial
+    updateFullscreenStatus();
+
+    return () => {
+      document.removeEventListener('fullscreenchange', updateFullscreenStatus);
+      document.removeEventListener('webkitfullscreenchange', updateFullscreenStatus);
+      document.removeEventListener('mozfullscreenchange', updateFullscreenStatus);
+      document.removeEventListener('MSFullscreenChange', updateFullscreenStatus);
+    };
+  }, []);
 
   const handleLogout = () => {
     // Aqui você pode adicionar lógica de logout (limpar tokens, etc.)
@@ -68,8 +128,22 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* User Profile with Dropdown */}
-          <div className="flex items-center absolute right-8 z-10 lg:right-10">
+          {/* Fullscreen Toggle and User Profile */}
+          <div className="flex items-center absolute right-8 z-10 lg:right-10 gap-3">
+            {/* Botão de Tela Cheia */}
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 cursor-pointer transition-colors duration-200 text-[var(--color-text-dark)] hover:opacity-80"
+              aria-label={isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"}
+              title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+            >
+              {isFullscreen ? (
+                <FiMinimize className="w-5 h-5" />
+              ) : (
+                <FiMaximize className="w-5 h-5" />
+              )}
+            </button>
+
             <div className="relative">
               <button
                 onClick={toggleUserMenu}

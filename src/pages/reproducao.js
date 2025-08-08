@@ -135,7 +135,7 @@ export default function Reproducao() {
         {/* Header - Controle de Reprodução */}
         <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Controle de Reprodução 🐄</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Controle de Reprodução </h1>
             <p className="text-gray-600 text-lg">
               Gerencie o ciclo reprodutivo do rebanho e otimize a taxa de concepção.
             </p>
@@ -194,7 +194,7 @@ export default function Reproducao() {
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Búfalas Problemáticas</h2>
-                <span className="text-xs font-medium text-red-600">⚠️ Atenção</span>
+                <span className="text-xs font-medium text-red-600"> Atenção</span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-red-600">12</p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Não lactando nem em cio</p>
@@ -213,7 +213,6 @@ export default function Reproducao() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <span className="text-red-600 text-lg">⚠️</span>
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-semibold text-red-800">Ação Requerida</h3>

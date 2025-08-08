@@ -7,18 +7,18 @@
 
 /* altura da navbar vem do Navbar.module.css (.container height: 60px) */
 .content {
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height: calc(100vh - 64px);
-  margin-top: 64px;
-  overflow-y: auto;
+  min-height: calc(100vh - 60px);
+  margin-top: 60px;
   overflow-x: hidden;
 }
 
 @media (max-width: 768px) {
   .content {
-    height: calc(100vh - 64px);
-    margin-top: 64px;
+    min-height: calc(100vh - 60px);
+    margin-top: 60px;
   }
 }
 

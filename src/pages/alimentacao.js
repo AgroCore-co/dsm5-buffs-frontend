@@ -14,8 +14,6 @@ import {
   YAxis,
   CartesianGrid,
   Legend,
-  LineChart,
-  Line,
   AreaChart,
   Area
 } from "recharts";
@@ -67,20 +65,7 @@ export default function Alimentacao() {
     { grupo: "Bezerros", quantidade: 700, percentual: 10 },
   ];
 
-  const eficienciaMensal = [
-    { mes: "Jan", eficiencia: 82 },
-    { mes: "Fev", eficiencia: 84 },
-    { mes: "Mar", eficiencia: 86 },
-    { mes: "Abr", eficiencia: 87 },
-    { mes: "Mai", eficiencia: 88 },
-    { mes: "Jun", eficiencia: 89 },
-    { mes: "Jul", eficiencia: 87 },
-    { mes: "Ago", eficiencia: 88 },
-    { mes: "Set", eficiencia: 89 },
-    { mes: "Out", eficiencia: 90 },
-    { mes: "Nov", eficiencia: 91 },
-    { mes: "Dez", eficiencia: 92 },
-  ];
+  
 
   const alimentacoesMock = [
     { id: 1, nome: "Ração Premium Lactação", tipo: "Sólido", quantidade: 5.5, unidade: "kg", grupo: "Em lactação", frequencia: 3, status: "Ativo" },
@@ -114,14 +99,14 @@ export default function Alimentacao() {
         {/* Header - Gestão da Alimentação */}
         <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Gestão da Alimentação 🌾</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Gestão da Alimentação </h1>
             <p className="text-gray-600 text-lg">
               Controle o consumo de alimentos e distribuição por grupos do rebanho.
             </p>
           </div>
           
           {/* Resumo da Alimentação */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Consumo Diário</h2>
@@ -149,14 +134,7 @@ export default function Alimentacao() {
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Diferentes tipos</p>
             </div>
 
-            <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-              <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Eficiência</h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">Conversão</span>
-              </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">92%</p>
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Taxa de aproveitamento</p>
-            </div>
+            
           </div>
         </div>
 
@@ -309,63 +287,7 @@ export default function Alimentacao() {
           </div>
         </div>
 
-        {/* Análise de Eficiência */}
-        <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Análise de Eficiência de Alimentação</h2>
-          <div className="w-full">
-            <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Evolução da Eficiência Mensal</h3>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={eficienciaMensal}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis 
-                    dataKey="mes" 
-                    tick={{ fontSize: 10, fill: '#666' }}
-                    tickLine={{ stroke: '#ccc' }}
-                    axisLine={{ stroke: '#ccc' }}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12, fill: '#666' }}
-                    tickLine={{ stroke: '#ccc' }}
-                    axisLine={{ stroke: '#ccc' }}
-                    domain={[80, 95]}
-                    tickFormatter={(value) => `${value}%`}
-                  />
-                  <Tooltip 
-                    formatter={(value) => [`${value}%`, 'Eficiência']}
-                    labelFormatter={(label) => `Mês: ${label}`}
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #ccc',
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="eficiencia" 
-                    stroke="#FFCF78" 
-                    strokeWidth={3}
-                    dot={{ 
-                      fill: "#CE7D0A", 
-                      stroke: "#FFCF78", 
-                      strokeWidth: 2, 
-                      r: 4,
-                      strokeOpacity: 0.8
-                    }}
-                    activeDot={{ 
-                      fill: "#CE7D0A", 
-                      stroke: "#FFCF78", 
-                      strokeWidth: 3, 
-                      r: 6 
-                    }}
-                    name="Eficiência"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Tabela de Alimentações */}
         <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">

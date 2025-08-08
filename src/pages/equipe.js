@@ -63,7 +63,7 @@ export default function Equipe() {
         {/* Header - Gestão da Equipe */}
         <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Gestão da Equipe 👥</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Gestão da Equipe </h1>
             <p className="text-gray-600 text-lg">
               Gerencie sua equipe de funcionários e acompanhe o desempenho da equipe.
             </p>

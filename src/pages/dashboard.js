@@ -117,7 +117,7 @@ export default function Dashboard() {
         {/* Header and Indicators */}
         <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Olá, João Lima! 👋</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Olá, João Lima! </h1>
             <p className="text-gray-600 text-lg">
               Bem-vindo ao dashboard da sua fazenda de búfalos. Aqui está o resumo
               de hoje.
