@@ -1,0 +1,25 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* altura da navbar vem do Navbar.module.css (.container height: 60px) */
+.content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: calc(100vh - 60px);
+  margin-top: 60px;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .content {
+    min-height: calc(100vh - 60px);
+    margin-top: 60px;
+  }
+}
+
+

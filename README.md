@@ -1,40 +1,153 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+![Logo](./public/images/banner%20buffs.png)
 
-## Getting Started
+### 🦬 Buffs - Plataforma de Controle e Acompanhamento da Produção Leiteira e Manejo de Búfalas
 
-First, run the development server:
+O Buffs é um projeto acadêmico desenvolvido com Next.js com o objetivo de construir uma plataforma web para controle e acompanhamento da produção leiteira e manejo de búfalas. A aplicação tem foco em organização, acessibilidade e escalabilidade, facilitando o trabalho de produtores, técnicos e gestores rurais.
 
+Este repositório contém a estrutura do frontend da aplicação, incluindo os principais diretórios, organização modular e instruções para rodar o projeto com variáveis de ambiente conectadas à API.
+
+---
+
+## Autores
+- [@V1niSouza](https://github.com/V1niSouza)
+- [@paulocsa](https://github.com/paulocsa)
+- [@JoaoKuzinor](https://github.com/JoaoKuzinor)
+- [@jaobarreto](https://github.com/jaobarreto)
+- [@Gabrielll04](https://github.com/Gabrielll04)
+
+<br>
+
+# Como Trabalhar no Projeto
+
+### 1. Fazer o Fork do Repositório
+Trabalhe somente com fork do repositório original: `https://github.com/AgroCore-co/dsm5-buffs-frontend.git`.
+
+#### a) Clique no botão Fork no canto superior direito
+#### b) Escolha sua conta do GitHub como destino para o fork
+
+<hr>
+
+### 2. Clonar o Repositório (do seu fork)
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/SEU_USUARIO/dsm5-buffs-frontend.git
+cd dsm5-buffs-frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Opcional: configure o upstream para sincronizar com o repositório original:
+```bash
+git remote add upstream https://github.com/AgroCore-co/dsm5-buffs-frontend.git
+git fetch upstream
+```
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+<hr>
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+### 3. Criar uma Nova Branch
+```bash
+git checkout -b nome-da-sua-branch
+```
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+<hr>
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Fazer Modificações e Commits
+Siga o padrão de commits para garantir consistência.
 
-## Learn More
+Commit Pattern:
+- Tipo: `feat`, `fix`, `docs`, `style`, `refactor`, `test`
+- Escopo (opcional): área afetada (ex.: `auth`, `dashboard`)
+- Descrição: clara e objetiva
 
-To learn more about Next.js, take a look at the following resources:
+Exemplos:
+- `feat(auth): add login functionality`
+- `fix(button): fix button color issue`
+- `docs(readme): update setup instructions`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+Comandos:
+```bash
+git add .
+git commit -m "feat(auth): add login functionality"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+<hr>
 
-## Deploy on Vercel
+### 5. Subir suas Mudanças
+```bash
+git push origin nome-da-sua-branch
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+<hr>
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+### 6. Abrir um Pull Request (PR)
+Abra um PR do seu fork para o repositório original, descrevendo claramente o que foi feito.
+
+<br>
+
+# Como rodar o projeto
+
+### 1) Requisitos
+- Node.js 18.17+ (recomendado 20+)
+- npm
+
+### 2) Instale as dependências
+```bash
+npm install
+```
+
+### 3) Configure variáveis de ambiente (conectar com a API)
+Crie um arquivo `.env.local` na raiz do projeto e adicione:
+```bash
+NEXT_PUBLIC_API_URL=https://api.exemplo.com
+```
+
+### 4) Inicie o servidor de desenvolvimento
+```bash
+npm run dev
+```
+Acesse `http://localhost:3000`.
+
+### 5) Build e produção
+```bash
+npm run build
+npm run start
+```
+
+<br>
+
+# Estrutura do Projeto
+
+Este projeto é modular para facilitar evolução e manutenção.
+
+### 📁 `src/`
+Código-fonte da aplicação.
+
+### 📁 `src/pages/`
+Páginas do Next.js (Pages Router). Cada arquivo é uma rota. Ex.: `_app.js`, `_document.js`, `index.js`.
+
+### 📁 `src/components/`
+Componentes React reutilizáveis de UI (botões, modais, cards, etc.).
+
+### 📁 `src/hooks/`
+Hooks customizados para encapsular lógicas reutilizáveis.
+
+### 📁 `src/context/`
+Providers e estados globais usando React Context.
+
+### 📁 `src/services/`
+Integração com APIs e camadas de serviço.
+
+### 📁 `src/utils/`
+Funções utilitárias puras e helpers.
+
+### 📁 `src/styles/`
+Estilos globais (ex.: `globals.css`) e utilitários de estilo.
+
+### 📁 `src/lib/`
+Módulos de suporte (ex.: clientes, parsers, configs compartilhadas).
+
+### 📁 `src/tests/`
+Estrutura de testes (configure o runner conforme necessidade).
+
+### 📁 `public/`
+Arquivos estáticos servidos diretamente (imagens, ícones, etc.).
+
+---
+
