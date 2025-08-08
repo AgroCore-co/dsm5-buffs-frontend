@@ -11,7 +11,8 @@ const Navbar = () => {
     { label: "Página inicial", path: "/dashboard" },
     { label: "Rebanho", path: "/rebanho" },
     { label: "Lactação", path: "/lactacao" },
-    { label: "Controle Reprodução", path: "/controle-reproducao" },
+    { label: "Alimentação", path: "/alimentacao" },
+    { label: "Controle Reprodução", path: "/reproducao" },
     { label: "Manejo", path: "/manejo" },
     { label: "Equipe", path: "/equipe" },
   ];
