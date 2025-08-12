@@ -2,7 +2,7 @@ import "@/styles/globals.css";
 import Layout from "@/components/Layout";
 import { useRouter } from "next/router";
 
-export default function App({ Component, pageProps }) {
+function App({ Component, pageProps }) {
   const router = useRouter();
   const isAuthRoute = router.pathname.startsWith("/auth");
 
@@ -16,3 +16,5 @@ export default function App({ Component, pageProps }) {
     </Layout>
   );
 }
+
+export default App;
