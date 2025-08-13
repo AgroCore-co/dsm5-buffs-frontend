@@ -94,17 +94,7 @@ export default function Dashboard() {
     }).format(value);
   };
 
-  useEffect(() => {
-    // Redirecionar para login se não estiver autenticado (mas só após carregar)
-    if (!isLoading && !isAuthenticated) {
-      router.push("/auth/login");
-    }
-  }, [isLoading, isAuthenticated, router]);
-
-  // Não mostrar nada se estiver carregando ou não autenticado
-  if (isLoading || !isAuthenticated) {
-    return null;
-  }
+  // Removido: proteção de rota agora é feita pelo Layout
 
   return (
     <>

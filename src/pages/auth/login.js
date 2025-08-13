@@ -6,13 +6,20 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingForm, setIsLoadingForm] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  // Redireciona usuários já autenticados para o dashboard
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   // Força fundo branco na página de login
   useEffect(() => {
@@ -22,6 +29,11 @@ export default function Login() {
       document.body.removeAttribute('data-page');
     };
   }, []);
+
+  // Se estiver carregando ou já autenticado, não mostra o formulário
+  if (isLoading || isAuthenticated) {
+    return null;
+  }
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -44,7 +56,7 @@ export default function Login() {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingForm(true);
 
     try {
       const result = await login(formData.email, formData.password);
@@ -59,7 +71,7 @@ export default function Login() {
       console.error("Erro no login:", error);
       alert("Erro ao fazer login. Tente novamente.");
     } finally {
-      setIsLoading(false);
+      setIsLoadingForm(false);
     }
   };
 
@@ -90,7 +102,7 @@ export default function Login() {
               placeholder=" "
               autoComplete="email"
               aria-describedby="email-error"
-              disabled={isLoading}
+              disabled={isLoadingForm}
             />
             <label htmlFor="email" className={styles.label}>
               Email
@@ -111,7 +123,7 @@ export default function Login() {
               placeholder=" "
               autoComplete="current-password"
               aria-describedby="password-error"
-              disabled={isLoading}
+              disabled={isLoadingForm}
             />
             <label htmlFor="password" className={styles.label}>
               Senha
@@ -122,7 +134,7 @@ export default function Login() {
               onClick={togglePasswordVisibility}
               aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
               aria-pressed={showPassword}
-              disabled={isLoading}
+              disabled={isLoadingForm}
             >
               <img
                 src={showPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
@@ -135,10 +147,10 @@ export default function Login() {
             type="submit" 
             variant="primary" 
             size="full"
-            loading={isLoading}
-            disabled={isLoading}
+            loading={isLoadingForm}
+            disabled={isLoadingForm}
           >
-            {isLoading ? "Entrando..." : "Log in"}
+            {isLoadingForm ? "Entrando..." : "Log in"}
           </Button>
         </form>
         <a href="/forgot-password" className={styles.forgotPassword}>

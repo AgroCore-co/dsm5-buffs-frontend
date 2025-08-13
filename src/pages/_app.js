@@ -1,19 +1,40 @@
 import "@/styles/globals.css";
 import Layout from "@/components/Layout";
 import { useRouter } from "next/router";
+import { useRouteProtection } from "@/hooks/useRouteProtection";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 function App({ Component, pageProps }) {
   const router = useRouter();
   const isAuthRoute = router.pathname.startsWith("/auth");
+  const isErrorPage = router.pathname === "/404" || router.pathname === "/500" || router.pathname === "/_error" || router.pathname === "/test-error";
+  
+  // Aplica proteção de rotas globalmente
+  useRouteProtection();
+
+  // Páginas de erro não devem ter layout nem proteção
+  if (isErrorPage) {
+    return (
+      <ErrorBoundary>
+        <Component {...pageProps} />
+      </ErrorBoundary>
+    );
+  }
 
   if (isAuthRoute) {
-    return <Component {...pageProps} />;
+    return (
+      <ErrorBoundary>
+        <Component {...pageProps} />
+      </ErrorBoundary>
+    );
   }
 
   return (
-    <Layout>
-      <Component {...pageProps} />
-    </Layout>
+    <ErrorBoundary>
+      <Layout>
+        <Component {...pageProps} />
+      </Layout>
+    </ErrorBoundary>
   );
 }
 

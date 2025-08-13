@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { supabase } from "@/lib/supabaseClient";
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);
@@ -8,15 +9,14 @@ export const useAuth = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Verificar se há dados de usuário no localStorage
-    const checkAuth = () => {
+    // Verificar se há uma sessão ativa do Supabase
+    const checkAuth = async () => {
       try {
-        const token = localStorage.getItem("authToken");
-        const userData = localStorage.getItem("userData");
+        // Obter a sessão atual
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (token && userData) {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
+        if (session) {
+          setUser(session.user);
           setIsAuthenticated(true);
         } else {
           setUser(null);
@@ -32,54 +32,93 @@ export const useAuth = () => {
     };
 
     checkAuth();
+
+    // Escutar mudanças na autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          setUser(session.user);
+          setIsAuthenticated(true);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+        setIsLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email, password) => {
     try {
-      // Simular chamada de API
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      setIsLoading(true);
       
-      // TODO: Implementar chamada real para API
-      const mockResponse = {
-        success: true,
-        user: {
-          id: 1,
-          name: "Usuário Teste",
-          email: email
-        },
-        token: "mock-jwt-token"
-      };
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
 
-      if (mockResponse.success) {
-        localStorage.setItem("authToken", mockResponse.token);
-        localStorage.setItem("userData", JSON.stringify(mockResponse.user));
-        
-        setUser(mockResponse.user);
+      if (error) {
+        console.error("Erro no login:", error);
+        return { success: false, error: error.message };
+      }
+
+      if (data.session) {
+        setUser(data.user);
         setIsAuthenticated(true);
-        
-        return { success: true };
+        return { success: true, user: data.user };
       } else {
-        return { success: false, error: "Credenciais inválidas" };
+        return { success: false, error: "Falha na autenticação" };
       }
     } catch (error) {
       console.error("Erro no login:", error);
       return { success: false, error: "Erro ao fazer login" };
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userData");
-    
-    setUser(null);
-    setIsAuthenticated(false);
-    
-    router.push("/auth/login");
+  const logout = async () => {
+    try {
+      console.log("Iniciando logout...");
+      
+      // Limpar estado local primeiro para evitar conflitos
+      setUser(null);
+      setIsAuthenticated(false);
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Erro no logout:", error);
+        return;
+      }
+
+      console.log("Logout do Supabase concluído, redirecionando...");
+      
+      // Redirecionar para login
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Erro no logout:", error);
+    }
   };
 
   const checkAuthStatus = () => {
-    const token = localStorage.getItem("authToken");
-    return !!token;
+    return isAuthenticated;
+  };
+
+  const getCurrentUser = () => {
+    return user;
+  };
+
+  const getAccessToken = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session?.access_token || null;
+    } catch (error) {
+      console.error("Erro ao obter token:", error);
+      return null;
+    }
   };
 
   return {
@@ -88,6 +127,8 @@ export const useAuth = () => {
     isAuthenticated,
     login,
     logout,
-    checkAuthStatus
+    checkAuthStatus,
+    getCurrentUser,
+    getAccessToken
   };
 };

@@ -3,8 +3,14 @@ import { FiMaximize, FiMinimize } from "react-icons/fi";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
+import { useAuth } from '@/hooks/useAuth';
+
+
 const Navbar = () => {
   const router = useRouter();
+
+  const { logout } = useAuth();
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -85,9 +91,13 @@ const Navbar = () => {
     };
   }, []);
 
-  const handleLogout = () => {
-    // Adicione sua lógica de logout aqui
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    try {
+      setIsUserMenuOpen(false);
+      await logout();
+    } catch (error) {
+      console.error('Erro no logout:', error);
+    }
   };
 
   const handleViewProfile = () => {
