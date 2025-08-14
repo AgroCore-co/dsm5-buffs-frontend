@@ -9,70 +9,59 @@ export default function Login() {
   const { login, isAuthenticated, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoadingForm, setIsLoadingForm] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
-  // Redireciona usuários já autenticados para o dashboard
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       router.push("/dashboard");
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Força fundo branco na página de login
   useEffect(() => {
-    document.body.setAttribute('data-page', 'login');
-    
+    document.body.setAttribute("data-page", "login");
     return () => {
-      document.body.removeAttribute('data-page');
+      document.body.removeAttribute("data-page");
     };
   }, []);
 
-  // Se estiver carregando ou já autenticado, não mostra o formulário
-  if (isLoading || isAuthenticated) {
-    return null;
-  }
+  if (isLoading || isAuthenticated) return null;
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setLoginError(""); // Limpa erro ao digitar
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validação básica
+
     if (!formData.email || !formData.password) {
-      alert("Por favor, preencha todos os campos.");
+      setLoginError("Por favor, preencha todos os campos.");
       return;
     }
 
     setIsLoadingForm(true);
+    setLoginError("");
 
-    try {
-      const result = await login(formData.email, formData.password);
-      
-      if (result.success) {
-        // Redirecionar para o dashboard
-        router.push("/dashboard");
+    const result = await login(formData.email, formData.password);
+    if (result.success) {
+      router.push("/dashboard");
+    } else {
+      if (result.error?.includes("Invalid login credentials")) {
+        setLoginError("❌ Email ou senha inválidos.");
+      } else if (result.error?.includes("User not confirmed")) {
+        setLoginError("⚠️ Usuário não confirmado. Verifique seu email.");
       } else {
-        alert(result.error || "Erro ao fazer login. Tente novamente.");
+        setLoginError("❌ Ocorreu um erro inesperado. Tente novamente.");
       }
-    } catch (error) {
-      console.error("Erro no login:", error);
-      alert("Erro ao fazer login. Tente novamente.");
-    } finally {
-      setIsLoadingForm(false);
     }
+    setIsLoadingForm(false);
   };
 
   return (
@@ -89,6 +78,10 @@ export default function Login() {
         <p className={styles.description}>
           Faça login com os dados inseridos durante seu cadastro.
         </p>
+
+        {/* Exibe erro no HTML */}
+        {loginError && <p className={styles.error}>{loginError}</p>}
+
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.inputGroup}>
             <input
@@ -101,7 +94,6 @@ export default function Login() {
               className={styles.input}
               placeholder=" "
               autoComplete="email"
-              aria-describedby="email-error"
               disabled={isLoadingForm}
             />
             <label htmlFor="email" className={styles.label}>
@@ -111,6 +103,7 @@ export default function Login() {
               <img src="/images/icon_email.svg" alt="" />
             </span>
           </div>
+
           <div className={styles.inputGroup}>
             <input
               type={showPassword ? "text" : "password"}
@@ -122,7 +115,6 @@ export default function Login() {
               className={styles.input}
               placeholder=" "
               autoComplete="current-password"
-              aria-describedby="password-error"
               disabled={isLoadingForm}
             />
             <label htmlFor="password" className={styles.label}>
@@ -137,15 +129,19 @@ export default function Login() {
               disabled={isLoadingForm}
             >
               <img
-                src={showPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
+                src={
+                  showPassword
+                    ? "/images/not-view-password.svg"
+                    : "/images/not-view-password-bloqued.svg"
+                }
                 alt=""
               />
             </button>
           </div>
 
-          <Button 
-            type="submit" 
-            variant="primary" 
+          <Button
+            type="submit"
+            variant="primary"
             size="full"
             loading={isLoadingForm}
             disabled={isLoadingForm}

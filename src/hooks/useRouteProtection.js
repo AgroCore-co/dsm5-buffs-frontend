@@ -20,12 +20,9 @@ export const useRouteProtection = () => {
         return;
       }
       
-      // Se não estiver autenticado e não estiver em rota pública, redireciona para login
-      // Mas só se não estiver já indo para login (evita loops)
-      if (!isAuthenticated && !isPublicRoute(router.pathname) && router.pathname !== '/auth/login') {
-        router.push('/auth/login');
-        return;
-      }
+      // Removido o redirecionamento automático para login
+      // Agora o ProtectedRoute é responsável por mostrar a tela de erro
+      // e controlar o redirecionamento com o contador de 15 segundos
     }
   }, [isAuthenticated, isLoading, router]);
 

@@ -17,12 +17,15 @@ const CountdownTimer = ({ seconds, onComplete }) => {
   }, [timeLeft, onComplete]);
 
   return (
-    <div className="text-center">
-      <div className="text-sm text-gray-500 mb-2">
-        Redirecionando em:
+    <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+      <div className="text-sm text-gray-600 mb-2 font-medium">
+        Redirecionando automaticamente em:
       </div>
-      <div className="text-2xl font-bold text-orange-500">
+      <div className="text-3xl font-bold text-orange-600 mb-2">
         {timeLeft}s
+      </div>
+      <div className="text-xs text-gray-500">
+        Ou clique no botão "Fazer Login" para ir imediatamente
       </div>
     </div>
   );

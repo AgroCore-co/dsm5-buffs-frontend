@@ -23,7 +23,6 @@ export const useAuth = () => {
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
         setUser(null);
         setIsAuthenticated(false);
       } finally {
@@ -51,19 +50,16 @@ export const useAuth = () => {
   }, []);
 
   const login = async (email, password) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
+        email,
+        password,
       });
-
       if (error) {
-        console.error("Erro no login:", error);
+        // Não lança exceção, retorna objeto padronizado
         return { success: false, error: error.message };
       }
-
       if (data.session) {
         setUser(data.user);
         setIsAuthenticated(true);
@@ -72,7 +68,7 @@ export const useAuth = () => {
         return { success: false, error: "Falha na autenticação" };
       }
     } catch (error) {
-      console.error("Erro no login:", error);
+      // Não lança exceção, retorna objeto padronizado
       return { success: false, error: "Erro ao fazer login" };
     } finally {
       setIsLoading(false);
@@ -81,25 +77,21 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      console.log("Iniciando logout...");
-      
-      // Limpar estado local primeiro para evitar conflitos
+      setIsLoading(true);
+      // Limpar estado local depois do signOut
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        // Não redireciona se erro no logout
+        return { success: false, error: error.message };
+      }
       setUser(null);
       setIsAuthenticated(false);
-      
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error("Erro no logout:", error);
-        return;
-      }
-
-      console.log("Logout do Supabase concluído, redirecionando...");
-      
-      // Redirecionar para login
       router.push("/auth/login");
+      return { success: true };
     } catch (error) {
-      console.error("Erro no logout:", error);
+      return { success: false, error: "Erro no logout" };
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -284,7 +284,7 @@ export default function Manejo() {
         {/* Análise Detalhada */}
         <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Análise Detalhada 📊</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Análise Detalhada </h2>
             <p className="text-gray-600">
               Insights visuais sobre a distribuição e performance dos lotes.
             </p>
@@ -294,7 +294,7 @@ export default function Manejo() {
             {/* Distribuição por Tipo */}
             <div className="bg-gradient-to-br from-white to-orange-50 p-6 rounded-xl shadow border border-orange-200">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                📈 Distribuição por Tipo de Lote
+                 Distribuição por Tipo de Lote
               </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={distribuicaoPorTipoData}>

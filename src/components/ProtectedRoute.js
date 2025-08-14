@@ -8,9 +8,7 @@ import CountdownTimer from './CountdownTimer';
 export default function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-  const [isTokenValid, setIsTokenValid] = useState(false);
   const [showUnauthorized, setShowUnauthorized] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
 
   // Não aplicar proteção em páginas de erro
   if (router.pathname === '/404' || router.pathname === '/500' || router.pathname === '/_error' || router.pathname === '/test-error') {
@@ -25,14 +23,12 @@ export default function ProtectedRoute({ children }) {
         return;
       }
 
-      // Se estiver autenticado, considera o token válido
-      setIsTokenValid(true);
+      // Se estiver autenticado, esconde o erro
       setShowUnauthorized(false);
     }
   }, [isAuthenticated, isLoading]);
 
   const handleRedirect = () => {
-    setRedirecting(true);
     router.push('/auth/login');
   };
 
@@ -45,18 +41,13 @@ export default function ProtectedRoute({ children }) {
   if (showUnauthorized) {
     return (
       <UnauthorizedError 
-        message="Você não tem permissão para acessar esta página. Será redirecionado automaticamente para o login."
-        showLoginButton={false}
+        message="Você não tem permissão para acessar esta página. Será redirecionado automaticamente para o login em alguns segundos."
+        showLoginButton={true}
         countdownTimer={<CountdownTimer seconds={5} onComplete={handleRedirect} />}
       />
     );
   }
 
-  // Se não estiver autenticado ou token inválido, não renderiza nada
-  if (!isAuthenticated || !isTokenValid) {
-    return null;
-  }
-
-  // Se estiver autenticado e token válido, renderiza o conteúdo
+  // Se estiver autenticado, renderiza o conteúdo
   return children;
 }
