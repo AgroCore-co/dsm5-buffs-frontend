@@ -3,13 +3,12 @@ import { FiMaximize, FiMinimize } from "react-icons/fi";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-import { useAuth } from '@/hooks/useAuth';
-
+import { useAuth } from "@/hooks/useAuth";
 
 const Navbar = () => {
   const router = useRouter();
 
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -86,8 +85,14 @@ const Navbar = () => {
         "webkitfullscreenchange",
         updateFullscreenStatus
       );
-      document.removeEventListener("mozfullscreenchange", updateFullscreenStatus);
-      document.removeEventListener("MSFullscreenChange", updateFullscreenStatus);
+      document.removeEventListener(
+        "mozfullscreenchange",
+        updateFullscreenStatus
+      );
+      document.removeEventListener(
+        "MSFullscreenChange",
+        updateFullscreenStatus
+      );
     };
   }, []);
 
@@ -96,7 +101,7 @@ const Navbar = () => {
       setIsUserMenuOpen(false);
       await logout();
     } catch (error) {
-      console.error('Erro no logout:', error);
+      console.error("Erro no logout:", error);
     }
   };
 
@@ -152,7 +157,9 @@ const Navbar = () => {
             <button
               onClick={toggleFullscreen}
               className="p-2 cursor-pointer transition-colors duration-200 text-[var(--color-text-dark)] hover:opacity-80"
-              aria-label={isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"}
+              aria-label={
+                isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"
+              }
               title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
             >
               {isFullscreen ? (
@@ -195,8 +202,12 @@ const Navbar = () => {
                   <div className="py-1">
                     {/* Info usuário */}
                     <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-                      <div className="font-medium">Usuário</div>
-                      <div className="text-gray-500">usuario@email.com</div>
+                      <div className="font-medium">
+                        {user?.name || "Usuário"}
+                      </div>
+                      <div className="text-gray-500">
+                        {user?.email || "sem-email@dominio.com"}
+                      </div>
                     </div>
 
                     {/* Visualizar perfil */}
@@ -396,7 +407,10 @@ const Navbar = () => {
 
       {/* Fecha menu usuário clicando fora */}
       {isUserMenuOpen && (
-        <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsUserMenuOpen(false)}
+        />
       )}
     </>
   );

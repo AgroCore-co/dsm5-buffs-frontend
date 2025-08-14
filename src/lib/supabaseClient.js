@@ -1,25 +1,26 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js"
 
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  {
-    auth: {
-      persistSession: true,     // Persiste a sessão no localStorage
-      autoRefreshToken: true,   // Atualiza automaticamente o token da sessão 
-      storageKey: "sb-auth-token", // Chave para armazenar o token da sessão
-      detectSessionInUrl: true, // Detecta tokens de autenticação na URL
-      flowType: 'pkce',         // Usa PKCE para maior segurança
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Variáveis de ambiente do Supabase não configuradas")
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
     },
-    realtime: {
-      params: {
-        eventsPerSecond: 10,
-      },
+  },
+  global: {
+    headers: {
+      "X-Client-Info": "dsm5-buffs-frontend",
     },
-    global: {
-      headers: {
-        'X-Client-Info': 'dsm5-buffs-frontend',
-      },
-    },
-  }
-);
+  },
+})

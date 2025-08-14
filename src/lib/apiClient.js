@@ -1,4 +1,4 @@
-import { SupabaseAuth } from "@/utils/supabaseApi";
+import { SupabaseAuth } from "@/utils/supabaseApi"
 
 /**
  * Função genérica para fazer requisições à API com token JWT.
@@ -13,11 +13,11 @@ import { SupabaseAuth } from "@/utils/supabaseApi";
 export const apiFetch = async (endpoint, { method = "GET", data = null, token = null } = {}) => {
   try {
     if (!token) {
-      token = await SupabaseAuth.getAccessToken();
-      if (!token) throw new Error("Usuário não autenticado.");
+      token = await SupabaseAuth.getAccessToken()
+      if (!token) throw new Error("Usuário não autenticado.")
     }
 
-    const url = `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
+    const url = `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`
 
     const response = await fetch(url, {
       method,
@@ -26,22 +26,22 @@ export const apiFetch = async (endpoint, { method = "GET", data = null, token = 
         Authorization: `Bearer ${token}`,
       },
       body: data ? JSON.stringify(data) : undefined,
-    });
+    })
 
-    const json = await response.json().catch(() => ({}));
+    const json = await response.json().catch(() => ({}))
 
     if (!response.ok) {
       // Lança erro com status e message
-      const err = new Error(json.message || `Erro ${response.status}`);
-      err.status = response.status;
-      throw err;
+      const err = new Error(json.message || `Erro ${response.status}`)
+      err.status = response.status
+      throw err
     }
 
-    return json;
+    return json
   } catch (error) {
-    console.error("❌ Erro em apiFetch:", error.message);
-    throw error;
+    console.error("❌ Erro em apiFetch:", error.message)
+    throw error
   }
-};
+}
 
-export default { apiFetch };
+export default { apiFetch }

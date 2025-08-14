@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from "@/lib/supabaseClient"
 
 /**
  * Utilitário para autenticação com Supabase
@@ -11,12 +11,12 @@ export class SupabaseAuth {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
-        password
+        password,
       })
       if (error) throw error
       return { success: true, data }
     } catch (error) {
-      console.error('Erro no login:', error.message)
+      console.error("Erro no login:", error.message)
       return { success: false, error: error.message }
     }
   }
@@ -30,7 +30,7 @@ export class SupabaseAuth {
       if (error) throw error
       return { success: true }
     } catch (error) {
-      console.error('Erro no logout:', error.message)
+      console.error("Erro no logout:", error.message)
       return { success: false, error: error.message }
     }
   }
@@ -40,11 +40,14 @@ export class SupabaseAuth {
    */
   static async getSession() {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession()
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession()
       if (error) throw error
       return { success: true, session }
     } catch (error) {
-      console.error('Erro ao obter sessão:', error.message)
+      console.error("Erro ao obter sessão:", error.message)
       return { success: false, error: error.message }
     }
   }
@@ -54,11 +57,14 @@ export class SupabaseAuth {
    */
   static async getAccessToken() {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession()
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession()
       if (error) throw error
       return session?.access_token || null
     } catch (error) {
-      console.error('Erro ao obter token de acesso:', error.message)
+      console.error("Erro ao obter token de acesso:", error.message)
       return null
     }
   }

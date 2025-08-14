@@ -1,66 +1,40 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+"use client"
+
+import { useState, useEffect } from "react"
 
 export const useErrorBoundary = () => {
-  const [error, setError] = useState(null);
-  const [errorInfo, setErrorInfo] = useState(null);
-  const router = useRouter();
+  const [error, setError] = useState(null)
 
-  const handleError = (error, errorInfo) => {
-    console.error('Erro capturado:', error, errorInfo);
-    setError(error);
-    setErrorInfo(errorInfo);
-  };
+  const resetError = () => {
+    setError(null)
+  }
 
-  const clearError = () => {
-    setError(null);
-    setErrorInfo(null);
-  };
+  const captureError = (error) => {
+    console.error("Error captured by useErrorBoundary:", error)
+    setError(error)
+  }
 
-  const handleRetry = () => {
-    clearError();
-    window.location.reload();
-  };
-
-  const handleGoHome = () => {
-    clearError();
-    router.push('/dashboard');
-  };
-
-  const handleGoBack = () => {
-    clearError();
-    router.back();
-  };
-
-  // Captura erros não tratados
   useEffect(() => {
-    const handleUnhandledRejection = (event) => {
-      console.error('Promise rejeitada não tratada:', event.reason);
-      setError(new Error('Erro de conexão com o servidor'));
-    };
-
     const handleError = (event) => {
-      console.error('Erro não tratado:', event.error);
-      setError(event.error || new Error('Erro inesperado'));
-    };
+      captureError(event.error)
+    }
 
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    window.addEventListener('error', handleError);
+    const handleUnhandledRejection = (event) => {
+      captureError(event.reason)
+    }
+
+    window.addEventListener("error", handleError)
+    window.addEventListener("unhandledrejection", handleUnhandledRejection)
 
     return () => {
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      window.removeEventListener('error', handleError);
-    };
-  }, []);
+      window.removeEventListener("error", handleError)
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection)
+    }
+  }, [])
 
   return {
     error,
-    errorInfo,
-    handleError,
-    clearError,
-    handleRetry,
-    handleGoHome,
-    handleGoBack,
-    hasError: !!error
-  };
-};
+    resetError,
+    captureError,
+  }
+}
