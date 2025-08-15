@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Panel from "@/components/Panel";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import styles from "@/styles/Layout.module.css";
+import PropertySelectorFloating from "./PropertySelectorFloating";
 
 export default function Layout({ children }) {
   return (
@@ -10,11 +11,12 @@ export default function Layout({ children }) {
       <div className={styles.layout}>
         <Navbar />
         <main className={styles.content}>
-          <Panel>{children}</Panel>
+          <Panel>
+            {children}
+            <PropertySelectorFloating></PropertySelectorFloating>
+          </Panel>
         </main>
       </div>
     </ProtectedRoute>
   );
 }
-
-

@@ -21,13 +21,7 @@ import {
 // Removido: ícones de biblioteca. Vamos usar SVGs locais em /public/images
 
 export default function Dashboard() {
-  const [idPropriedade, setIdPropriedade] = useState(null);
-
-  useEffect(() => {
-    const storedId = localStorage.getItem("idPropriedade");
-    if (storedId) setIdPropriedade(Number(storedId));
-    console.log("ID da propriedade:", storedId);
-  }, []);
+ 
 
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
