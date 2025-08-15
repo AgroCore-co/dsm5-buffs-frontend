@@ -3,6 +3,7 @@ import Layout from "@/components/Layout";
 import { useRouter } from "next/router";
 import { useRouteProtection } from "@/hooks/useRouteProtection";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { PropertyProvider } from "@/contexts/PropertyContext"; // import do contexto
 
 function App({ Component, pageProps }) {
   const router = useRouter();
@@ -30,11 +31,13 @@ function App({ Component, pageProps }) {
   }
 
   return (
-    <ErrorBoundary>
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
-    </ErrorBoundary>
+    <PropertyProvider> {/* Contexto engloba o sistema todo */}
+      <ErrorBoundary>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      </ErrorBoundary>
+    </PropertyProvider>
   );
 }
 
