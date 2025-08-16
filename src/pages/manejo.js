@@ -20,7 +20,11 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import MapaPiquetes from "@/components/MapaPiquetes";
+import dynamic from "next/dynamic";
+
+const MapaPiquetes = dynamic(() => import("@/components/MapaPiquetes"), {
+  ssr: false, // desativa renderização no servidor
+});
 
 export default function Manejo() {
   const router = useRouter();
@@ -239,8 +243,7 @@ export default function Manejo() {
           </div>
 
           {/* Área do Mapa */}
-                      <MapaPiquetes />
-
+          <MapaPiquetes />
         </div>
 
         {/* Header - Manejo do Rebanho */}
