@@ -119,7 +119,7 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className="bg-[var(--color-primary)] px-0 shadow-md fixed top-0 left-0 right-0 z-50"
+        className="bg-[var(--color-primary)] px-0 shadow-md fixed top-0 left-0 right-0 z-[1000]"
         role="navigation"
         aria-label="Principal"
       >

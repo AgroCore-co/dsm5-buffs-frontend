@@ -54,7 +54,7 @@ export default function PropertySelectorFloating() {
         title="Selecionar Propriedade"
         onClick={() => setOpen(true)}
         disabled={loadingPropriedade}
-        className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
+        className="fixed bottom-6 right-6 z-[1000] bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
       >
         <Building2 size={20} />
         <span className="text-sm font-medium max-w-40 truncate">{activeName}</span>
@@ -64,7 +64,7 @@ export default function PropertySelectorFloating() {
       {/* Modal */}
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50"
           onClick={onOverlayClick}
         >
           <div
