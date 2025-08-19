@@ -3,16 +3,13 @@ import { apiFetch } from "@/lib/apiClient";
 
 // --- HELPER: GeoJSON Polygon -> WKT POLYGON ---
 function geoToWKT(geo) {
-  // Se já vier como string WKT, só retorna
   if (typeof geo === "string") {
     const trimmed = geo.trim();
     if (trimmed.toUpperCase().startsWith("POLYGON(")) return trimmed;
   }
 
-  // GeoJSON { type: "Polygon", coordinates: [ [ [lng, lat], ... ] ] }
   if (geo && geo.type === "Polygon" && Array.isArray(geo.coordinates)) {
     let ring = geo.coordinates[0] || [];
-    // Garante fechamento do anel
     if (ring.length >= 3) {
       const first = ring[0];
       const last = ring[ring.length - 1];
@@ -20,7 +17,6 @@ function geoToWKT(geo) {
         ring = [...ring, first];
       }
     }
-    // Monta "lng lat" (WKT usa ordem LON LAT)
     const pairs = ring.map(([lng, lat]) => `${Number(lng)} ${Number(lat)}`);
     return `POLYGON((${pairs.join(", ")}))`;
   }
@@ -29,7 +25,7 @@ function geoToWKT(geo) {
 }
 
 /**
- * Lista todos os lotes (piquetes) georreferenciados.
+ * Lista todos os lotes.
  */
 const listarLotes = async (token) => {
   try {
@@ -50,8 +46,32 @@ const listarLotes = async (token) => {
 };
 
 /**
- * Cria um novo lote (piquete) georreferenciado.
+ * Lista todos os lotes de uma propriedade específica.
  */
+const listarLotesPorPropriedade = async (idPropriedade, token) => {
+  try {
+    if (!idPropriedade) throw new Error("É necessário informar um id_propriedade válido.");
+
+    const data = await apiFetch(`/lotes/propriedade/${idPropriedade}`, {
+      method: "GET",
+      token,
+    });
+
+    if (!Array.isArray(data)) {
+      console.warn("Resposta inesperada em /lotes/propriedade:", data);
+      return [];
+    }
+
+    console.log(`✅ Lotes da propriedade ${idPropriedade} carregados:`, data);
+    return data;
+  } catch (error) {
+    console.error("❌ Erro ao listar lotes da propriedade:", error);
+    throw error;
+  }
+};
+
+
+// loteService.js
 const criarLote = async (payload, token) => {
   try {
     const nome = String(payload?.nome_lote ?? "").trim();
@@ -60,16 +80,14 @@ const criarLote = async (payload, token) => {
     const idProp = Number(payload?.id_propriedade);
     if (!Number.isInteger(idProp)) throw new Error("Campo 'id_propriedade' deve ser um inteiro.");
 
-    if (!payload?.geo_mapa) throw new Error("Campo 'geo_mapa' é obrigatório.");
-
-    // Converte para WKT se vier em GeoJSON
-    const wkt = geoToWKT(payload.geo_mapa);
+    if (!payload?.geo_mapa || typeof payload.geo_mapa !== "object") 
+      throw new Error("Campo 'geo_mapa' é obrigatório e deve ser um objeto GeoJSON.");
 
     const body = {
       nome_lote: nome,
       id_propriedade: idProp,
       descricao: payload?.descricao ?? null,
-      geo_mapa: wkt, // <-- agora no formato que a API espera
+      geo_mapa: payload.geo_mapa, // <- enviando GeoJSON diretamente
     };
 
     const data = await apiFetch(`/lotes`, {
@@ -89,5 +107,6 @@ const criarLote = async (payload, token) => {
 
 export default {
   listarLotes,
+  listarLotesPorPropriedade,
   criarLote,
 };
