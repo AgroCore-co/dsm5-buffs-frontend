@@ -30,27 +30,7 @@
     const router = useRouter();
     const { user, isLoading, isAuthenticated, getAccessToken } = useAuth();
 
-    useEffect(() => {
-      if (!isAuthenticated) return;
-
-      const carregarLotes = async () => {
-        try {
-          const token = await getAccessToken();
-          if (!token) {
-            console.error("❌ Token não disponível.");
-            return;
-          }
-
-          // Chama o service para listar lotes
-          const lotes = await loteService.listarLotes(token);
-          console.log("📋 Lotes carregados:", lotes);
-        } catch (error) {
-          console.error("❌ Erro ao carregar lotes:", error);
-        }
-      };
-
-      carregarLotes();
-    }, [isAuthenticated]);
+  
 
     // Dados mockados para manejo
 

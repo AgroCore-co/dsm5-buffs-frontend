@@ -24,26 +24,7 @@ function geoToWKT(geo) {
   throw new Error("Campo 'geo_mapa' inválido: forneça WKT POLYGON ou GeoJSON Polygon.");
 }
 
-/**
- * Lista todos os lotes.
- */
-const listarLotes = async (token) => {
-  try {
-    const data = await apiFetch(`/lotes`, {
-      method: "GET",
-      token,
-    });
-    if (!Array.isArray(data)) {
-      console.warn("Resposta inesperada em /lotes:", data);
-      return [];
-    }
-    console.log("✅ Lotes carregados:", data);
-    return data;
-  } catch (error) {
-    console.error("❌ Erro ao listar lotes:", error);
-    throw error;
-  }
-};
+
 
 /**
  * Lista todos os lotes de uma propriedade específica.
@@ -106,7 +87,6 @@ const criarLote = async (payload, token) => {
 };
 
 export default {
-  listarLotes,
   listarLotesPorPropriedade,
   criarLote,
 };
