@@ -23,6 +23,7 @@ const Navbar = () => {
     { label: "Controle Reprodução", path: "/reproducao" },
     { label: "Manejo", path: "/manejo" },
     { label: "Equipe", path: "/equipe" },
+    { label: "Industria", path: "/industria" },
   ];
 
   const toggleMobileMenu = () => {

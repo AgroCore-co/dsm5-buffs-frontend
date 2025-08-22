@@ -1,4 +1,4 @@
-import React, { useEffect , useState} from "react";
+import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,8 +21,6 @@ import {
 // Removido: ícones de biblioteca. Vamos usar SVGs locais em /public/images
 
 export default function Dashboard() {
- 
-
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
 
@@ -251,23 +249,33 @@ export default function Dashboard() {
                 Top 5 Búfalas Produtoras
               </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topBuffalosData}>
+                <BarChart
+                  data={topBuffalosData}
+                  layout="vertical" // <- muda o gráfico para horizontal
+                  margin={{ left: 50 }} // espaço extra para os nomes
+                >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
+
+                  {/* Agora o eixo X é numérico (valores de leite) */}
+                  <XAxis type="number" />
+
+                  {/* O eixo Y mostra os nomes das búfalas */}
+                  <YAxis dataKey="name" type="category" />
+
                   <Tooltip formatter={(value) => `${value} L/dia`} />
                   <Legend />
+
                   <Bar dataKey="leite" fill="#FFCF78" name="Leite (L/dia)">
                     {topBuffalosData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={
                           [
-                            "#FFCF78", // Amarelo dourado (primária)
-                            "#CE7D0A", // Laranja escuro (primária escura)
-                            "#F2B84D", // Laranja médio (hover)
-                            "#FCA90F", // Laranja claro (primária light)
-                            "#E6A23C", // Laranja dourado (variação)
+                            "#FFCF78", // Amarelo dourado
+                            "#CE7D0A", // Laranja escuro
+                            "#F2B84D", // Laranja médio
+                            "#FCA90F", // Laranja claro
+                            "#E6A23C", // Laranja dourado variação
                           ][index % 5]
                         }
                       />
@@ -324,7 +332,7 @@ export default function Dashboard() {
         </div>
 
         {/* Production Collection Chart */}
-        <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
+        {/* <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             Produção vs Coleta Mensal
           </h2>
@@ -351,7 +359,7 @@ export default function Dashboard() {
               />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </div> */}
       </div>
     </>
   );

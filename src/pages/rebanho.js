@@ -670,257 +670,206 @@ export default function Rebanho() {
           </div>
         </div>
 
-        {/* Cards de Búfalos com Filtros e Paginação */}
-        <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Registro de Búfalos
-              </h2>
-              <Button
-                variant="primary"
-                size="medium"
-                onClick={() => setIsModalOpen(true)}
+{/* Tabela de Búfalos com Filtros e Paginação (estilo zebra) */}
+<div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
+  <div className="mb-4">
+    <div className="flex justify-between items-center mb-2">
+      <h2 className="text-2xl font-bold text-gray-800">Registro de Búfalos</h2>
+      <Button variant="primary" size="medium" onClick={() => setIsModalOpen(true)}>
+        + Adicionar Búfalo
+      </Button>
+    </div>
+
+    <p className="text-gray-600">
+      {filteredBuffalos.length === BUFFALOS_MOCK.length
+        ? `Lista completa do rebanho com ${BUFFALOS_MOCK.length} búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`
+        : `Mostrando ${filteredBuffalos.length} de ${BUFFALOS_MOCK.length} búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`}
+      {totalPages > 0 && ` Página ${currentPage} de ${totalPages}`}
+    </p>
+  </div>
+
+  {/* Filtros */}
+  <div className="bg-gray-50 rounded-lg p-4 mb-4">
+    <div className="flex flex-wrap items-center gap-4">
+      <h3 className="text-sm font-semibold text-gray-700 mr-2">Filtros:</h3>
+
+      {/* Sexo */}
+      <div className="flex items-center gap-2">
+        <label className="text-sm text-gray-600">Sexo:</label>
+        <select
+          value={filters.sexo}
+          onChange={(e) => handleFilterChange("sexo", e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
+        >
+          <option value="">Todos</option>
+          {getUniqueValues("sexo").map((sexo) => (
+            <option key={sexo} value={sexo}>{sexo}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Raça */}
+      <div className="flex items-center gap-2">
+        <label className="text-sm text-gray-600">Raça:</label>
+        <select
+          value={filters.raca}
+          onChange={(e) => handleFilterChange("raca", e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
+        >
+          <option value="">Todas</option>
+          {getUniqueValues("raca").map((raca) => (
+            <option key={raca} value={raca}>{raca}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Maturidade */}
+      <div className="flex items-center gap-2">
+        <label className="text-sm text-gray-600">Maturidade:</label>
+        <select
+          value={filters.maturidade}
+          onChange={(e) => handleFilterChange("maturidade", e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
+        >
+          <option value="">Todas</option>
+          {getUniqueValues("maturidade").map((maturidade) => (
+            <option key={maturidade} value={maturidade}>{maturidade}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Status */}
+      <div className="flex items-center gap-2">
+        <label className="text-sm text-gray-600">Status:</label>
+        <select
+          value={filters.status}
+          onChange={(e) => handleFilterChange("status", e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
+        >
+          <option value="">Todos</option>
+          {getUniqueValues("status").map((status) => (
+            <option key={status} value={status}>{status}</option>
+          ))}
+        </select>
+      </div>
+
+      {(filters.sexo || filters.raca || filters.maturidade || filters.status) && (
+        <button
+          onClick={clearFilters}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-3 py-1 rounded-md transition-colors"
+        >
+          Limpar filtros
+        </button>
+      )}
+    </div>
+  </div>
+
+  {/* Tabela ou vazio */}
+  {filteredBuffalos.length === 0 ? (
+    <div className="text-center py-8">
+      <p className="text-gray-500 text-lg mb-2">Nenhum búfalo encontrado</p>
+      <p className="text-gray-400 text-sm">Tente ajustar os filtros para ver mais resultados</p>
+      <button
+        onClick={clearFilters}
+        className="mt-4 bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
+      >
+        Limpar filtros
+      </button>
+    </div>
+  ) : (
+    <>
+      <div className="overflow-x-auto w-full">
+        <table className="w-full border-collapse min-w-[800px] bg-white rounded-lg overflow-hidden shadow-sm">
+          <thead className="bg-[#f0f0f0]">
+            <tr>
+              <th className="p-3 text-center font-medium text-gray-800 text-base">TAG</th>
+              <th className="p-3 text-center font-medium text-gray-800 text-base">Nome</th>
+              <th className="p-3 text-center font-medium text-gray-800 text-base">Sexo</th>
+              <th className="p-3 text-center font-medium text-gray-800 text-base">Raça</th>
+              <th className="p-3 text-center font-medium text-gray-800 text-base">Maturidade</th>
+              <th className="p-3 text-center font-medium text-gray-800 text-base">Peso</th>
+              <th className="p-3 text-center font-medium text-gray-800 text-base">Status</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-gray-200">
+            {currentBuffalos.map((buffalo) => (
+              <tr
+                key={buffalo.tag}
+                className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50 cursor-pointer"
+                onClick={() => handleViewBuffalo(buffalo)}
               >
-                + Adicionar Búfalo
-              </Button>
-            </div>
+                <td className="p-3 text-center text-gray-800 text-base font-medium">{buffalo.tag}</td>
+                <td className="p-3 text-center text-gray-800 text-base">{buffalo.nome}</td>
+                <td className="p-3 text-center text-gray-800 text-base">{buffalo.sexo}</td>
+                <td className="p-3 text-center text-gray-800 text-base">{buffalo.raca}</td>
+                <td className="p-3 text-center text-gray-800 text-base">{buffalo.maturidade}</td>
+                <td className="p-3 text-center text-gray-800 text-base">{buffalo.peso} kg</td>
+                <td className="p-3 text-center text-gray-800 text-base">
+                  <span className={`px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-28 ${getStatusColor(buffalo.status)}`}>
+                    {buffalo.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-            <p className="text-gray-600">
-              {filteredBuffalos.length === BUFFALOS_MOCK.length
-                ? `Lista completa do rebanho com ${
-                    BUFFALOS_MOCK.length
-                  } búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`
-                : `Mostrando ${filteredBuffalos.length} de ${
-                    BUFFALOS_MOCK.length
-                  } búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`}
-              {totalPages > 0 && ` Página ${currentPage} de ${totalPages}`}
-            </p>
-          </div>
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 mt-6">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              currentPage === 1
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+            }`}
+          >
+            Anterior
+          </button>
 
-          {/* Filtros */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-4">
-            <div className="flex flex-wrap items-center gap-4">
-              <h3 className="text-sm font-semibold text-gray-700 mr-2">
-                Filtros:
-              </h3>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => handlePageChange(page)}
+              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                currentPage === page
+                  ? "bg-[#CE7D0A] text-white"
+                  : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
 
-              {/* Filtro por Sexo */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Sexo:</label>
-                <select
-                  value={filters.sexo}
-                  onChange={(e) => handleFilterChange("sexo", e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
-                >
-                  <option value="">Todos</option>
-                  {getUniqueValues("sexo").map((sexo) => (
-                    <option key={sexo} value={sexo}>
-                      {sexo}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Filtro por Raça */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Raça:</label>
-                <select
-                  value={filters.raca}
-                  onChange={(e) => handleFilterChange("raca", e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
-                >
-                  <option value="">Todas</option>
-                  {getUniqueValues("raca").map((raca) => (
-                    <option key={raca} value={raca}>
-                      {raca}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Filtro por Maturidade */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Maturidade:</label>
-                <select
-                  value={filters.maturidade}
-                  onChange={(e) =>
-                    handleFilterChange("maturidade", e.target.value)
-                  }
-                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
-                >
-                  <option value="">Todas</option>
-                  {getUniqueValues("maturidade").map((maturidade) => (
-                    <option key={maturidade} value={maturidade}>
-                      {maturidade}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Filtro por Status */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Status:</label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange("status", e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
-                >
-                  <option value="">Todos</option>
-                  {getUniqueValues("status").map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Botão para limpar filtros */}
-              {(filters.sexo ||
-                filters.raca ||
-                filters.maturidade ||
-                filters.status) && (
-                <button
-                  onClick={clearFilters}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-3 py-1 rounded-md transition-colors"
-                >
-                  Limpar filtros
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Lista de Búfalos ou Mensagem de Vazio */}
-          {filteredBuffalos.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 text-lg mb-2">
-                Nenhum búfalo encontrado
-              </p>
-              <p className="text-gray-400 text-sm">
-                Tente ajustar os filtros para ver mais resultados
-              </p>
-              <button
-                onClick={clearFilters}
-                className="mt-4 bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                Limpar filtros
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Grid de Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {currentBuffalos.map((buffalo) => (
-                  <div
-                    key={buffalo.tag}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleViewBuffalo(buffalo)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleViewBuffalo(buffalo);
-                      }
-                    }}
-                    className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all p-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  >
-                    {/* Header do Card */}
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-xs font-bold text-[#CE7D0A] bg-[#FFCF78]/30 px-2 py-1 rounded">
-                        {buffalo.tag}
-                      </span>
-                      <span className="text-lg text-[#CE7D0A]">
-                        {getSexIcon(buffalo.sexo)}
-                      </span>
-                    </div>
-
-                    {/* Nome e informações principais */}
-                    <div className="mb-3">
-                      <h3 className="text-sm font-bold text-gray-800 mb-1 truncate">
-                        {buffalo.nome}
-                      </h3>
-                      <div className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span>{buffalo.raca}</span>
-                        <span>{buffalo.peso}kg</span>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {buffalo.maturidade}
-                      </div>
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex justify-between items-center">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                          buffalo.status
-                        )}`}
-                      >
-                        {buffalo.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Componente de Paginação */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center space-x-2 mt-6">
-                  {/* Botão Anterior */}
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      currentPage === 1
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                    }`}
-                  >
-                    Anterior
-                  </button>
-
-                  {/* Números das páginas */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                          currentPage === page
-                            ? "bg-[#CE7D0A] text-white"
-                            : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    )
-                  )}
-
-                  {/* Botão Próximo */}
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      currentPage === totalPages
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                    }`}
-                  >
-                    Próximo
-                  </button>
-                </div>
-              )}
-
-              {/* Informações da paginação */}
-              {totalPages > 0 && (
-                <div className="text-center text-sm text-gray-600 mt-4">
-                  Mostrando {startIndex + 1} a{" "}
-                  {Math.min(endIndex, filteredBuffalos.length)} de{" "}
-                  {filteredBuffalos.length} búfalos
-                </div>
-              )}
-            </>
-          )}
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              currentPage === totalPages
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+            }`}
+          >
+            Próximo
+          </button>
         </div>
+      )}
+
+      {totalPages > 0 && (
+        <div className="text-center text-sm text-gray-600 mt-4">
+          Mostrando {startIndex + 1} a {Math.min(endIndex, filteredBuffalos.length)} de {filteredBuffalos.length} búfalos
+        </div>
+      )}
+    </>
+  )}
+</div>
+
+
+
 
         {/* Análise de Saúde do Rebanho */}
         <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
