@@ -52,39 +52,41 @@ const listarLotesPorPropriedade = async (idPropriedade, token) => {
 };
 
 
-// loteService.js
 const criarLote = async (payload, token) => {
   try {
-    const nome = String(payload?.nome_lote ?? "").trim();
-    if (!nome) throw new Error("Campo 'nome_lote' é obrigatório e não pode ser vazio.");
+    // Validações
+    const nome = String(payload?.nome_lote ?? "").trim()
+    if (!nome) throw new Error("Campo 'nome_lote' é obrigatório e não pode ser vazio.")
 
-    const idProp = Number(payload?.id_propriedade);
-    if (!Number.isInteger(idProp)) throw new Error("Campo 'id_propriedade' deve ser um inteiro.");
+    const idProp = Number(payload?.id_propriedade)
+    if (!Number.isInteger(idProp)) throw new Error("Campo 'id_propriedade' deve ser um inteiro.")
 
-    if (!payload?.geo_mapa || typeof payload.geo_mapa !== "object") 
-      throw new Error("Campo 'geo_mapa' é obrigatório e deve ser um objeto GeoJSON.");
+    if (!payload?.geo_mapa || typeof payload.geo_mapa !== "object") {
+      throw new Error("Campo 'geo_mapa' é obrigatório e deve ser um objeto GeoJSON.")
+    }
 
+    // Monta o corpo da requisição conforme a API espera
     const body = {
       nome_lote: nome,
       id_propriedade: idProp,
       descricao: payload?.descricao ?? null,
-      geo_mapa: payload.geo_mapa, // <- enviando GeoJSON diretamente
-    };
+      geo_mapa: payload.geo_mapa,
+    }
 
+    // Chamada ao apiFetch (usa 'data', não 'body')
     const data = await apiFetch(`/lotes`, {
       method: "POST",
       token,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+      data: body,
+    })
 
-    console.log("✅ Lote criado com sucesso:", data);
-    return data;
+    console.log("✅ Lote criado com sucesso:", data)
+    return data
   } catch (error) {
-    console.error("❌ Erro ao criar lote:", error);
-    throw error;
+    console.error("❌ Erro ao criar lote:", error.message)
+    throw error
   }
-};
+}
 
 export default {
   listarLotesPorPropriedade,

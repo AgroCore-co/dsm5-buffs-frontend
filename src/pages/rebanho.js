@@ -99,162 +99,6 @@ const BUFFALOS_MOCK = [
     pai: "Touro João",
     mae: "Búfala Maria",
   },
-  {
-    tag: "BUF004",
-    nome: "Bezerro Pedro",
-    peso: 120,
-    raca: "Mediterrâneo",
-    sexo: "Macho",
-    maturidade: "Bezerro",
-    ultimaAtualizacao: "12/12/2024",
-    status: "Ativo",
-    nascimento: "05/06/2024",
-    pai: "Touro Mário",
-    mae: "Vaca Antonia",
-  },
-  {
-    tag: "BUF005",
-    nome: "Búfala Clara",
-    peso: 680,
-    raca: "Surti",
-    sexo: "Fêmea",
-    maturidade: "Vaca",
-    ultimaAtualizacao: "11/12/2024",
-    status: "Ativo",
-    nascimento: "18/11/2020",
-    pai: "Touro Ricardo",
-    mae: "Vaca Silvia",
-  },
-  {
-    tag: "BUF006",
-    nome: "Touro Carlos",
-    peso: 900,
-    raca: "Jafarabadi",
-    sexo: "Macho",
-    maturidade: "Touro",
-    ultimaAtualizacao: "10/12/2024",
-    status: "Ativo",
-    nascimento: "30/04/2018",
-    pai: "Touro Benedito",
-    mae: "Vaca Lúcia",
-  },
-  {
-    tag: "BUF007",
-    nome: "Novilha Lucia",
-    peso: 480,
-    raca: "Murrah",
-    sexo: "Fêmea",
-    maturidade: "Novilha",
-    ultimaAtualizacao: "09/12/2024",
-    status: "Ativo",
-    nascimento: "12/09/2022",
-    pai: "Touro João",
-    mae: "Búfala Clara",
-  },
-  {
-    tag: "BUF008",
-    nome: "Bezerra Joana",
-    peso: 150,
-    raca: "Surti",
-    sexo: "Fêmea",
-    maturidade: "Bezerra",
-    ultimaAtualizacao: "08/12/2024",
-    status: "Ativo",
-    nascimento: "20/07/2024",
-    pai: "Touro Carlos",
-    mae: "Búfala Clara",
-  },
-  {
-    tag: "BUF009",
-    nome: "Touro Mário",
-    peso: 820,
-    raca: "Mediterrâneo",
-    sexo: "Macho",
-    maturidade: "Touro",
-    ultimaAtualizacao: "07/12/2024",
-    status: "Ativo",
-    nascimento: "14/02/2019",
-    pai: "Touro Sebastião",
-    mae: "Vaca Rosa",
-  },
-  {
-    tag: "BUF010",
-    nome: "Vaca Helena",
-    peso: 700,
-    raca: "Murrah",
-    sexo: "Fêmea",
-    maturidade: "Vaca",
-    ultimaAtualizacao: "06/12/2024",
-    status: "Ativo",
-    nascimento: "25/05/2020",
-    pai: "Touro Antônio",
-    mae: "Vaca Francisca",
-  },
-  {
-    tag: "BUF011",
-    nome: "Novilho José",
-    peso: 550,
-    raca: "Jafarabadi",
-    sexo: "Macho",
-    maturidade: "Novilho",
-    ultimaAtualizacao: "05/12/2024",
-    status: "Ativo",
-    nascimento: "08/10/2022",
-    pai: "Touro Carlos",
-    mae: "Vaca Lúcia",
-  },
-  {
-    tag: "BUF012",
-    nome: "Bezerra Rosa",
-    peso: 130,
-    raca: "Surti",
-    sexo: "Fêmea",
-    maturidade: "Bezerra",
-    ultimaAtualizacao: "04/12/2024",
-    status: "Ativo",
-    nascimento: "15/08/2024",
-    pai: "Touro Mário",
-    mae: "Búfala Clara",
-  },
-  {
-    tag: "BUF013",
-    nome: "Vaca Antonia",
-    peso: 720,
-    raca: "Mediterrâneo",
-    sexo: "Fêmea",
-    maturidade: "Vaca",
-    ultimaAtualizacao: "03/12/2024",
-    status: "Ativo",
-    nascimento: "03/07/2019",
-    pai: "Touro Sebastião",
-    mae: "Vaca Rosa",
-  },
-  {
-    tag: "BUF014",
-    nome: "Touro Bruno",
-    peso: 880,
-    raca: "Murrah",
-    sexo: "Macho",
-    maturidade: "Touro",
-    ultimaAtualizacao: "02/12/2024",
-    status: "Ativo",
-    nascimento: "17/12/2018",
-    pai: "Touro Antônio",
-    mae: "Vaca Francisca",
-  },
-  {
-    tag: "BUF015",
-    nome: "Novilha Rita",
-    peso: 470,
-    raca: "Jafarabadi",
-    sexo: "Fêmea",
-    maturidade: "Novilha",
-    ultimaAtualizacao: "01/12/2024",
-    status: "Ativo",
-    nascimento: "28/11/2022",
-    pai: "Touro Bruno",
-    mae: "Vaca Lúcia",
-  },
 ];
 
 // ==================== FUNÇÕES UTILITÁRIAS ====================
@@ -326,24 +170,6 @@ const getDadosSanitarios = (buffalo) => ({
       proxima: "15/04/2025",
       status: "Em dia",
     },
-    {
-      vacina: "Brucelose",
-      data: "20/08/2024",
-      proxima: "20/08/2025",
-      status: "Em dia",
-    },
-    {
-      vacina: "Raiva",
-      data: "10/09/2024",
-      proxima: "10/09/2025",
-      status: "Em dia",
-    },
-    {
-      vacina: "Clostridiose",
-      data: "05/11/2024",
-      proxima: "05/05/2025",
-      status: "Em dia",
-    },
   ],
   vermifugacao: [
     {
@@ -352,26 +178,8 @@ const getDadosSanitarios = (buffalo) => ({
       proxima: "01/02/2025",
       status: "Em dia",
     },
-    {
-      produto: "Albendazol",
-      data: "15/09/2024",
-      proxima: "15/12/2024",
-      status: "Atrasado",
-    },
   ],
   exames: [
-    {
-      exame: "Brucelose",
-      data: "10/10/2024",
-      resultado: "Negativo",
-      status: "Normal",
-    },
-    {
-      exame: "Tuberculose",
-      data: "10/10/2024",
-      resultado: "Negativo",
-      status: "Normal",
-    },
     {
       exame: "Hemograma",
       data: "25/11/2024",
@@ -407,11 +215,12 @@ export default function Rebanho() {
   });
   const [selectedBuffalo, setSelectedBuffalo] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false); // modal de visualizar (BuffaloModal)
+  const [showCreateModal, setShowCreateModal] = useState(false); // modal de criar
 
   // modal criar bufalo
 
- const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({
     nome: "",
     brinco: "",
     dt_nascimento: "",
@@ -434,13 +243,12 @@ export default function Rebanho() {
     e.preventDefault();
     try {
       await buffaloService.registrarBuffalo(formData, token);
-      setIsModalOpen(false);
+      setShowCreateModal(false);
       alert("✅ Búfalo cadastrado com sucesso!");
     } catch (error) {
       alert("❌ Erro ao cadastrar búfalo");
     }
   };
-
 
   // fim modal criar bufalo
 
@@ -463,18 +271,22 @@ export default function Rebanho() {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentBuffalos = filteredBuffalos.slice(startIndex, endIndex);
 
-  // Handlers
+  // abrir ao clicar na linha da tabela
   const handleViewBuffalo = (buffalo) => {
     setSelectedBuffalo(buffalo);
     setActiveTab("info");
-    setIsModalOpen(true);
+    setShowViewModal(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
+  const closeViewModal = () => {
+    setShowViewModal(false);
     setSelectedBuffalo(null);
     setActiveTab("info");
   };
+
+  // abrir modal de criação (botão + Adicionar Búfalo)
+  const openCreateModal = () => setShowCreateModal(true);
+  const closeCreateModal = () => setShowCreateModal(false);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -670,206 +482,263 @@ export default function Rebanho() {
           </div>
         </div>
 
-{/* Tabela de Búfalos com Filtros e Paginação (estilo zebra) */}
-<div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-  <div className="mb-4">
-    <div className="flex justify-between items-center mb-2">
-      <h2 className="text-2xl font-bold text-gray-800">Registro de Búfalos</h2>
-      <Button variant="primary" size="medium" onClick={() => setIsModalOpen(true)}>
-        + Adicionar Búfalo
-      </Button>
-    </div>
+        {/* Tabela de Búfalos com Filtros e Paginação (estilo zebra) */}
+        <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Registro de Búfalos
+              </h2>
 
-    <p className="text-gray-600">
-      {filteredBuffalos.length === BUFFALOS_MOCK.length
-        ? `Lista completa do rebanho com ${BUFFALOS_MOCK.length} búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`
-        : `Mostrando ${filteredBuffalos.length} de ${BUFFALOS_MOCK.length} búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`}
-      {totalPages > 0 && ` Página ${currentPage} de ${totalPages}`}
-    </p>
-  </div>
+              <Button variant="primary" size="medium" onClick={openCreateModal}>
+                + Adicionar Búfalo
+              </Button>
+            </div>
 
-  {/* Filtros */}
-  <div className="bg-gray-50 rounded-lg p-4 mb-4">
-    <div className="flex flex-wrap items-center gap-4">
-      <h3 className="text-sm font-semibold text-gray-700 mr-2">Filtros:</h3>
+            <p className="text-gray-600">
+              {filteredBuffalos.length === BUFFALOS_MOCK.length
+                ? `Lista completa do rebanho com ${
+                    BUFFALOS_MOCK.length
+                  } búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`
+                : `Mostrando ${filteredBuffalos.length} de ${
+                    BUFFALOS_MOCK.length
+                  } búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`}
+              {totalPages > 0 && ` Página ${currentPage} de ${totalPages}`}
+            </p>
+          </div>
 
-      {/* Sexo */}
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-600">Sexo:</label>
-        <select
-          value={filters.sexo}
-          onChange={(e) => handleFilterChange("sexo", e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
-        >
-          <option value="">Todos</option>
-          {getUniqueValues("sexo").map((sexo) => (
-            <option key={sexo} value={sexo}>{sexo}</option>
-          ))}
-        </select>
-      </div>
+          {/* Filtros */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <h3 className="text-sm font-semibold text-gray-700 mr-2">
+                Filtros:
+              </h3>
 
-      {/* Raça */}
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-600">Raça:</label>
-        <select
-          value={filters.raca}
-          onChange={(e) => handleFilterChange("raca", e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
-        >
-          <option value="">Todas</option>
-          {getUniqueValues("raca").map((raca) => (
-            <option key={raca} value={raca}>{raca}</option>
-          ))}
-        </select>
-      </div>
+              {/* Sexo */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Sexo:</label>
+                <select
+                  value={filters.sexo}
+                  onChange={(e) => handleFilterChange("sexo", e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
+                >
+                  <option value="">Todos</option>
+                  {getUniqueValues("sexo").map((sexo) => (
+                    <option key={sexo} value={sexo}>
+                      {sexo}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-      {/* Maturidade */}
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-600">Maturidade:</label>
-        <select
-          value={filters.maturidade}
-          onChange={(e) => handleFilterChange("maturidade", e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
-        >
-          <option value="">Todas</option>
-          {getUniqueValues("maturidade").map((maturidade) => (
-            <option key={maturidade} value={maturidade}>{maturidade}</option>
-          ))}
-        </select>
-      </div>
+              {/* Raça */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Raça:</label>
+                <select
+                  value={filters.raca}
+                  onChange={(e) => handleFilterChange("raca", e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
+                >
+                  <option value="">Todas</option>
+                  {getUniqueValues("raca").map((raca) => (
+                    <option key={raca} value={raca}>
+                      {raca}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-      {/* Status */}
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-600">Status:</label>
-        <select
-          value={filters.status}
-          onChange={(e) => handleFilterChange("status", e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
-        >
-          <option value="">Todos</option>
-          {getUniqueValues("status").map((status) => (
-            <option key={status} value={status}>{status}</option>
-          ))}
-        </select>
-      </div>
+              {/* Maturidade */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Maturidade:</label>
+                <select
+                  value={filters.maturidade}
+                  onChange={(e) =>
+                    handleFilterChange("maturidade", e.target.value)
+                  }
+                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
+                >
+                  <option value="">Todas</option>
+                  {getUniqueValues("maturidade").map((maturidade) => (
+                    <option key={maturidade} value={maturidade}>
+                      {maturidade}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-      {(filters.sexo || filters.raca || filters.maturidade || filters.status) && (
-        <button
-          onClick={clearFilters}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-3 py-1 rounded-md transition-colors"
-        >
-          Limpar filtros
-        </button>
-      )}
-    </div>
-  </div>
+              {/* Status */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Status:</label>
+                <select
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange("status", e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
+                >
+                  <option value="">Todos</option>
+                  {getUniqueValues("status").map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-  {/* Tabela ou vazio */}
-  {filteredBuffalos.length === 0 ? (
-    <div className="text-center py-8">
-      <p className="text-gray-500 text-lg mb-2">Nenhum búfalo encontrado</p>
-      <p className="text-gray-400 text-sm">Tente ajustar os filtros para ver mais resultados</p>
-      <button
-        onClick={clearFilters}
-        className="mt-4 bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
-      >
-        Limpar filtros
-      </button>
-    </div>
-  ) : (
-    <>
-      <div className="overflow-x-auto w-full">
-        <table className="w-full border-collapse min-w-[800px] bg-white rounded-lg overflow-hidden shadow-sm">
-          <thead className="bg-[#f0f0f0]">
-            <tr>
-              <th className="p-3 text-center font-medium text-gray-800 text-base">TAG</th>
-              <th className="p-3 text-center font-medium text-gray-800 text-base">Nome</th>
-              <th className="p-3 text-center font-medium text-gray-800 text-base">Sexo</th>
-              <th className="p-3 text-center font-medium text-gray-800 text-base">Raça</th>
-              <th className="p-3 text-center font-medium text-gray-800 text-base">Maturidade</th>
-              <th className="p-3 text-center font-medium text-gray-800 text-base">Peso</th>
-              <th className="p-3 text-center font-medium text-gray-800 text-base">Status</th>
-            </tr>
-          </thead>
+              {(filters.sexo ||
+                filters.raca ||
+                filters.maturidade ||
+                filters.status) && (
+                <button
+                  onClick={clearFilters}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-3 py-1 rounded-md transition-colors"
+                >
+                  Limpar filtros
+                </button>
+              )}
+            </div>
+          </div>
 
-          <tbody className="divide-y divide-gray-200">
-            {currentBuffalos.map((buffalo) => (
-              <tr
-                key={buffalo.tag}
-                className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50 cursor-pointer"
-                onClick={() => handleViewBuffalo(buffalo)}
+          {/* Tabela ou vazio */}
+          {filteredBuffalos.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 text-lg mb-2">
+                Nenhum búfalo encontrado
+              </p>
+              <p className="text-gray-400 text-sm">
+                Tente ajustar os filtros para ver mais resultados
+              </p>
+              <button
+                onClick={clearFilters}
+                className="mt-4 bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                <td className="p-3 text-center text-gray-800 text-base font-medium">{buffalo.tag}</td>
-                <td className="p-3 text-center text-gray-800 text-base">{buffalo.nome}</td>
-                <td className="p-3 text-center text-gray-800 text-base">{buffalo.sexo}</td>
-                <td className="p-3 text-center text-gray-800 text-base">{buffalo.raca}</td>
-                <td className="p-3 text-center text-gray-800 text-base">{buffalo.maturidade}</td>
-                <td className="p-3 text-center text-gray-800 text-base">{buffalo.peso} kg</td>
-                <td className="p-3 text-center text-gray-800 text-base">
-                  <span className={`px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-28 ${getStatusColor(buffalo.status)}`}>
-                    {buffalo.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                Limpar filtros
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto w-full">
+                <table className="w-full border-collapse min-w-[800px] bg-white rounded-lg overflow-hidden shadow-sm">
+                  <thead className="bg-[#f0f0f0]">
+                    <tr>
+                      <th className="p-3 text-center font-medium text-gray-800 text-base">
+                        TAG
+                      </th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-base">
+                        Nome
+                      </th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-base">
+                        Sexo
+                      </th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-base">
+                        Raça
+                      </th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-base">
+                        Maturidade
+                      </th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-base">
+                        Peso
+                      </th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-base">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
 
-      {/* Paginação */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2 mt-6">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              currentPage === 1
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-            }`}
-          >
-            Anterior
-          </button>
+                  <tbody className="divide-y divide-gray-200">
+                    {currentBuffalos.map((buffalo) => (
+                      <tr
+                        key={buffalo.tag}
+                        className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50 cursor-pointer"
+                        onClick={() => handleViewBuffalo(buffalo)}
+                      >
+                        <td className="p-3 text-center text-gray-800 text-base font-medium">
+                          {buffalo.tag}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          {buffalo.nome}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          {buffalo.sexo}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          {buffalo.raca}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          {buffalo.maturidade}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          {buffalo.peso} kg
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          <span
+                            className={`px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-28 ${getStatusColor(
+                              buffalo.status
+                            )}`}
+                          >
+                            {buffalo.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => handlePageChange(page)}
-              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                currentPage === page
-                  ? "bg-[#CE7D0A] text-white"
-                  : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
+              {/* Paginação */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-2 mt-6">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      currentPage === 1
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+                    }`}
+                  >
+                    Anterior
+                  </button>
 
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              currentPage === totalPages
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-            }`}
-          >
-            Próximo
-          </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                          currentPage === page
+                            ? "bg-[#CE7D0A] text-white"
+                            : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      currentPage === totalPages
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+                    }`}
+                  >
+                    Próximo
+                  </button>
+                </div>
+              )}
+
+              {totalPages > 0 && (
+                <div className="text-center text-sm text-gray-600 mt-4">
+                  Mostrando {startIndex + 1} a{" "}
+                  {Math.min(endIndex, filteredBuffalos.length)} de{" "}
+                  {filteredBuffalos.length} búfalos
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
-
-      {totalPages > 0 && (
-        <div className="text-center text-sm text-gray-600 mt-4">
-          Mostrando {startIndex + 1} a {Math.min(endIndex, filteredBuffalos.length)} de {filteredBuffalos.length} búfalos
-        </div>
-      )}
-    </>
-  )}
-</div>
-
-
-
 
         {/* Análise de Saúde do Rebanho */}
         <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
@@ -943,9 +812,9 @@ export default function Rebanho() {
 
         {/* Modal do Búfalo */}
         <BuffaloModal
-          open={isModalOpen}
+          open={showViewModal}
           buffalo={selectedBuffalo}
-          onClose={closeModal}
+          onClose={closeViewModal}
           getStatusColor={getStatusColor}
           getDadosZootecnicos={getDadosZootecnicos}
           getDadosSanitarios={getDadosSanitarios}
@@ -953,76 +822,158 @@ export default function Rebanho() {
           buffalosMock={BUFFALOS_MOCK}
         />
 
-        {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Cadastrar Búfalo</h2>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <input
-                type="text"
-                name="nome"
-                placeholder="Nome"
-                value={formData.nome}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="text"
-                name="brinco"
-                placeholder="Brinco"
-                value={formData.brinco}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="date"
-                name="dt_nascimento"
-                value={formData.dt_nascimento}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-              <select
-                name="nivel_maturidade"
-                value={formData.nivel_maturidade}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              >
-                <option value="">Selecione o nível</option>
-                <option value="N">Novo</option>
-                <option value="A">Adulto</option>
-              </select>
-              <select
-                name="sexo"
-                value={formData.sexo}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              >
-                <option value="">Selecione o sexo</option>
-                <option value="M">Macho</option>
-                <option value="F">Fêmea</option>
-              </select>
+        {/* Modal de criar búfalo */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg">
+              <h2 className="text-xl font-bold mb-4">Cadastrar Búfalo</h2>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {/* Nome */}
+                <input
+                  type="text"
+                  name="nome"
+                  placeholder="Nome"
+                  value={formData.nome}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                  required
+                />
 
-              {/* Aqui você pode adicionar mais campos como id_raca, id_propriedade etc. */}
+                {/* Brinco */}
+                <input
+                  type="text"
+                  name="brinco"
+                  placeholder="Brinco"
+                  value={formData.brinco}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                  required
+                />
 
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-gray-300 rounded"
-                  onClick={() => setIsModalOpen(false)}
+                {/* Data de Nascimento */}
+                <input
+                  type="date"
+                  name="dt_nascimento"
+                  value={formData.dt_nascimento}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                  required
+                />
+
+                {/* Nível de Maturidade */}
+                <select
+                  name="nivel_maturidade"
+                  value={formData.nivel_maturidade}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                  required
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded"
+                  <option value="">Selecione o nível</option>
+                  <option value="Bezerro">Bezerro</option>
+                  <option value="Novilho">Novilho</option>
+                  <option value="Novilha">Novilha</option>
+                  <option value="Vaca">Vaca</option>
+                  <option value="Touro">Touro</option>
+                </select>
+
+                {/* Sexo */}
+                <select
+                  name="sexo"
+                  value={formData.sexo}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                  required
                 >
-                  Salvar
-                </button>
-              </div>
-            </form>
+                  <option value="">Selecione o sexo</option>
+                  <option value="M">Macho</option>
+                  <option value="F">Fêmea</option>
+                </select>
+
+                {/* Raça */}
+                <select
+                  name="id_raca"
+                  value={formData.id_raca}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                >
+                  <option value="">Selecione a raça</option>
+                  <option value="Murrah">Murrah</option>
+                  <option value="Jafarabadi">Jafarabadi</option>
+                  <option value="Mediterrâneo">Mediterrâneo</option>
+                  <option value="Surti">Surti</option>
+                </select>
+
+                {/* Propriedade */}
+                <input
+                  type="text"
+                  name="id_propriedade"
+                  placeholder="ID da Propriedade"
+                  value={formData.id_propriedade}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                />
+
+                {/* Grupo */}
+                <input
+                  type="text"
+                  name="id_grupo"
+                  placeholder="ID do Grupo"
+                  value={formData.id_grupo}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                />
+
+                {/* Pai */}
+                <input
+                  type="text"
+                  name="id_pai"
+                  placeholder="ID do Pai"
+                  value={formData.id_pai}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                />
+
+                {/* Mãe */}
+                <input
+                  type="text"
+                  name="id_mae"
+                  placeholder="ID da Mãe"
+                  value={formData.id_mae}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                />
+
+                {/* Status */}
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                >
+                  <option value={true}>Ativo</option>
+                  <option value={false}>Inativo</option>
+                </select>
+
+                {/* Botões */}
+                <div className="flex justify-end gap-2 mt-4">
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-gray-300 rounded"
+                    onClick={closeCreateModal}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded"
+                  >
+                    Salvar
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </>
   );
