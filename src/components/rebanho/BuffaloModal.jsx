@@ -155,9 +155,6 @@ export default function BuffaloModal({
         <div className="sticky top-0 z-10 border-b bg-white">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-start gap-4">
-              <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center ring-1 ring-amber-300">
-                <span className="text-2xl">🐃</span>
-              </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">
@@ -1333,7 +1330,7 @@ export default function BuffaloModal({
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      🌳 Árvore Genealógica
+                      Árvore Genealógica
                     </h3>
                     <p className="text-sm text-gray-500">
                       {buffalo.nome} • 3 gerações
@@ -1341,14 +1338,6 @@ export default function BuffaloModal({
                         Consanguinidade: 12%
                       </span>
                     </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="px-3 py-1.5 text-sm rounded-lg border bg-white hover:bg-gray-50">
-                      🔍 Buscar
-                    </button>
-                    <button className="px-3 py-1.5 text-sm rounded-lg border bg-white hover:bg-gray-50">
-                      📱 Expandir
-                    </button>
                   </div>
                 </div>
 

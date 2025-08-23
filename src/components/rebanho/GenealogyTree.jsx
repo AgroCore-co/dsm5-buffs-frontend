@@ -2,7 +2,12 @@
 
 import React from "react";
 
-export default function GenealogyTree({ current, parents, grandparents, greatGrandparents }) {
+export default function GenealogyTree({
+  current,
+  parents,
+  grandparents,
+  greatGrandparents,
+}) {
   // ====== badge de risco
   const riskChip = (risk = "low") => {
     const map = {
@@ -15,7 +20,7 @@ export default function GenealogyTree({ current, parents, grandparents, greatGra
     return { box: map[risk] || map.low, dot: dot[risk] || dot.low, txt: txt[risk] || txt.low };
   };
 
-  // ====== Nó
+  // ====== Nó (forwardRef p/ medir posição)
   const Node = React.forwardRef(function Node(
     { title, subtitle, initials, role = "current", risk = "low" },
     ref
@@ -59,8 +64,9 @@ export default function GenealogyTree({ current, parents, grandparents, greatGra
   const ini = (name = "") =>
     name.split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("") || "—";
 
-  // refs + linhas
-  const containerRef = React.useRef(null);
+  // ====== refs (linhas + fullscreen)
+  const fsRef = React.useRef(null);        // elemento que entra em fullscreen
+  const canvasRef = React.useRef(null);    // “lona” onde desenhamos e medimos
   const refCur = React.useRef(null);
   const refPai = React.useRef(null);
   const refMae = React.useRef(null);
@@ -74,9 +80,10 @@ export default function GenealogyTree({ current, parents, grandparents, greatGra
   const refBM2 = React.useRef(null);
 
   const [lines, setLines] = React.useState([]);
+  const [isFs, setIsFs] = React.useState(false);
 
   const addLine = (aRef, bRef, acc) => {
-    const cont = containerRef.current;
+    const cont = canvasRef.current;
     if (!cont || !aRef?.current || !bRef?.current) return;
     const c = cont.getBoundingClientRect();
     const a = aRef.current.getBoundingClientRect();
@@ -89,96 +96,217 @@ export default function GenealogyTree({ current, parents, grandparents, greatGra
     });
   };
 
-  React.useLayoutEffect(() => {
-    const calc = () => {
-      const arr = [];
-      addLine(refPai, refCur, arr);
-      addLine(refMae, refCur, arr);
-      addLine(refAP, refPai, arr);
-      addLine(refAPF, refPai, arr);
-      addLine(refAM, refMae, arr);
-      addLine(refAMF, refMae, arr);
-      addLine(refBP1, refAP, arr);
-      addLine(refBP2, refAPF, arr);
-      addLine(refBM1, refAM, arr);
-      addLine(refBM2, refAMF, arr);
-      setLines(arr);
-    };
-    calc();
-    const obs = new ResizeObserver(calc);
-    if (containerRef.current) obs.observe(containerRef.current);
-    window.addEventListener("resize", calc);
-    return () => {
-      window.removeEventListener("resize", calc);
-      obs.disconnect();
-    };
-  }, [current, parents, grandparents, greatGrandparents]);
+  const recalc = React.useCallback(() => {
+    const arr = [];
+    addLine(refPai, refCur, arr);
+    addLine(refMae, refCur, arr);
+    addLine(refAP, refPai, arr);
+    addLine(refAPF, refPai, arr);
+    addLine(refAM, refMae, arr);
+    addLine(refAMF, refMae, arr);
+    addLine(refBP1, refAP, arr);
+    addLine(refBP2, refAPF, arr);
+    addLine(refBM1, refAM, arr);
+    addLine(refBM2, refAMF, arr);
+    setLines(arr);
+  }, []);
 
+  // recalcula em resize e mudanças de dados/FS
+  React.useLayoutEffect(() => {
+    recalc();
+    const obs = new ResizeObserver(recalc);
+    if (canvasRef.current) obs.observe(canvasRef.current);
+    const onResize = () => recalc();
+    window.addEventListener("resize", onResize);
+
+    const onFsChange = () => {
+      const doc = document;
+      const active =
+        !!doc.fullscreenElement ||
+        !!doc.webkitFullscreenElement ||
+        !!doc.msFullscreenElement;
+      setIsFs(active);
+      // aguarda o layout estabilizar ao entrar em FS
+      setTimeout(recalc, 50);
+      setTimeout(recalc, 200);
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    document.addEventListener("MSFullscreenChange", onFsChange);
+
+    return () => {
+      obs.disconnect();
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+      document.removeEventListener("MSFullscreenChange", onFsChange);
+    };
+  }, [recalc, current, parents, grandparents, greatGrandparents]);
+
+  // ====== Fullscreen handlers
+  const enterFs = async () => {
+    const el = fsRef.current;
+    if (!el) return;
+    try {
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    } catch (_) {}
+  };
+
+  const exitFs = async () => {
+    const doc = document;
+    try {
+      if (doc.exitFullscreen) await doc.exitFullscreen();
+      else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+      else if (doc.msExitFullscreen) doc.msExitFullscreen();
+    } catch (_) {}
+  };
+
+  const toggleFs = () => (isFs ? exitFs() : enterFs());
+
+  // ====== UI
   return (
     <div className="relative">
-      {/* Fundo ocupa o tamanho real */}
-      <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-gradient-to-b from-emerald-100 to-emerald-300 p-6">
-        {/* Linhas em cima do fundo */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none">
-          {lines.map((l, i) => (
-            <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="rgba(31,41,55,.45)" strokeWidth="2" />
-          ))}
-        </svg>
+      {/* Botão de tela cheia */}
+      <div className="mb-2 flex justify-end">
+        <button
+          onClick={toggleFs}
+          className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          title={isFs ? "Sair da tela cheia (Esc)" : "Tela cheia"}
+        >
+          {isFs ? "Sair da tela cheia" : "Tela cheia"}
+        </button>
+      </div>
 
-        {/* Pirâmide */}
-        <div className="relative mx-auto max-w-[1100px]">
-          {/* Atual */}
-          <div className="flex justify-center mb-8">
-            <Node
-              ref={refCur}
-              role="current"
-              title={current?.nome || "—"}
-              subtitle={`${current?.raca || "—"} • ${current?.maturidade || "—"}`}
-              initials={ini(current?.nome)}
-            />
-          </div>
+      {/* Área que entra em fullscreen */}
+      <div
+        ref={fsRef}
+        className={`
+          relative rounded-xl overflow-hidden
+          ${isFs ? "w-screen h-screen" : ""}
+          bg-gradient-to-b from-emerald-100 to-emerald-300
+        `}
+        style={isFs ? { borderRadius: 0 } : undefined}
+      >
+        {/* Canvas que mede e recebe as linhas */}
+        <div ref={canvasRef} className="relative p-6">
+          {/* Linhas */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none">
+            {lines.map((l, i) => (
+              <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="rgba(31,41,55,.45)" strokeWidth="2" />
+            ))}
+          </svg>
 
-          {/* Pais */}
-          <div className="flex justify-center gap-12 mb-10">
-            <Node
-              ref={refPai}
-              role="parent"
-              title={parents?.pai?.nome || "—"}
-              subtitle={`${parents?.pai?.raca || "—"} • ${parents?.pai?.prod || "—"}`}
-              initials={ini(parents?.pai?.nome)}
-            />
-            <Node
-              ref={refMae}
-              role="parent"
-              title={parents?.mae?.nome || "—"}
-              subtitle={`${parents?.mae?.raca || "—"} • ${parents?.mae?.prod || "—"}`}
-              initials={ini(parents?.mae?.nome)}
-            />
-          </div>
+          {/* Pirâmide */}
+          <div className="relative mx-auto max-w-[1200px]">
+            {/* Atual */}
+            <div className="flex justify-center mb-8">
+              <Node
+                ref={refCur}
+                role="current"
+                title={current?.nome || "—"}
+                subtitle={`${current?.raca || "—"} • ${current?.maturidade || "—"}`}
+                initials={ini(current?.nome)}
+              />
+            </div>
 
-          {/* Avós */}
-          <div className="flex justify-center gap-8 mb-10 flex-wrap">
-            <Node ref={refAP} role="parent" title={grandparents?.avoPai?.nome || "—"} subtitle={`${grandparents?.avoPai?.raca || "—"} • ${grandparents?.avoPai?.prod || "—"}`} initials={ini(grandparents?.avoPai?.nome)} />
-            <Node ref={refAPF} role="parent" title={grandparents?.avoPaiF?.nome || "—"} subtitle={`${grandparents?.avoPaiF?.raca || "—"} • ${grandparents?.avoPaiF?.prod || "—"}`} initials={ini(grandparents?.avoPaiF?.nome)} />
-            <Node ref={refAM} role="parent" title={grandparents?.avoMae?.nome || "—"} subtitle={`${grandparents?.avoMae?.raca || "—"} • ${grandparents?.avoMae?.prod || "—"}`} initials={ini(grandparents?.avoMae?.nome)} />
-            <Node ref={refAMF} role="parent" title={grandparents?.avoMaeF?.nome || "—"} subtitle={`${grandparents?.avoMaeF?.raca || "—"} • ${grandparents?.avoMaeF?.prod || "—"}`} initials={ini(grandparents?.avoMaeF?.nome)} />
-          </div>
+            {/* Pais */}
+            <div className="flex justify-center gap-12 mb-10">
+              <Node
+                ref={refPai}
+                role="parent"
+                title={parents?.pai?.nome || "—"}
+                subtitle={`${parents?.pai?.raca || "—"} • ${parents?.pai?.prod || "—"}`}
+                initials={ini(parents?.pai?.nome)}
+              />
+              <Node
+                ref={refMae}
+                role="parent"
+                title={parents?.mae?.nome || "—"}
+                subtitle={`${parents?.mae?.raca || "—"} • ${parents?.mae?.prod || "—"}`}
+                initials={ini(parents?.mae?.nome)}
+              />
+            </div>
 
-          {/* Bisavós */}
-          <div className="flex justify-center gap-6 flex-wrap">
-            <Node ref={refBP1} role="grand" title={greatGrandparents?.bisavoP1?.nome || "—"} subtitle={greatGrandparents?.bisavoP1?.raca} initials={ini(greatGrandparents?.bisavoP1?.nome)} />
-            <Node ref={refBP2} role="grand" title={greatGrandparents?.bisavoP2?.nome || "—"} subtitle={greatGrandparents?.bisavoP2?.raca} initials={ini(greatGrandparents?.bisavoP2?.nome)} />
-            <Node ref={refBM1} role="grand" title={greatGrandparents?.bisavoM1?.nome || "—"} subtitle={greatGrandparents?.bisavoM1?.raca} initials={ini(greatGrandparents?.bisavoM1?.nome)} />
-            <Node ref={refBM2} role="grand" title={greatGrandparents?.bisavoM2?.nome || "—"} subtitle={greatGrandparents?.bisavoM2?.raca} initials={ini(greatGrandparents?.bisavoM2?.nome)} />
+            {/* Avós */}
+            <div className="flex justify-center gap-8 mb-10 flex-wrap">
+              <Node
+                ref={refAP}
+                role="parent"
+                title={grandparents?.avoPai?.nome || "—"}
+                subtitle={`${grandparents?.avoPai?.raca || "—"} • ${grandparents?.avoPai?.prod || "—"}`}
+                initials={ini(grandparents?.avoPai?.nome)}
+              />
+              <Node
+                ref={refAPF}
+                role="parent"
+                title={grandparents?.avoPaiF?.nome || "—"}
+                subtitle={`${grandparents?.avoPaiF?.raca || "—"} • ${grandparents?.avoPaiF?.prod || "—"}`}
+                initials={ini(grandparents?.avoPaiF?.nome)}
+              />
+              <Node
+                ref={refAM}
+                role="parent"
+                title={grandparents?.avoMae?.nome || "—"}
+                subtitle={`${grandparents?.avoMae?.raca || "—"} • ${grandparents?.avoMae?.prod || "—"}`}
+                initials={ini(grandparents?.avoMae?.nome)}
+              />
+              <Node
+                ref={refAMF}
+                role="parent"
+                title={grandparents?.avoMaeF?.nome || "—"}
+                subtitle={`${grandparents?.avoMaeF?.raca || "—"} • ${grandparents?.avoMaeF?.prod || "—"}`}
+                initials={ini(grandparents?.avoMaeF?.nome)}
+              />
+            </div>
+
+            {/* Bisavós */}
+            <div className="flex justify-center gap-6 flex-wrap">
+              <Node
+                ref={refBP1}
+                role="grand"
+                title={greatGrandparents?.bisavoP1?.nome || "—"}
+                subtitle={greatGrandparents?.bisavoP1?.raca}
+                initials={ini(greatGrandparents?.bisavoP1?.nome)}
+              />
+              <Node
+                ref={refBP2}
+                role="grand"
+                title={greatGrandparents?.bisavoP2?.nome || "—"}
+                subtitle={greatGrandparents?.bisavoP2?.raca}
+                initials={ini(greatGrandparents?.bisavoP2?.nome)}
+              />
+              <Node
+                ref={refBM1}
+                role="grand"
+                title={greatGrandparents?.bisavoM1?.nome || "—"}
+                subtitle={greatGrandparents?.bisavoM1?.raca}
+                initials={ini(greatGrandparents?.bisavoM1?.nome)}
+              />
+              <Node
+                ref={refBM2}
+                role="grand"
+                title={greatGrandparents?.bisavoM2?.nome || "—"}
+                subtitle={greatGrandparents?.bisavoM2?.raca}
+                initials={ini(greatGrandparents?.bisavoM2?.nome)}
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* legenda */}
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-700">
-        <span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-emerald-600" /> atual</span>
-        <span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-amber-600" /> pais/avós</span>
-        <span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-teal-600" /> bisavós</span>
+        <span className="inline-flex items-center gap-1">
+          <i className="h-2 w-2 rounded-full bg-emerald-600" /> atual
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <i className="h-2 w-2 rounded-full bg-amber-600" /> pais/avós
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <i className="h-2 w-2 rounded-full bg-teal-600" /> bisavós
+        </span>
       </div>
     </div>
   );

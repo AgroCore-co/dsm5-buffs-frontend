@@ -20,8 +20,30 @@ import {
 import BuffaloModal from "@/components/rebanho/BuffaloModal";
 import Button from "@/components/Button";
 import buffaloService from "@/services/bufaloService";
+import HerdHealthAnalysis from "@/components/rebanho/HerdHealthAnalysis";
 
 // ==================== DADOS MOCK ====================
+
+const records = [
+  {
+    id: "A-001",
+    grupo: "Lote 1",
+    sexo: "Fêmea",
+    raca: "Murrah",
+    maturidade: "Adulto",
+    doencas: [{ nome: "Mastite" }, { nome: "Claudicação" }],
+  },
+  {
+    id: "A-002",
+    grupo: "Lote 2",
+    sexo: "Macho",
+    raca: "Jafarabadi",
+    maturidade: "Jovem",
+    doencas: [{ nome: "Verminose" }],
+  },
+  // ...
+];
+
 const ITEMS_PER_PAGE = 10;
 
 const CHART_DATA = {
@@ -740,75 +762,7 @@ export default function Rebanho() {
           )}
         </div>
 
-        {/* Análise de Saúde do Rebanho */}
-        <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Análise de Saúde do Rebanho
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Doenças recorrentes */}
-            <div className="bg-white rounded-lg shadow border border-[#e0e0e0] p-5">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Doenças Recorrentes
-              </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                Doenças recorrentes registradas no rebanho
-              </p>
-
-              <div className="flex flex-col gap-4">
-                {HEALTH_DATA.doencasRecorrentes.map((doenca, index) => (
-                  <div key={index} className="flex flex-col gap-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-800">
-                        {doenca.nome}
-                      </span>
-                      <span className="text-sm font-medium text-gray-800">
-                        {doenca.percentual.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="w-full h-6 bg-gray-100 rounded overflow-hidden">
-                      <div
-                        className="h-full bg-[#FFCF78] rounded flex items-center justify-end pr-2"
-                        style={{ width: `${doenca.percentual}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Doenças por maturidade */}
-            <div className="bg-white rounded-lg shadow border border-[#e0e0e0] p-5">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Doenças por Nível de Maturidade
-              </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                Distribuição de doenças por faixa etária
-              </p>
-
-              <div className="flex flex-col gap-4">
-                {HEALTH_DATA.doencasPorMaturidade.map((item, index) => (
-                  <div key={index} className="flex flex-col gap-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-800">
-                        {item.categoria}
-                      </span>
-                      <span className="text-sm font-medium text-gray-800">
-                        {item.percentual.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="w-full h-6 bg-gray-100 rounded overflow-hidden">
-                      <div
-                        className="h-full bg-[#CE7D0A] rounded flex items-center justify-end pr-2"
-                        style={{ width: `${item.percentual}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <HerdHealthAnalysis records={records} />
 
         {/* Modal do Búfalo */}
         <BuffaloModal
