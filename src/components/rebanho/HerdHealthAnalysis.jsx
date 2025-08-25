@@ -130,30 +130,44 @@ export default function HerdHealthAnalysis({ records = [] }) {
 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Doenças recorrentes */}
-        <Card title="Doenças Recorrentes" subtitle="Doenças mais frequentes nos registros filtrados">
-          <BarList
-            data={doencasRecorrentes.map(d => ({
-              label: d.nome,
-              value: d.percentual,
-              right: `${d.percentual.toFixed(1)}%`,
-            }))}
-            barClass="bg-[#FFCF78]"
-          />
-        </Card>
+  {/* Doenças recorrentes */}
+  <Card
+    title="Doenças Recorrentes"
+    subtitle="Doenças mais frequentes nos registros filtrados"
+  >
+    <BarList
+      data={[
+        { label: "Brucelose", value: 0, right: "0%" },
+        { label: "Tuberculose Bovina", value: 0, right: "0%" },
+        { label: "Febre Aftosa", value: 0, right: "0%" },
+        { label: "Mastite", value: 6, right: "6%" },
+        { label: "Endometrite", value: 4, right: "4%" },
+        { label: "Carrapatos", value: 5, right: "5%" },
+        { label: "Problemas de Casco", value: 3, right: "3%" },
+        { label: "Verminose", value: 5, right: "5%" },
+        { label: "Dermatites", value: 2, right: "2%" },
+      ]}
+      barClass="bg-[#FFCF78]"
+    />
+  </Card>
 
-        {/* Doenças por nível de maturidade */}
-        <Card title="Doenças por Nível de Maturidade" subtitle="Percentual de animais com alguma doença por faixa">
-          <BarList
-            data={doencasPorMaturidade.map(i => ({
-              label: i.categoria,
-              value: i.percentual,
-              right: `${i.percentual.toFixed(1)}%`,
-            }))}
-            barClass="bg-[#CE7D0A]"
-          />
-        </Card>
-      </div>
+  {/* Doenças por nível de maturidade */}
+  <Card
+    title="Doenças por Nível de Maturidade"
+    subtitle="Percentual de animais com alguma doença por faixa"
+  >
+    <BarList
+      data={[
+        { label: "Bezerros", value: 5, right: "5%" },
+        { label: "Novilhas", value: 4, right: "4%" },
+        { label: "Adultas", value: 6, right: "6%" },
+        { label: "Idosas", value: 3, right: "3%" },
+      ]}
+      barClass="bg-[#CE7D0A]"
+    />
+  </Card>
+</div>
+
     </div>
   );
 }
