@@ -1,21 +1,22 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
+
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from "recharts";
 // Removido: ícones de biblioteca. Vamos usar SVGs locais em /public/images
 
@@ -24,8 +25,8 @@ export default function Dashboard() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
 
   // Dados mockados para os gráficos
-  const [viewMode, setViewMode] = React.useState('monthly'); // 'monthly' ou 'yearly'
-  
+  const [viewMode, setViewMode] = React.useState("monthly"); // 'monthly' ou 'yearly'
+
   const lactationDataMonthly = [
     { name: "Jan", producao: 8500 },
     { name: "Fev", producao: 9200 },
@@ -49,7 +50,8 @@ export default function Dashboard() {
     { name: "2024", producao: 112000 },
   ];
 
-  const lactationData = viewMode === 'monthly' ? lactationDataMonthly : lactationDataYearly;
+  const lactationData =
+    viewMode === "monthly" ? lactationDataMonthly : lactationDataYearly;
 
   const topBuffalosData = [
     { name: "Búfala 001", leite: 12.5 },
@@ -77,34 +79,24 @@ export default function Dashboard() {
   const salesData = {
     lastCollection: {
       amount: 11500,
-      date: new Date(2024, 11, 15)
+      date: new Date(2024, 11, 15),
     },
-    pricePerLiter: 3.50,
-    estimatedRevenue: 40250
+    pricePerLiter: 3.5,
+    estimatedRevenue: 40250,
   };
 
   const formatDate = (date) => {
-    return date.toLocaleDateString('pt-BR');
+    return date.toLocaleDateString("pt-BR");
   };
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   };
 
-  useEffect(() => {
-    // Redirecionar para login se não estiver autenticado (mas só após carregar)
-    if (!isLoading && !isAuthenticated) {
-      router.push("/auth/login");
-    }
-  }, [isLoading, isAuthenticated, router]);
-
-  // Não mostrar nada se estiver carregando ou não autenticado
-  if (isLoading || !isAuthenticated) {
-    return null;
-  }
+  // Removido: proteção de rota agora é feita pelo Layout
 
   return (
     <>
@@ -112,56 +104,90 @@ export default function Dashboard() {
         <title>Dashboard | Buffs</title>
         <meta name="description" content="Dashboard da plataforma Buffs" />
       </Head>
-      
+
       <div className="p-6 flex flex-col gap-8">
         {/* Header and Indicators */}
         <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Olá, João Lima! </h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              Olá, João Lima!{" "}
+            </h1>
             <p className="text-gray-600 text-lg">
-              Bem-vindo ao dashboard da sua fazenda de búfalos. Aqui está o resumo
-              de hoje.
+              Bem-vindo ao dashboard da sua fazenda de búfalos. Aqui está o
+              resumo de hoje.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Total de Búfalos */}
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Total de Búfalos</h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">Total</span>
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Total de Búfalos
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Total
+                </span>
               </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">150</p>
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Rebanho completo</p>
+              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                150
+              </p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                Rebanho completo
+              </p>
             </div>
 
             {/* Total de Machos */}
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Total de Machos</h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">Percentual</span>
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Total de Machos
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Percentual
+                </span>
               </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">45</p>
-              <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">30% do rebanho</p>
+              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                45
+              </p>
+              <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
+                30% do rebanho
+              </p>
             </div>
 
             {/* Total de Fêmeas */}
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Total de Fêmeas</h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">Percentual</span>
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Total de Fêmeas
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Percentual
+                </span>
               </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">105</p>
-              <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">70% do rebanho</p>
+              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                105
+              </p>
+              <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
+                70% do rebanho
+              </p>
             </div>
 
             {/* Total de Usuários */}
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Total de Usuários</h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">Ativos</span>
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Total de Usuários
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Ativos
+                </span>
               </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">12</p>
-              <p className="text-sm font-medium text-[var(--color-text-tertiary)] mt-1">Funcionários ativos</p>
+              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                12
+              </p>
+              <p className="text-sm font-medium text-[var(--color-text-tertiary)] mt-1">
+                Funcionários ativos
+              </p>
             </div>
           </div>
         </div>
@@ -173,25 +199,26 @@ export default function Dashboard() {
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-800">
-                  Produção de Leite {viewMode === 'monthly' ? 'Mensal' : 'Anual'}
+                  Produção de Leite{" "}
+                  {viewMode === "monthly" ? "Mensal" : "Anual"}
                 </h2>
                 <div className="flex bg-gray-100 rounded-lg p-1">
                   <button
-                    onClick={() => setViewMode('monthly')}
+                    onClick={() => setViewMode("monthly")}
                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                      viewMode === 'monthly'
-                        ? 'bg-white text-gray-800 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-800'
+                      viewMode === "monthly"
+                        ? "bg-white text-gray-800 shadow-sm"
+                        : "text-gray-600 hover:text-gray-800"
                     }`}
                   >
                     Mensal
                   </button>
                   <button
-                    onClick={() => setViewMode('yearly')}
+                    onClick={() => setViewMode("yearly")}
                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                      viewMode === 'yearly'
-                        ? 'bg-white text-gray-800 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-800'
+                      viewMode === "yearly"
+                        ? "bg-white text-gray-800 shadow-sm"
+                        : "text-gray-600 hover:text-gray-800"
                     }`}
                   >
                     Anual
@@ -205,10 +232,10 @@ export default function Dashboard() {
                   <YAxis />
                   <Tooltip formatter={(value) => `${value} L`} />
                   <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="producao" 
-                    stroke="#FFCF78" 
+                  <Line
+                    type="monotone"
+                    dataKey="producao"
+                    stroke="#FFCF78"
                     strokeWidth={3}
                     name="Produção (L)"
                   />
@@ -218,29 +245,39 @@ export default function Dashboard() {
 
             {/* Top Buffaloes Chart */}
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Top 5 Búfalas Produtoras</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Top 5 Búfalas Produtoras
+              </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topBuffalosData}>
+                <BarChart
+                  data={topBuffalosData}
+                  layout="vertical" // <- muda o gráfico para horizontal
+                  margin={{ left: 50 }} // espaço extra para os nomes
+                >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
+
+                  {/* Agora o eixo X é numérico (valores de leite) */}
+                  <XAxis type="number" />
+
+                  {/* O eixo Y mostra os nomes das búfalas */}
+                  <YAxis dataKey="name" type="category" />
+
                   <Tooltip formatter={(value) => `${value} L/dia`} />
                   <Legend />
-                  <Bar 
-                    dataKey="leite" 
-                    fill="#FFCF78" 
-                    name="Leite (L/dia)"
-                  >
+
+                  <Bar dataKey="leite" fill="#FFCF78" name="Leite (L/dia)">
                     {topBuffalosData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={[
-                          '#FFCF78', // Amarelo dourado (primária)
-                          '#CE7D0A', // Laranja escuro (primária escura)
-                          '#F2B84D', // Laranja médio (hover)
-                          '#FCA90F', // Laranja claro (primária light)
-                          '#E6A23C'  // Laranja dourado (variação)
-                        ][index % 5]} 
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          [
+                            "#FFCF78", // Amarelo dourado
+                            "#CE7D0A", // Laranja escuro
+                            "#F2B84D", // Laranja médio
+                            "#FCA90F", // Laranja claro
+                            "#E6A23C", // Laranja dourado variação
+                          ][index % 5]
+                        }
                       />
                     ))}
                   </Bar>
@@ -259,7 +296,9 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-              <h2 className="text-sm font-medium text-gray-500">Última Coleta</h2>
+              <h2 className="text-sm font-medium text-gray-500">
+                Última Coleta
+              </h2>
               <p className="text-2xl font-bold text-gray-800">
                 {salesData.lastCollection.amount.toLocaleString("pt-BR")} L
               </p>
@@ -293,8 +332,10 @@ export default function Dashboard() {
         </div>
 
         {/* Production Collection Chart */}
-        <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Produção vs Coleta Mensal</h2>
+        {/* <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            Produção vs Coleta Mensal
+          </h2>
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={productionVsCollection}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -302,23 +343,23 @@ export default function Dashboard() {
               <YAxis />
               <Tooltip formatter={(value) => `${value} L`} />
               <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="producao" 
-                stroke="#FFCF78" 
+              <Line
+                type="monotone"
+                dataKey="producao"
+                stroke="#FFCF78"
                 strokeWidth={3}
                 name="Produção (L)"
               />
-              <Line 
-                type="monotone" 
-                dataKey="coleta" 
-                stroke="#CE7D0A" 
+              <Line
+                type="monotone"
+                dataKey="coleta"
+                stroke="#CE7D0A"
                 strokeWidth={3}
                 name="Coleta (L)"
               />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </div> */}
       </div>
     </>
   );

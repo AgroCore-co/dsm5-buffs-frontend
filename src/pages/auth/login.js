@@ -6,61 +6,91 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, isLoading, needsProfile } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingForm, setIsLoadingForm] = useState(false);
+  const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
-  // Força fundo branco na página de login
   useEffect(() => {
-    document.body.setAttribute('data-page', 'login');
-    
+    if (!isLoading && isAuthenticated) {
+      // Redireciona baseado no estado do perfil
+      if (needsProfile) {
+        router.push("/complete-profile");
+      } else {
+        router.push("/dashboard");
+      }
+    }
+  }, [isAuthenticated, isLoading, needsProfile, router]);
+
+  useEffect(() => {
+    document.body.setAttribute("data-page", "login");
     return () => {
-      document.body.removeAttribute('data-page');
+      document.body.removeAttribute("data-page");
     };
   }, []);
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  if (isLoading || isAuthenticated) return null;
+
+  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setLoginError(""); // Limpa erro ao digitar
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validação básica
+
     if (!formData.email || !formData.password) {
-      alert("Por favor, preencha todos os campos.");
+      setLoginError("Por favor, preencha todos os campos.");
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingForm(true);
+    setLoginError("");
 
-    try {
-      const result = await login(formData.email, formData.password);
-      
-      if (result.success) {
-        // Redirecionar para o dashboard
-        router.push("/dashboard");
-      } else {
-        alert(result.error || "Erro ao fazer login. Tente novamente.");
+    const result = await login(formData.email, formData.password);
+    
+    if (result.success) {
+      // O redirecionamento é tratado automaticamente pelo useEffect acima
+      // baseado no resultado do login (needsProfile, redirectTo)
+      if (result.redirectTo) {
+        router.push(result.redirectTo);
       }
-    } catch (error) {
-      console.error("Erro no login:", error);
-      alert("Erro ao fazer login. Tente novamente.");
-    } finally {
-      setIsLoading(false);
+    } else {
+      // Tratamento de erros específicos
+      if (result.error?.includes("Invalid login credentials")) {
+        setLoginError("❌ Email ou senha inválidos.");
+      } else if (result.error?.includes("User not confirmed")) {
+        setLoginError("⚠️ Usuário não confirmado. Verifique seu email.");
+      } else if (result.error?.includes("Email not confirmed")) {
+        setLoginError("⚠️ Por favor, confirme seu email antes de fazer login.");
+      } else if (result.error?.includes("Too many requests")) {
+        setLoginError("⚠️ Muitas tentativas. Aguarde alguns minutos.");
+      } else {
+        setLoginError(result.error || "❌ Ocorreu um erro inesperado. Tente novamente.");
+      }
     }
+    setIsLoadingForm(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoadingGoogle(true);
+    setLoginError("");
+
+    const result = await loginWithGoogle();
+    
+    if (!result.success) {
+      setLoginError(result.error || "❌ Erro ao fazer login com Google.");
+      setIsLoadingGoogle(false);
+    }
+    // Se sucesso, o redirecionamento será tratado pela página de callback
   };
 
   return (
@@ -77,6 +107,10 @@ export default function Login() {
         <p className={styles.description}>
           Faça login com os dados inseridos durante seu cadastro.
         </p>
+
+        {/* Exibe erro no HTML */}
+        {loginError && <p className={styles.error}>{loginError}</p>}
+
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.inputGroup}>
             <input
@@ -89,8 +123,7 @@ export default function Login() {
               className={styles.input}
               placeholder=" "
               autoComplete="email"
-              aria-describedby="email-error"
-              disabled={isLoading}
+              disabled={isLoadingForm || isLoadingGoogle}
             />
             <label htmlFor="email" className={styles.label}>
               Email
@@ -99,6 +132,7 @@ export default function Login() {
               <img src="/images/icon_email.svg" alt="" />
             </span>
           </div>
+
           <div className={styles.inputGroup}>
             <input
               type={showPassword ? "text" : "password"}
@@ -110,8 +144,7 @@ export default function Login() {
               className={styles.input}
               placeholder=" "
               autoComplete="current-password"
-              aria-describedby="password-error"
-              disabled={isLoading}
+              disabled={isLoadingForm || isLoadingGoogle}
             />
             <label htmlFor="password" className={styles.label}>
               Senha
@@ -122,28 +155,70 @@ export default function Login() {
               onClick={togglePasswordVisibility}
               aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
               aria-pressed={showPassword}
-              disabled={isLoading}
+              disabled={isLoadingForm || isLoadingGoogle}
             >
               <img
-                src={showPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
+                src={
+                  showPassword
+                    ? "/images/not-view-password.svg"
+                    : "/images/not-view-password-bloqued.svg"
+                }
                 alt=""
               />
             </button>
           </div>
 
-          <Button 
-            type="submit" 
-            variant="primary" 
+          <Button
+            type="submit"
+            variant="primary"
             size="full"
-            loading={isLoading}
-            disabled={isLoading}
+            loading={isLoadingForm}
+            disabled={isLoadingForm || isLoadingGoogle}
           >
-            {isLoading ? "Entrando..." : "Log in"}
+            {isLoadingForm ? "Entrando..." : "Log in"}
           </Button>
         </form>
-        <a href="/forgot-password" className={styles.forgotPassword}>
+
+        {/* Divisor */}
+        <div className={styles.divider}>
+          <span>ou</span>
+        </div>
+
+        {/* Botão do Google */}
+        <Button
+          type="button"
+          variant="secondary"
+          size="full"
+          loading={isLoadingGoogle}
+          disabled={isLoadingForm || isLoadingGoogle}
+          onClick={handleGoogleLogin}
+          className={styles.googleButton}
+        >
+          {isLoadingGoogle ? (
+            "Conectando..."
+          ) : (
+            <>
+              <img 
+                src="/images/google-icon.svg" 
+                alt="Google" 
+                className={styles.googleIcon}
+              />
+              
+            </>
+          )}
+        </Button>
+
+        <a href="/auth/forgot-password" className={styles.forgotPassword}>
           Esqueci minha senha
         </a>
+
+        {/* Link para cadastro */}
+        <p className={styles.signupLink}>
+          Não tem uma conta? 
+          <a href="/auth/register" className={styles.link}>
+            Cadastre-se
+          </a>
+        </p>
       </div>
     </div>
   );

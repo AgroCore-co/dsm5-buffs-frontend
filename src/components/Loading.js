@@ -6,7 +6,7 @@ const Loading = ({
   size = "medium",
   text = "Carregando...",
   fullScreen = false,
-  duration = 3000, // 3 segundos por padrão
+  duration = 1000   , // 1 segundos por padrão
   onComplete,
   className = "",
   ...props

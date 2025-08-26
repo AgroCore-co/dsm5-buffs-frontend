@@ -1,18 +1,43 @@
+// src/pages/_app.js
 import "@/styles/globals.css";
 import Layout from "@/components/Layout";
 import { useRouter } from "next/router";
+import { useRouteProtection } from "@/hooks/useRouteProtection";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { PropertyProvider } from "@/contexts/PropertyContext";
+// (import AuthProvider se você tiver um)
 
-export default function App({ Component, pageProps }) {
+function App({ Component, pageProps }) {
   const router = useRouter();
-  const isAuthRoute = router.pathname.startsWith("/auth");
+  const isErrorPage = ["/404", "/500", "/_error", "/test-error"].includes(
+    router.pathname
+  );
 
-  if (isAuthRoute) {
-    return <Component {...pageProps} />;
+  useRouteProtection();
+
+  if (isErrorPage) {
+    return (
+      <ErrorBoundary>
+        <Component {...pageProps} />
+      </ErrorBoundary>
+    );
   }
 
   return (
-    <Layout>
-      <Component {...pageProps} />
-    </Layout>
+    // <AuthProvider>  // se você tiver
+    <PropertyProvider>
+      <ErrorBoundary>
+        {router.pathname.startsWith("/auth") ? (
+          <Component {...pageProps} />
+        ) : (
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+        )}
+      </ErrorBoundary>
+    </PropertyProvider>
+    // </AuthProvider>
   );
 }
+
+export default App;

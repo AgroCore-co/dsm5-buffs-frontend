@@ -96,10 +96,14 @@
   transform: scale(1.05);
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
+/*  Adicionando breakpoint para 1300px conforme solicitado */
+@media (max-width: 1300px) {
+  .navItems {
+    display: none;
+  }
+  
   .container {
-    padding: 0 40px;
+    padding: 0 50px;
   }
   
   .logo {
@@ -107,12 +111,21 @@
   }
   
   .userProfile {
-    right: 25px;
+    right: 80px; /* Espaço para o botão hambúrguer */
+  }
+}
+
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 40px;
   }
   
-  .navItem {
-    padding: 18px 15px;
-    font-size: 13px;
+  .logo {
+    left: 20px;
+  }
+  
+  .userProfile {
+    right: 70px;
   }
 }
 
@@ -122,18 +135,32 @@
   }
   
   .logo {
-    left: 20px;
+    left: 15px;
   }
   
   .userProfile {
-    right: 20px;
+    right: 60px;
   }
   
   .logoImage {
     height: 28px;
   }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 20px;
+  }
   
-  .navItems {
-    display: none;
+  .logo {
+    left: 10px;
+  }
+  
+  .userProfile {
+    right: 50px;
+  }
+  
+  .logoImage {
+    height: 26px;
   }
 }
