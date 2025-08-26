@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/useAuth';
 import Loading from './Loading';
@@ -6,9 +6,10 @@ import UnauthorizedError from './errors/UnauthorizedError';
 import CountdownTimer from './CountdownTimer';
 
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, authInitialized } = useAuth();
   const router = useRouter();
   const [showUnauthorized, setShowUnauthorized] = useState(false);
+  const didRedirectRef = useRef(false);
 
   // Não aplicar proteção em páginas de erro
   if (router.pathname === '/404' || router.pathname === '/500' || router.pathname === '/_error' || router.pathname === '/test-error') {
@@ -16,24 +17,24 @@ export default function ProtectedRoute({ children }) {
   }
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && authInitialized) {
       if (!isAuthenticated) {
-        // Em vez de redirecionar imediatamente, mostra o erro
         setShowUnauthorized(true);
         return;
       }
-
-      // Se estiver autenticado, esconde o erro
       setShowUnauthorized(false);
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, authInitialized]);
 
   const handleRedirect = () => {
-    router.push('/auth/login');
+    if (!didRedirectRef.current && router.pathname !== '/auth/login') {
+      didRedirectRef.current = true;
+      router.push('/auth/login');
+    }
   };
 
   // Mostra loading enquanto verifica autenticação
-  if (isLoading) {
+  if (isLoading || !authInitialized) {
     return <Loading />;
   }
 
