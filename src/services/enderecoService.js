@@ -39,8 +39,7 @@ const criarEndereco = async (payload, token) => {
     const data = await apiFetch(`/enderecos`, {
       method: "POST",
       token,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      data: body,
     });
 
     console.log("✅ Endereço criado com sucesso:", data);
@@ -115,8 +114,7 @@ const atualizarEndereco = async (idEndereco, payload, token) => {
     const data = await apiFetch(`/enderecos/${idEndereco}`, {
       method: "PATCH",
       token,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload ?? {}),
+      data: payload ?? {},
     });
     console.log("✅ Endereço atualizado com sucesso:", data);
     return data;
