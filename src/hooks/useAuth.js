@@ -74,9 +74,9 @@ export const useAuth = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setIsLoading(true)
       switch (event) {
         case "SIGNED_IN":
+          setIsLoading(true)
           setUser(session.user)
           setIsAuthenticated(true)
           try {
@@ -84,21 +84,23 @@ export const useAuth = () => {
           } catch (error) {
             console.error("Erro ao verificar perfil do usuário:", error)
           }
+          setIsLoading(false)
           break
         case "SIGNED_OUT":
+          setIsLoading(true)
           setUser(null)
           setUserProfile(null)
           setIsAuthenticated(false)
           setNeedsProfile(false)
+          setIsLoading(false)
           break
         case "TOKEN_REFRESHED":
         case "USER_UPDATED":
-          // Ignora eventos neutros
-          break
+          // Eventos neutros: NÃO tocar em isLoading/isAuthenticated/authInitialized
+          return
         default:
-          break
+          return
       }
-      setIsLoading(false)
       setAuthInitialized(true)
     })
 
