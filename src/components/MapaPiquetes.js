@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Polygon, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useProperty } from "@/hooks/useProperty";
-import { useAuth } from "@/hooks/useAuth";
 import loteService from "@/services/loteService";
 
 /* ========================= Leaflet icon fix ========================= */
@@ -31,15 +29,13 @@ const parseGeoJSONPolygon = (geoJson) => {
 };
 
 /* ========================= Componente Principal ========================= */
-export default function MapaPiquetes() {
-  const { propriedadeSelecionada } = useProperty();
-  const { getAccessToken } = useAuth();
+export default function MapaPiquetes({ propriedadeId }) {
   const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const carregarLotes = async () => {
-    if (!propriedadeSelecionada?.id_propriedade) {
+    if (!propriedadeId) {
       setLotes([]);
       return;
     }
@@ -47,12 +43,12 @@ export default function MapaPiquetes() {
     setError(null);
 
     try {
-      const token = await getAccessToken();
-      if (!token) throw new Error("Token de acesso não encontrado");
+      // Aqui você pode pegar o token de onde quiser, se necessário
+      // const token = await getAccessToken();
 
       const lotesData = await loteService.listarLotesPorPropriedade(
-        propriedadeSelecionada.id_propriedade,
-        token
+        propriedadeId,
+        null // ou token se necessário
       );
 
       const lotesProcessados = lotesData
@@ -78,15 +74,15 @@ export default function MapaPiquetes() {
 
   useEffect(() => {
     carregarLotes();
-  }, [propriedadeSelecionada?.id_propriedade]);
+  }, [propriedadeId]);
 
   return (
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-800">Mapa de Piquetes</h3>
-        {propriedadeSelecionada && (
+        {propriedadeId && (
           <span className="text-sm text-gray-600">
-            {propriedadeSelecionada.nome} • {lotes.length} lote{lotes.length !== 1 ? "s" : ""}
+            Propriedade ID: {propriedadeId} • {lotes.length} lote{lotes.length !== 1 ? "s" : ""}
           </span>
         )}
       </div>

@@ -43,7 +43,9 @@ export default function Propriedades() {
       // Obtendo token diretamente do hook de autenticação
       const token = await getAccessToken();
       if (!token) {
-        setError("Usuário não autenticado. Faça login para acessar suas propriedades.");
+        setError(
+          "Usuário não autenticado. Faça login para acessar suas propriedades."
+        );
         return;
       }
 
@@ -55,7 +57,14 @@ export default function Propriedades() {
         id: prop.id_propriedade,
         nome: prop.nome,
         tipo_manejo: prop.tipo_manejo,
-        tipo: prop.tipo_manejo === "P" ? "Pecuária" : prop.tipo_manejo === "E" ? "Extensivo" : prop.tipo_manejo === "I" ? "Intensivo" : "Não definido",
+        tipo:
+          prop.tipo_manejo === "P"
+            ? "Pecuária"
+            : prop.tipo_manejo === "E"
+            ? "Extensivo"
+            : prop.tipo_manejo === "I"
+            ? "Intensivo"
+            : "Não definido",
         cnpj: prop.cnpj,
         p_abcb: prop.p_abcb,
         id_endereco: prop.id_endereco,
@@ -68,12 +77,19 @@ export default function Propriedades() {
       hasLoadedRef.current = true; // Marca como carregado para não refazer
     } catch (err) {
       console.error("Erro ao carregar propriedades:", err);
-      
+
       // Tratamento específico para erros de autenticação
-      if (err.message?.includes('401') || err.message?.includes('Unauthorized')) {
-        setError("Sessão expirada. Faça login novamente para acessar suas propriedades.");
+      if (
+        err.message?.includes("401") ||
+        err.message?.includes("Unauthorized")
+      ) {
+        setError(
+          "Sessão expirada. Faça login novamente para acessar suas propriedades."
+        );
       } else {
-        setError(err.message || "Erro ao carregar propriedades. Tente novamente.");
+        setError(
+          err.message || "Erro ao carregar propriedades. Tente novamente."
+        );
       }
     } finally {
       setLoading(false); // Final do carregamento
@@ -93,9 +109,11 @@ export default function Propriedades() {
   // Lógica de paginação e filtros aplicados
   // ==========================
   const propriedadesFiltradas = propriedades.filter((propriedade) => {
-    const matchStatus = !filters.status || propriedade.status === filters.status;
+    const matchStatus =
+      !filters.status || propriedade.status === filters.status;
     const matchTipo = !filters.tipo || propriedade.tipo === filters.tipo;
-    const matchCidade = !filters.cidade || propriedade.cidade === filters.cidade;
+    const matchCidade =
+      !filters.cidade || propriedade.cidade === filters.cidade;
     return matchStatus && matchTipo && matchCidade;
   });
 
@@ -110,7 +128,7 @@ export default function Propriedades() {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     try {
-      return new Date(dateString).toLocaleDateString('pt-BR');
+      return new Date(dateString).toLocaleDateString("pt-BR");
     } catch {
       return "N/A";
     }
@@ -122,9 +140,12 @@ export default function Propriedades() {
   const formatCNPJ = (cnpj) => {
     if (!cnpj) return "N/A";
     // Se já estiver formatado, retorna como está
-    if (cnpj.includes('.') || cnpj.includes('/')) return cnpj;
+    if (cnpj.includes(".") || cnpj.includes("/")) return cnpj;
     // Formatação simples para CNPJ
-    return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    return cnpj.replace(
+      /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+      "$1.$2.$3/$4-$5"
+    );
   };
 
   // ==========================
@@ -141,21 +162,6 @@ export default function Propriedades() {
       default:
         return "bg-gray-100 text-gray-800";
     }
-  };
-
-  // ==========================
-  // Funções para modal de detalhes
-  // ==========================
-  const handleViewPropriedade = (propriedade) => {
-    setSelectedPropriedade(propriedade);
-    setActiveTab("info"); // Sempre abre na aba "info"
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedPropriedade(null);
-    setActiveTab("info");
   };
 
   // ==========================
@@ -367,15 +373,15 @@ export default function Propriedades() {
           {currentPropriedades.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-500 text-lg mb-4">
-                {propriedades.length === 0 
+                {propriedades.length === 0
                   ? "Nenhuma propriedade cadastrada ainda."
-                  : "Nenhuma propriedade encontrada com os filtros aplicados."
-                }
+                  : "Nenhuma propriedade encontrada com os filtros aplicados."}
               </div>
               {propriedades.length === 0 && (
                 <button
                   onClick={handleOpenCreateModal}
-                  className="bg-[#FFCF78] text-gray-800 py-2 px-4 rounded-lg text-sm font-bold hover:bg-[#F2B84D] transition-colors">
+                  className="bg-[#FFCF78] text-gray-800 py-2 px-4 rounded-lg text-sm font-bold hover:bg-[#F2B84D] transition-colors"
+                >
                   + Cadastrar Primeira Propriedade
                 </button>
               )}
@@ -387,20 +393,13 @@ export default function Propriedades() {
                   key={propriedade.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => handleViewPropriedade(propriedade)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleViewPropriedade(propriedade);
-                    }
-                  }}
+                  onClick={() =>
+                    (window.location.href = `/propriedade/${propriedade.id}`)
+                  }
                   className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all p-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400"
                 >
                   {/* Header do Card */}
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold text-[#CE7D0A] bg-[#FFCF78]/30 px-2 py-1 rounded">
-                      ID: {propriedade.id}
-                    </span>
                     <div className="flex flex-col gap-1">
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-[#9DFFBE] text-gray-800">
                         Ativa
@@ -421,7 +420,8 @@ export default function Propriedades() {
                     <div className="flex justify-between text-xs text-gray-600 mb-1">
                       <span>{propriedade.tipo}</span>
                       <span className="text-xs text-gray-500">
-                        {propriedade.tipo_manejo && `(${propriedade.tipo_manejo})`}
+                        {propriedade.tipo_manejo &&
+                          `(${propriedade.tipo_manejo})`}
                       </span>
                     </div>
                     <div className="text-xs text-gray-500">
@@ -507,156 +507,6 @@ export default function Propriedades() {
             </div>
           )}
         </div>
-
-        {isModalOpen && selectedPropriedade && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              {/* Header do Modal */}
-              <div className="flex justify-between items-center p-6 border-b border-gray-200">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    {selectedPropriedade.nome}
-                  </h2>
-                  <p className="text-gray-600">{selectedPropriedade.tipo}</p>
-                </div>
-                <button
-                  onClick={closeModal}
-                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex border-b border-gray-200">
-                <button
-                  onClick={() => setActiveTab("info")}
-                  className={`px-6 py-3 font-medium text-sm ${
-                    activeTab === "info"
-                      ? "border-b-2 border-[#CE7D0A] text-[#CE7D0A]"
-                      : "text-gray-600 hover:text-gray-800"
-                  }`}
-                >
-                  Informações Gerais
-                </button>
-                <button
-                  onClick={() => setActiveTab("details")}
-                  className={`px-6 py-3 font-medium text-sm ${
-                    activeTab === "details"
-                      ? "border-b-2 border-[#CE7D0A] text-[#CE7D0A]"
-                      : "text-gray-600 hover:text-gray-800"
-                  }`}
-                >
-                  Detalhes Técnicos
-                </button>
-                <button
-                  onClick={() => setActiveTab("contact")}
-                  className={`px-6 py-3 font-medium text-sm ${
-                    activeTab === "contact"
-                      ? "border-b-2 border-[#CE7D0A] text-[#CE7D0A]"
-                      : "text-gray-600 hover:text-gray-800"
-                  }`}
-                >
-                  Contato
-                </button>
-              </div>
-
-              {/* Conteúdo das Tabs */}
-              <div className="p-6">
-                {activeTab === "info" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Nome da Propriedade</label>
-                        <p className="text-lg font-semibold text-gray-800">{selectedPropriedade.nome}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">CNPJ</label>
-                        <p className="text-lg text-gray-800">{formatCNPJ(selectedPropriedade.cnpj)}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Tipo de Manejo</label>
-                        <p className="text-lg text-gray-800">{selectedPropriedade.tipo} ({selectedPropriedade.tipo_manejo})</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">ABCB</label>
-                        <p className="text-lg text-gray-800">{selectedPropriedade.p_abcb ? "Sim" : "Não"}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">ID da Propriedade</label>
-                        <p className="text-lg text-gray-800">#{selectedPropriedade.id}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">ID do Endereço</label>
-                        <p className="text-lg text-gray-800">#{selectedPropriedade.id_endereco}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">ID do Proprietário</label>
-                        <p className="text-lg text-gray-800">#{selectedPropriedade.id_dono}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Data de Cadastro</label>
-                        <p className="text-lg text-gray-800">{formatDate(selectedPropriedade.created_at)}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "details" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Última Atualização</label>
-                        <p className="text-lg text-gray-800">{formatDate(selectedPropriedade.updated_at)}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Status do Sistema</label>
-                        <p className="text-lg text-gray-800">Ativo</p>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Informações Técnicas</label>
-                        <p className="text-sm text-gray-600">Dados técnicos detalhados serão implementados em breve.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "contact" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Informações de Contato</label>
-                        <p className="text-sm text-gray-600">Detalhes de contato serão carregados do endereço #{selectedPropriedade.id_endereco}.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Footer do Modal */}
-              <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-                <button
-                  onClick={closeModal}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  Fechar
-                </button>
-                <button className="px-4 py-2 bg-[#FFCF78] text-gray-800 rounded-lg hover:bg-[#F2B84D] transition-colors font-medium"
-                  onClick={() => {
-                    // TODO: Implementar modal de edição de propriedade
-                    console.log('TODO: Abrir modal de edição para propriedade:', selectedPropriedade.id);
-                  }}
-                >
-                  Editar Propriedade
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Modal de Criação de Propriedade */}
         <PropriedadeCreateModal
