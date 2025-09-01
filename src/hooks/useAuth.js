@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/router"
 import { supabase } from "@/lib/supabaseClient"
 import { apiFetch } from "@/lib/apiClient"
@@ -12,6 +12,8 @@ export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [needsProfile, setNeedsProfile] = useState(false)
   const [error, setError] = useState(null)
+  const [authInitialized, setAuthInitialized] = useState(false)
+  const didHandleRef = useRef(false)
   const router = useRouter()
 
   // Função para verificar se o usuário tem perfil criado na API
@@ -38,7 +40,6 @@ export const useAuth = () => {
         const {
           data: { session },
         } = await supabase.auth.getSession()
-
         if (session) {
           setUser(session.user)
           setIsAuthenticated(true)
@@ -63,6 +64,7 @@ export const useAuth = () => {
         setNeedsProfile(false)
       } finally {
         setIsLoading(false)
+        setAuthInitialized(true)
       }
     }
 
@@ -72,26 +74,34 @@ export const useAuth = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setIsLoading(true)
-
-      if (event === "SIGNED_IN" && session) {
-        setUser(session.user)
-        setIsAuthenticated(true)
-
-        // Verificar se o usuário tem perfil
-        try {
-          await checkUserProfile(session.access_token)
-        } catch (error) {
-          console.error("Erro ao verificar perfil do usuário:", error)
-        }
-      } else if (event === "SIGNED_OUT") {
-        setUser(null)
-        setUserProfile(null)
-        setIsAuthenticated(false)
-        setNeedsProfile(false)
+      switch (event) {
+        case "SIGNED_IN":
+          setIsLoading(true)
+          setUser(session.user)
+          setIsAuthenticated(true)
+          try {
+            await checkUserProfile(session.access_token)
+          } catch (error) {
+            console.error("Erro ao verificar perfil do usuário:", error)
+          }
+          setIsLoading(false)
+          break
+        case "SIGNED_OUT":
+          setIsLoading(true)
+          setUser(null)
+          setUserProfile(null)
+          setIsAuthenticated(false)
+          setNeedsProfile(false)
+          setIsLoading(false)
+          break
+        case "TOKEN_REFRESHED":
+        case "USER_UPDATED":
+          // Eventos neutros: NÃO tocar em isLoading/isAuthenticated/authInitialized
+          return
+        default:
+          return
       }
-
-      setIsLoading(false)
+      setAuthInitialized(true)
     })
 
     return () => subscription.unsubscribe()
@@ -360,6 +370,7 @@ export const useAuth = () => {
     isAuthenticated,
     needsProfile,
     error,
+    authInitialized,
     login,
     loginWithGoogle,
     signUp,

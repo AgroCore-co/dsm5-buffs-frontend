@@ -74,8 +74,7 @@ const criarPropriedade = async (payload, token) => {
     const data = await apiFetch(`/propriedades`, {
       method: "POST",
       token,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      data: body,
     });
 
     console.log("✅ Propriedade criada com sucesso:", data);
