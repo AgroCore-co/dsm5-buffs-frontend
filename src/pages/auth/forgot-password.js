@@ -1,88 +1,100 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/router"
-import styles from "@/styles/ForgotPassword.module.css"
-import Button from "@/components/Button"
-import { useAuth } from "@/hooks/useAuth"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import Image from "next/image";
+import styles from "@/styles/ForgotPassword.module.css";
+import Button from "@/components/Button";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ForgotPassword() {
-  const router = useRouter()
-  const { resetPassword, isAuthenticated, isLoading } = useAuth()
-  const [isLoadingForm, setIsLoadingForm] = useState(false)
-  const [resetError, setResetError] = useState("")
-  const [successMessage, setSuccessMessage] = useState("")
-  const [email, setEmail] = useState("")
+  const router = useRouter();
+  const { resetPassword, isAuthenticated, isLoading } = useAuth();
+  const [isLoadingForm, setIsLoadingForm] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push("/dashboard")
+      router.push("/dashboard");
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAuthenticated, isLoading, router]);
 
   useEffect(() => {
-    document.body.setAttribute("data-page", "forgot-password")
+    document.body.setAttribute("data-page", "forgot-password");
     return () => {
-      document.body.removeAttribute("data-page")
-    }
-  }, [])
+      document.body.removeAttribute("data-page");
+    };
+  }, []);
 
-  if (isAuthenticated) return null
+  if (isAuthenticated) return null;
 
   const handleInputChange = (e) => {
-    setEmail(e.target.value)
-    setResetError("") // Limpa erro ao digitar
-    setSuccessMessage("") // Limpa mensagem de sucesso ao digitar
-  }
+    setEmail(e.target.value);
+    setResetError(""); // Limpa erro ao digitar
+    setSuccessMessage(""); // Limpa mensagem de sucesso ao digitar
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!email) {
-      setResetError("Por favor, digite seu email.")
-      return
+      setResetError("Por favor, digite seu email.");
+      return;
     }
 
     // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setResetError("Por favor, digite um email válido.")
-      return
+      setResetError("Por favor, digite um email válido.");
+      return;
     }
 
-    setIsLoadingForm(true)
-    setResetError("")
-    setSuccessMessage("")
+    setIsLoadingForm(true);
+    setResetError("");
+    setSuccessMessage("");
 
-    const result = await resetPassword(email)
+    const result = await resetPassword(email);
 
     if (result.success) {
-      setSuccessMessage("✅ Email de recuperação enviado! Verifique sua caixa de entrada e spam.")
+      setSuccessMessage(
+        "✅ Email de recuperação enviado! Verifique sua caixa de entrada e spam."
+      );
       // Redirecionar para login após 5 segundos
       setTimeout(() => {
-        router.push("/auth/login")
-      }, 5000)
+        router.push("/auth/login");
+      }, 5000);
     } else {
       // Tratamento de erros específicos
       if (result.error?.includes("User not found")) {
-        setResetError("❌ Email não encontrado em nossa base de dados.")
+        setResetError("❌ Email não encontrado em nossa base de dados.");
       } else if (result.error?.includes("Too many requests")) {
-        setResetError("⚠️ Muitas tentativas. Aguarde alguns minutos.")
+        setResetError("⚠️ Muitas tentativas. Aguarde alguns minutos.");
       } else {
-        setResetError(result.error || "❌ Ocorreu um erro inesperado. Tente novamente.")
+        setResetError(
+          result.error || "❌ Ocorreu um erro inesperado. Tente novamente."
+        );
       }
     }
-    setIsLoadingForm(false)
-  }
+    setIsLoadingForm(false);
+  };
 
   return (
     <div className={`${styles.container} ${styles.forgotPasswordPage}`}>
       <div className={styles.imageSection}>
-        <img src="/images/bg2.png" alt="Imagem de recuperação" className={styles.image} />
+        <Image
+          src="/images/bg2.png"
+          alt="Imagem de recuperação"
+          className={styles.image}
+        />
       </div>
       <div className={styles.formSection}>
         <h1 className={styles.title}>Esqueceu sua senha?</h1>
-        <p className={styles.description}>Digite seu email e enviaremos um link para redefinir sua senha.</p>
+        <p className={styles.description}>
+          Digite seu email e enviaremos um link para redefinir sua senha.
+        </p>
 
         {/* Exibe erro no HTML */}
         {resetError && <p className={styles.error}>{resetError}</p>}
@@ -108,7 +120,7 @@ export default function ForgotPassword() {
               Email
             </label>
             <span className={styles.icon} aria-hidden="true">
-              <img src="/images/icon_email.svg" alt="" />
+              <Image src="/images/icon_email.svg" alt="" />
             </span>
           </div>
 
@@ -125,11 +137,11 @@ export default function ForgotPassword() {
 
         {/* Link para voltar ao login */}
         <div className={styles.backToLogin}>
-          <a href="/auth/login" className={styles.link}>
+          <Link href="/auth/login" className={styles.link}>
             ← Voltar para o login
-          </a>
+          </Link>
         </div>
       </div>
     </div>
-  )
+  );
 }

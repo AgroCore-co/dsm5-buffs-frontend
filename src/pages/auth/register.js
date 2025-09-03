@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+import Image from "next/image"
 import styles from "@/styles/Register.module.css"
 import Button from "@/components/Button"
 import { useAuth } from "@/hooks/useAuth"
@@ -126,7 +128,7 @@ export default function Register() {
   return (
     <div className={`${styles.container} ${styles.registerPage}`}>
       <div className={styles.imageSection}>
-        <img src="/images/bg2.png" alt="Imagem de cadastro" className={styles.image} />
+        <Image src="/images/bg2.png" alt="Imagem de cadastro" className={styles.image} />
       </div>
       <div className={styles.formSection}>
         <h1 className={styles.title}>Criar Conta</h1>
@@ -154,7 +156,7 @@ export default function Register() {
               Nome Completo
             </label>
             <span className={styles.icon} aria-hidden="true">
-              <img src="/images/icon_user.svg" alt="" />
+              <Image src="/images/icon_user.svg" alt="" />
             </span>
           </div>
 
@@ -175,7 +177,7 @@ export default function Register() {
               Email
             </label>
             <span className={styles.icon} aria-hidden="true">
-              <img src="/images/icon_email.svg" alt="" />
+              <Image src="/images/icon_email.svg" alt="" />
             </span>
           </div>
 
@@ -203,7 +205,7 @@ export default function Register() {
               aria-pressed={showPassword}
               disabled={isLoadingForm || isLoadingGoogle}
             >
-              <img
+              <Image
                 src={showPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
                 alt=""
               />
@@ -234,7 +236,7 @@ export default function Register() {
               aria-pressed={showConfirmPassword}
               disabled={isLoadingForm || isLoadingGoogle}
             >
-              <img
+              <Image
                 src={showConfirmPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
                 alt=""
               />
@@ -271,7 +273,7 @@ export default function Register() {
             "Conectando..."
           ) : (
             <>
-              <img src="/images/google-icon.svg" alt="Google" className={styles.googleIcon} />
+              <Image src="/images/google-icon.svg" alt="Google" className={styles.googleIcon} />
               Cadastrar com Google
             </>
           )}
@@ -280,9 +282,9 @@ export default function Register() {
         {/* Link para login */}
         <p className={styles.signupLink}>
           Já tem uma conta?
-          <a href="/auth/login" className={styles.link}>
+          <Link href="/auth/login" className={styles.link}>
             Faça login
-          </a>
+          </Link>
         </p>
       </div>
     </div>

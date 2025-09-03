@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/router"
+import Image from "next/image"
 import { useAuth } from "@/hooks/useAuth"
 import Button from "@/components/Button"
 import styles from "@/styles/Login.module.css" // usando o mesmo CSS das outras telas
@@ -92,7 +93,7 @@ export default function ResetPassword() {
   return (
     <div className={`${styles.container} ${styles.loginPage}`}>
       <div className={styles.imageSection}>
-        <img src="/images/bg2.png" alt="Redefinir Senha" className={styles.image} />
+        <Image src="/images/bg2.png" alt="Redefinir Senha" className={styles.image} />
       </div>
 
       <div className={styles.formSection}>
@@ -127,7 +128,7 @@ export default function ResetPassword() {
               aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
               disabled={isSubmitting}
             >
-              <img
+              <Image
                 src={showPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
                 alt=""
               />
@@ -158,7 +159,7 @@ export default function ResetPassword() {
               aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
               disabled={isSubmitting}
             >
-              <img
+              <Image
                 src={showConfirmPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
                 alt=""
               />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MapContainer, TileLayer, Polygon, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -34,7 +34,7 @@ export default function MapaPiquetes({ propriedadeId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const carregarLotes = async () => {
+  const carregarLotes = useCallback(async () => {
     if (!propriedadeId) {
       setLotes([]);
       return;
@@ -70,11 +70,11 @@ export default function MapaPiquetes({ propriedadeId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [propriedadeId]);
 
   useEffect(() => {
     carregarLotes();
-  }, [propriedadeId]);
+  }, [propriedadeId, carregarLotes]);
 
   return (
     <div className="w-full space-y-4">

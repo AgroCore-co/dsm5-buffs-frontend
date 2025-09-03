@@ -21,6 +21,8 @@ const listarUsuarios = async (token) => {
   }
 };
 
-export default {
+const usuarioService = {
   listarUsuarios,
 };
+
+export default usuarioService;

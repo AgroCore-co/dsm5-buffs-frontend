@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FiMaximize, FiMinimize } from "react-icons/fi";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/router";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -128,7 +129,7 @@ const Navbar = () => {
           {/* Logo e Menu Hamburguer */}
           <div className="flex items-center absolute left-8 z-10 gap-3">
             <Link href="/dashboard" passHref>
-              <img
+              <Image
                 src="/images/Logo-buffs.svg"
                 alt="Buffs Logo"
                 className="h-8 w-auto cursor-pointer transition-transform duration-200 hover:scale-105"
@@ -309,7 +310,6 @@ const Navbar = () => {
 
           {/*  Alterado breakpoint de md para xl para botão menu mobile */}
           {/* Botão menu mobile */}
-          
         </div>
       </nav>
 
@@ -322,17 +322,17 @@ const Navbar = () => {
             className="xl:hidden fixed inset-0 bg-black/45 z-40 transition-opacity duration-300"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          
+
           {/* Sidebar */}
           <div
             className={`xl:hidden fixed top-0 left-0 h-full w-80 bg-[var(--color-primary)] shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
-              isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+              isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
             }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header do Sidebar */}
             <div className="flex items-center justify-between p-6 border-b border-white/20">
-              <img
+              <Image
                 src="/images/Logo-buffs.svg"
                 alt="Buffs Logo"
                 className="h-8 w-auto"
@@ -426,7 +426,7 @@ const Navbar = () => {
                     </svg>
                     <span>Visualizar perfil</span>
                   </button>
-                  
+
                   <button
                     onClick={() => {
                       handleSystemSettings();
@@ -455,7 +455,7 @@ const Navbar = () => {
                     </svg>
                     <span>Configurações</span>
                   </button>
-                  
+
                   <button
                     onClick={() => {
                       handleLogout();

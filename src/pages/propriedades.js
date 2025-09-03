@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,7 +35,7 @@ export default function Propriedades() {
   // ==========================
   // Função para carregar propriedades da API
   // ==========================
-  const loadPropriedades = async () => {
+  const loadPropriedades = useCallback(async () => {
     try {
       setLoading(true); // Começo do carregamento
       setError(null); // Reset do erro anterior
@@ -94,7 +94,7 @@ export default function Propriedades() {
     } finally {
       setLoading(false); // Final do carregamento
     }
-  };
+  }, [getAccessToken]);
 
   // ==========================
   // useEffect para carregar propriedades apenas quando autenticado
@@ -103,7 +103,7 @@ export default function Propriedades() {
     if (isAuthenticated && !hasLoadedRef.current) {
       loadPropriedades();
     }
-  }, [isAuthenticated, getAccessToken]);
+  }, [isAuthenticated, getAccessToken, loadPropriedades]);
 
   // ==========================
   // Lógica de paginação e filtros aplicados

@@ -88,7 +88,9 @@ const criarLote = async (payload, token) => {
   }
 }
 
-export default {
+const loteService = {
   listarLotesPorPropriedade,
   criarLote,
 };
+
+export default loteService;

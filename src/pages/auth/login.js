@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
+import Image from "next/image";
 import styles from "@/styles/Login.module.css";
 import Button from "@/components/Button";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,7 +98,7 @@ export default function Login() {
   return (
     <div className={`${styles.container} ${styles.loginPage}`}>
       <div className={styles.imageSection}>
-        <img
+        <Image
           src="/images/bg2.png"
           alt="Imagem de login"
           className={styles.image}
@@ -129,7 +131,7 @@ export default function Login() {
               Email
             </label>
             <span className={styles.icon} aria-hidden="true">
-              <img src="/images/icon_email.svg" alt="" />
+              <Image src="/images/icon_email.svg" alt="" />
             </span>
           </div>
 
@@ -157,7 +159,7 @@ export default function Login() {
               aria-pressed={showPassword}
               disabled={isLoadingForm || isLoadingGoogle}
             >
-              <img
+              <Image
                 src={
                   showPassword
                     ? "/images/not-view-password.svg"
@@ -198,7 +200,7 @@ export default function Login() {
             "Conectando..."
           ) : (
             <>
-              <img 
+              <Image 
                 src="/images/google-icon.svg" 
                 alt="Google" 
                 className={styles.googleIcon}
@@ -208,16 +210,16 @@ export default function Login() {
           )}
         </Button>
 
-        <a href="/auth/forgot-password" className={styles.forgotPassword}>
+        <Link href="/auth/forgot-password" className={styles.forgotPassword}>
           Esqueci minha senha
-        </a>
+        </Link>
 
         {/* Link para cadastro */}
         <p className={styles.signupLink}>
           Não tem uma conta? 
-          <a href="/auth/register" className={styles.link}>
+          <Link href="/auth/register" className={styles.link}>
             Cadastre-se
-          </a>
+          </Link>
         </p>
       </div>
     </div>

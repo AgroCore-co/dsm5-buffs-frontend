@@ -25,7 +25,7 @@ const CountdownTimer = ({ seconds, onComplete }) => {
         {timeLeft}s
       </div>
       <div className="text-xs text-gray-500">
-        Ou clique no botão "Fazer Login" para ir imediatamente
+        Ou clique no botão &quot;Fazer Login&quot; para ir imediatamente
       </div>
     </div>
   );

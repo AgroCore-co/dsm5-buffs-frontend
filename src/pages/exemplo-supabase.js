@@ -1,19 +1,13 @@
 import React from 'react';
 import Layout from '@/components/Layout';
 import AuthStatus from '@/components/AuthStatus';
-import { RebanhoApi, LactacaoApi, ReproducaoApi } from '@/utils/supabaseApi';
+import { SupabaseAuth } from '@/utils/supabaseApi';
 
 export default function ExemploSupabase() {
   const handleTestRebanho = async () => {
     console.log('Testando API do Rebanho...');
-    const result = await RebanhoApi.getBubalinos();
-    console.log('Resultado:', result);
-    
-    if (result.success) {
-      alert(`Sucesso! Encontrados ${result.data.length} bubalinos.`);
-    } else {
-      alert(`Erro: ${result.error}`);
-    }
+    alert('Função temporariamente indisponível - API RebanhoApi não implementada');
+    // Esta API precisará ser implementada ou atualizada
   };
 
   
@@ -50,7 +44,7 @@ export default function ExemploSupabase() {
               <strong>Verifique o status:</strong> O componente AuthStatus mostrará informações da sessão
             </li>
             <li>
-              <strong>Obtenha o token:</strong> Clique em "Obter Token de Acesso" para ver o JWT
+              <strong>Obtenha o token:</strong> Clique em &quot;Obter Token de Acesso&quot; para ver o JWT
             </li>
             <li>
               <strong>Teste as APIs:</strong> Use os botões para testar as diferentes funcionalidades

@@ -12,11 +12,13 @@ export default function ProtectedRoute({ children }) {
   const didRedirectRef = useRef(false);
 
   // Não aplicar proteção em páginas de erro
-  if (router.pathname === '/404' || router.pathname === '/500' || router.pathname === '/_error' || router.pathname === '/test-error') {
-    return children;
-  }
+  const isErrorPage = router.pathname === '/404' || router.pathname === '/500' || router.pathname === '/_error' || router.pathname === '/test-error';
 
   useEffect(() => {
+    // Não prosseguir com a verificação se for página de erro
+    if (isErrorPage) {
+      return;
+    }
     if (!isLoading && authInitialized) {
       if (!isAuthenticated) {
         setShowUnauthorized(true);
@@ -24,7 +26,7 @@ export default function ProtectedRoute({ children }) {
       }
       setShowUnauthorized(false);
     }
-  }, [isAuthenticated, isLoading, authInitialized]);
+  }, [isAuthenticated, isLoading, authInitialized, isErrorPage]);
 
   const handleRedirect = () => {
     if (!didRedirectRef.current && router.pathname !== '/auth/login') {
@@ -36,6 +38,11 @@ export default function ProtectedRoute({ children }) {
   // Mostra loading enquanto verifica autenticação
   if (isLoading || !authInitialized) {
     return <Loading />;
+  }
+
+  // Não aplicar proteção em páginas de erro
+  if (isErrorPage) {
+    return children;
   }
 
   // Se não estiver autenticado, mostra erro de acesso não autorizado
