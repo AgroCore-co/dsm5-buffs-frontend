@@ -44,4 +44,5 @@ export const apiFetch = async (endpoint, { method = "GET", data = null, token = 
   }
 }
 
-export default { apiFetch }
+const apiClient = { apiFetch };
+export default apiClient;

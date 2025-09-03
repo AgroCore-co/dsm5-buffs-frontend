@@ -660,7 +660,7 @@ export default function Reproducao() {
               React.useEffect(() => {
                 const newTotalPages = Math.max(1, Math.ceil(reproducoesMock.length / pageSize))
                 if (page > newTotalPages) setPage(newTotalPages)
-              }, [pageSize, total])
+              }, [pageSize, total, page]) // reproducoesMock é invariante, não precisamos incluir
 
               const startIndex = (page - 1) * pageSize
               const endIndex = Math.min(startIndex + pageSize, total)

@@ -68,7 +68,7 @@ export default function Suporte() {
                   Como faço login na plataforma?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  Use seu email e senha cadastrados na página de login. Se esqueceu sua senha, clique em "Esqueci minha senha".
+                  Use seu email e senha cadastrados na página de login. Se esqueceu sua senha, clique em &quot;Esqueci minha senha&quot;.
                 </p>
               </details>
               
@@ -77,7 +77,7 @@ export default function Suporte() {
                   Como adicionar um novo búfalo ao rebanho?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  Acesse a seção "Rebanho" e clique no botão "Adicionar Búfalo" para cadastrar um novo animal.
+                  Acesse a seção &quot;Rebanho&quot; e clique no botão &quot;Adicionar Búfalo&quot; para cadastrar um novo animal.
                 </p>
               </details>
               
@@ -86,7 +86,7 @@ export default function Suporte() {
                   Como registrar uma nova lactação?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  Na seção "Lactação", clique em "Nova Lactação" e preencha os dados da produção de leite.
+                  Na seção &quot;Lactação&quot;, clique em &quot;Nova Lactação&quot; e preencha os dados da produção de leite.
                 </p>
               </details>
             </div>

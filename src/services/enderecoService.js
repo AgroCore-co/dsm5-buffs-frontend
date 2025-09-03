@@ -144,10 +144,12 @@ const deletarEndereco = async (idEndereco, token) => {
   }
 };
 
-export default {
+const enderecoService = {
   criarEndereco,
   listarEnderecos,
   buscarEnderecoPorId,
   atualizarEndereco,
   deletarEndereco,
 };
+
+export default enderecoService;

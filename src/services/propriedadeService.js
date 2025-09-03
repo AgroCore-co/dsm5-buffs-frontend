@@ -85,8 +85,10 @@ const criarPropriedade = async (payload, token) => {
   }
 };
 
-export default {
+const propriedadeService = {
   listarPropriedades,
   buscarPropriedadePorId,
   criarPropriedade, 
 };
+
+export default propriedadeService;

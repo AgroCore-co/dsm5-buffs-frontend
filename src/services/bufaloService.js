@@ -23,6 +23,8 @@ const registrarBuffalo = async (buffaloData, token) => {
   }
 };
 
-export default {
+const bufaloService = {
   registrarBuffalo,
 };
+
+export default bufaloService;
