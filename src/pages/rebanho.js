@@ -18,12 +18,14 @@ import {
 } from "recharts";
 
 import BuffaloModal from "@/components/rebanho/BuffaloModal";
+import CreateBuffaloModal from "@/components/rebanho/CreateBuffaloModal";
 import Button from "@/components/Button";
 import buffaloService from "@/services/bufaloService";
 import HerdHealthAnalysis from "@/components/rebanho/HerdHealthAnalysis";
 
 // ==================== DADOS MOCK ====================
 
+// Alguns dados mock ainda são necessários para os gráficos e análise de saúde
 const records = [
   {
     id: "A-001",
@@ -46,17 +48,10 @@ const records = [
 
 const ITEMS_PER_PAGE = 10;
 
+// Dados para os gráficos (alguns ainda mockados)
 const CHART_DATA = {
-  maturidade: [
-    { name: "Novilhas", value: 35, color: "#FFCF78" },
-    { name: "Vacas", value: 70, color: "#CE7D0A" },
-    { name: "Touros", value: 25, color: "#F2B84D" },
-    { name: "Bezerros", value: 20, color: "#FCA90F" },
-  ],
-  sexo: [
-    { name: "Fêmeas", value: 105, color: "#FFCF78" },
-    { name: "Machos", value: 45, color: "#CE7D0A" },
-  ],
+  // maturidade: removido - agora usa dados reais da API
+  // sexo: removido - agora usa dados reais da API
   racas: [
     { name: "Murrah", value: 60, color: "#FFCF78" },
     { name: "Jafarabadi", value: 45, color: "#CE7D0A" },
@@ -81,48 +76,6 @@ const HEALTH_DATA = {
   ],
 };
 
-const BUFFALOS_MOCK = [
-  {
-    tag: "BUF001",
-    nome: "Búfala Maria",
-    peso: 650,
-    raca: "Murrah",
-    sexo: "Fêmea",
-    maturidade: "Vaca",
-    ultimaAtualizacao: "15/12/2024",
-    status: "Ativo",
-    nascimento: "15/03/2020",
-    pai: "Touro Antônio",
-    mae: "Vaca Francisca",
-  },
-  {
-    tag: "BUF002",
-    nome: "Touro João",
-    peso: 850,
-    raca: "Jafarabadi",
-    sexo: "Macho",
-    maturidade: "Touro",
-    ultimaAtualizacao: "14/12/2024",
-    status: "Ativo",
-    nascimento: "22/01/2019",
-    pai: "Touro Benedito",
-    mae: "Vaca Carmem",
-  },
-  {
-    tag: "BUF003",
-    nome: "Novilha Ana",
-    peso: 450,
-    raca: "Murrah",
-    sexo: "Fêmea",
-    maturidade: "Novilha",
-    ultimaAtualizacao: "13/12/2024",
-    status: "Ativo",
-    nascimento: "10/08/2022",
-    pai: "Touro João",
-    mae: "Búfala Maria",
-  },
-];
-
 // ==================== FUNÇÕES UTILITÁRIAS ====================
 const getStatusColor = (status) => {
   switch (status.toLowerCase()) {
@@ -141,10 +94,7 @@ const getSexIcon = (sexo) => {
   return sexo === "Fêmea" ? "♀" : "♂";
 };
 
-const getUniqueValues = (field) => {
-  const values = [...new Set(BUFFALOS_MOCK.map((buffalo) => buffalo[field]))];
-  return values.sort();
-};
+// A função getUniqueValues foi movida para dentro do componente Rebanho
 
 const getDadosZootecnicos = (buffalo) => ({
   producaoLeite:
@@ -225,7 +175,77 @@ const getDadosSanitarios = (buffalo) => ({
 // ==================== COMPONENTE PRINCIPAL ====================
 export default function Rebanho() {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading, isAuthenticated, logout, token, getAccessToken } = useAuth();
+
+  const [bufalos, setBufalos] = useState([]);
+  const [carregandoBufalos, setCarregandoBufalos] = useState(false);
+
+  // Função para buscar búfalos usando Promise e try/catch adequados
+  const fetchBufalos = async () => {
+    try {
+      setCarregandoBufalos(true);
+      
+      // Forçar obtenção de um token fresco do Supabase
+      const token = await getAccessToken();
+      
+      if (!token) {
+        console.warn("⚠️ Token não disponível para buscar búfalos");
+        return;
+      }
+      
+      // Fazer a chamada de API
+      const data = await buffaloService.listarBufalos(token);
+      
+      // Atualizar estado com dados recebidos
+      if (Array.isArray(data)) {
+        setBufalos(data);
+      } else {
+        // Não atualizamos o estado se os dados não forem um array
+        console.warn("⚠️ Dados recebidos não são um array válido");
+      }
+    } catch (error) {
+      // Silenciar erros no componente, logs já estão no service
+      console.error("Erro ao buscar búfalos:", error.message);
+    } finally {
+      setCarregandoBufalos(false);
+    }
+  };
+
+  // Função para obter valores únicos para os filtros (agora dentro do componente)
+  const getUniqueValues = (field) => {
+    // Se não há dados da API, retornar array vazio para os filtros
+    if (bufalos.length === 0) {
+      return [];
+    }
+    
+    // Mapear campos para os equivalentes na API
+    const fieldMap = {
+      'sexo': (b) => b.sexo === 'M' ? 'Macho' : b.sexo === 'F' ? 'Fêmea' : b.sexo,
+      'raca': (b) => b.raca || (b.id_raca ? `Raça ${b.id_raca}` : ''),
+      'maturidade': (b) => {
+        if (b.maturidade) return b.maturidade;
+        if (b.nivel_maturidade === 'N') return 'Novilho(a)';
+        if (b.nivel_maturidade === 'B') return 'Bezerro(a)';
+        if (b.nivel_maturidade === 'A') return 'Adulto';
+        return b.nivel_maturidade || '';
+      },
+      'status': (b) => b.status === true ? 'Ativo' : 'Inativo'
+    };
+    
+    // Usar mapeador se existir, caso contrário usar campo direto
+    const valueGetter = fieldMap[field] || (b => b[field]);
+    
+    // Obter valores únicos
+    const values = [...new Set(bufalos.map(valueGetter).filter(Boolean))];
+    return values.sort();
+  };
+
+  useEffect(() => {
+    // Se autenticado, buscar búfalos
+    if (isAuthenticated && !isLoading) {
+      fetchBufalos();
+    }
+  }, [isAuthenticated, isLoading]);
 
   // Estados
   const [currentPage, setCurrentPage] = useState(1);
@@ -240,49 +260,31 @@ export default function Rebanho() {
   const [showViewModal, setShowViewModal] = useState(false); // modal de visualizar (BuffaloModal)
   const [showCreateModal, setShowCreateModal] = useState(false); // modal de criar
 
-  // modal criar bufalo
-
-  const [formData, setFormData] = useState({
-    nome: "",
-    brinco: "",
-    dt_nascimento: "",
-    nivel_maturidade: "",
-    sexo: "",
-    id_raca: "",
-    id_propriedade: "",
-    id_grupo: "",
-    id_pai: "",
-    id_mae: "",
-    status: true,
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  // Função para lidar com o envio do formulário do modal de criar búfalo
+  const handleCreateBuffaloSubmit = (formData) => {
+    // Removida lógica de POST do búfalo
+    setShowCreateModal(false);
+    alert("✅ Modal fechado - lógica de cadastro removida");
   };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await buffaloService.registrarBuffalo(formData, token);
-      setShowCreateModal(false);
-      alert("✅ Búfalo cadastrado com sucesso!");
-    } catch (error) {
-      alert("❌ Erro ao cadastrar búfalo");
-    }
-  };
-
-  // fim modal criar bufalo
 
   // Lógica de filtros e paginação
   const getFilteredBuffalos = () => {
-    return BUFFALOS_MOCK.filter((buffalo) => {
+    // Usar sempre os dados da API quando disponíveis
+    const dataSource = bufalos.length > 0 ? bufalos : [];
+    
+    return dataSource.filter((buffalo) => {
       return (
-        (filters.sexo === "" || buffalo.sexo === filters.sexo) &&
-        (filters.raca === "" || buffalo.raca === filters.raca) &&
+        (filters.sexo === "" || 
+          (buffalo.sexo === filters.sexo || 
+           (buffalo.sexo === "M" && filters.sexo === "Macho") || 
+           (buffalo.sexo === "F" && filters.sexo === "Fêmea"))) &&
+        (filters.raca === "" || buffalo.raca === filters.raca || buffalo.id_raca?.toString() === filters.raca) &&
         (filters.maturidade === "" ||
-          buffalo.maturidade === filters.maturidade) &&
-        (filters.status === "" || buffalo.status === filters.status)
+          buffalo.maturidade === filters.maturidade ||
+          buffalo.nivel_maturidade === filters.maturidade) &&
+        (filters.status === "" || 
+          (buffalo.status === true && filters.status === "Ativo") ||
+          (buffalo.status === false && filters.status === "Inativo"))
       );
     });
   };
@@ -375,10 +377,10 @@ export default function Rebanho() {
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                150
+                {bufalos.length || "-"}
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                Búfalos no sistema
+                {carregandoBufalos ? "Carregando..." : "Búfalos no sistema"}
               </p>
             </div>
 
@@ -391,12 +393,20 @@ export default function Rebanho() {
                   Percentual
                 </span>
               </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                105
-              </p>
-              <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
-                70% do rebanho
-              </p>
+              {carregandoBufalos ? (
+                <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">-</p>
+              ) : (
+                <>
+                  <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                    {bufalos.filter(b => b.sexo === 'F').length}
+                  </p>
+                  <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
+                    {bufalos.length > 0 
+                      ? `${Math.round((bufalos.filter(b => b.sexo === 'F').length / bufalos.length) * 100)}% do rebanho`
+                      : "0% do rebanho"}
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
@@ -408,12 +418,20 @@ export default function Rebanho() {
                   Percentual
                 </span>
               </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                45
-              </p>
-              <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
-                30% do rebanho
-              </p>
+              {carregandoBufalos ? (
+                <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">-</p>
+              ) : (
+                <>
+                  <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                    {bufalos.filter(b => b.sexo === 'M').length}
+                  </p>
+                  <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
+                    {bufalos.length > 0 
+                      ? `${Math.round((bufalos.filter(b => b.sexo === 'M').length / bufalos.length) * 100)}% do rebanho`
+                      : "0% do rebanho"}
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
@@ -425,9 +443,17 @@ export default function Rebanho() {
                   Ativas
                 </span>
               </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                70
-              </p>
+              {carregandoBufalos ? (
+                <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">-</p>
+              ) : (
+                <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                  {bufalos.filter(b => 
+                    b.sexo === 'F' && 
+                    (b.nivel_maturidade === 'A' || b.nivel_maturidade === 'adulto' || b.nivel_maturidade === 'Adulto') && 
+                    b.status === true
+                  ).length}
+                </p>
+              )}
               <p className="text-sm font-medium text-[var(--color-text-tertiary)] mt-1">
                 Em lactação
               </p>
@@ -437,54 +463,110 @@ export default function Rebanho() {
 
         {/* Gráficos de Análise */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Gráfico de Maturidade */}
+          {/* Gráfico de Maturidade - com dados reais da API */}
           <div className="bg-white rounded-xl p-5 border border-[#e0e0e0] shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               Distribuição por Maturidade
             </h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={CHART_DATA.maturidade}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={70}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`}
-                >
-                  {CHART_DATA.maturidade.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="flex flex-col items-center justify-center h-[200px] text-center">
+              {carregandoBufalos ? (
+                <p className="text-gray-400 text-sm mt-10">Carregando dados...</p>
+              ) : bufalos.length === 0 ? (
+                <p className="text-gray-400 text-sm mt-10">Nenhum dado disponível</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { 
+                          name: "Bezerros", 
+                          value: bufalos.filter(b => b.nivel_maturidade === 'B').length,
+                          color: "#FCA90F" 
+                        },
+                        { 
+                          name: "Novilhos", 
+                          value: bufalos.filter(b => b.nivel_maturidade === 'N').length,
+                          color: "#FFCF78" 
+                        },
+                        { 
+                          name: "Adultos", 
+                          value: bufalos.filter(b => b.nivel_maturidade === 'A').length,
+                          color: "#CE7D0A" 
+                        },
+                        { 
+                          name: "Outros", 
+                          value: bufalos.filter(b => !['A', 'B', 'N'].includes(b.nivel_maturidade)).length,
+                          color: "#F2B84D" 
+                        }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={70}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, value }) => value > 0 ? `${name}: ${value}` : ''}
+                    >
+                      {[
+                        { name: "Bezerros", color: "#FCA90F" },
+                        { name: "Novilhos", color: "#FFCF78" },
+                        { name: "Adultos", color: "#CE7D0A" },
+                        { name: "Outros", color: "#F2B84D" }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
 
-          {/* Gráfico de Sexo */}
+          {/* Gráfico de Sexo - com dados reais da API */}
           <div className="bg-white rounded-xl p-5 border border-[#e0e0e0] shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               Distribuição por Sexo
             </h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={CHART_DATA.sexo}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={70}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`}
-                >
-                  {CHART_DATA.sexo.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="flex flex-col items-center justify-center h-[200px] text-center">
+              {carregandoBufalos ? (
+                <p className="text-gray-400 text-sm mt-10">Carregando dados...</p>
+              ) : bufalos.length === 0 ? (
+                <p className="text-gray-400 text-sm mt-10">Nenhum dado disponível</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { 
+                          name: "Fêmeas", 
+                          value: bufalos.filter(b => b.sexo === 'F').length, 
+                          color: "#FFCF78" 
+                        },
+                        { 
+                          name: "Machos", 
+                          value: bufalos.filter(b => b.sexo === 'M').length, 
+                          color: "#CE7D0A" 
+                        }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={70}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}`}
+                    >
+                      {[
+                        { name: "Fêmeas", color: "#FFCF78" },
+                        { name: "Machos", color: "#CE7D0A" }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
 
           {/* Gráfico de Raças */}
@@ -492,15 +574,18 @@ export default function Rebanho() {
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               Distribuição por Raça
             </h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={CHART_DATA.racas}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#FFCF78" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="flex flex-col items-center justify-center h-[200px] text-center">
+              <p className="text-gray-400 text-sm">Dados em tempo real serão implementados em breve</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={CHART_DATA.racas}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#FFCF78" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
@@ -518,13 +603,19 @@ export default function Rebanho() {
             </div>
 
             <p className="text-gray-600">
-              {filteredBuffalos.length === BUFFALOS_MOCK.length
-                ? `Lista completa do rebanho com ${
-                    BUFFALOS_MOCK.length
-                  } búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`
-                : `Mostrando ${filteredBuffalos.length} de ${
-                    BUFFALOS_MOCK.length
-                  } búfalo${BUFFALOS_MOCK.length !== 1 ? "s" : ""} ativos.`}
+              {carregandoBufalos ? (
+                "Carregando dados do rebanho..."
+              ) : bufalos.length > 0 ? (
+                filteredBuffalos.length === bufalos.length
+                  ? `Lista completa do rebanho com ${
+                      bufalos.length
+                    } búfalo${bufalos.length !== 1 ? "s" : ""} ativos.`
+                  : `Mostrando ${filteredBuffalos.length} de ${
+                      bufalos.length
+                    } búfalo${bufalos.length !== 1 ? "s" : ""} ativos.`
+              ) : (
+                "Nenhum dado de rebanho disponível."
+              )}
               {totalPages > 0 && ` Página ${currentPage} de ${totalPages}`}
             </p>
           </div>
@@ -669,35 +760,38 @@ export default function Rebanho() {
                   <tbody className="divide-y divide-gray-200">
                     {currentBuffalos.map((buffalo) => (
                       <tr
-                        key={buffalo.tag}
+                        key={buffalo.id_bufalo || buffalo.tag}
                         className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50 cursor-pointer"
                         onClick={() => handleViewBuffalo(buffalo)}
                       >
                         <td className="p-3 text-center text-gray-800 text-base font-medium">
-                          {buffalo.tag}
+                          {buffalo.brinco || buffalo.tag}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
                           {buffalo.nome}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
-                          {buffalo.sexo}
+                          {buffalo.sexo === "M" ? "Macho" : buffalo.sexo === "F" ? "Fêmea" : buffalo.sexo}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
-                          {buffalo.raca}
+                          {buffalo.raca || (buffalo.id_raca ? `Raça ${buffalo.id_raca}` : "N/D")}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
-                          {buffalo.maturidade}
+                          {buffalo.maturidade || 
+                           (buffalo.nivel_maturidade === "N" ? "Novilho(a)" : 
+                            buffalo.nivel_maturidade === "B" ? "Bezerro(a)" : 
+                            buffalo.nivel_maturidade === "A" ? "Adulto" : buffalo.nivel_maturidade)}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
-                          {buffalo.peso} kg
+                          {buffalo.peso ? `${buffalo.peso} kg` : "N/D"}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
                           <span
                             className={`px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-28 ${getStatusColor(
-                              buffalo.status
+                              buffalo.status === true ? "Ativo" : "Inativo"
                             )}`}
                           >
-                            {buffalo.status}
+                            {buffalo.status === true ? "Ativo" : "Inativo"}
                           </span>
                         </td>
                       </tr>
@@ -773,161 +867,15 @@ export default function Rebanho() {
           getDadosZootecnicos={getDadosZootecnicos}
           getDadosSanitarios={getDadosSanitarios}
           getSexIcon={getSexIcon}
-          buffalosMock={BUFFALOS_MOCK}
+          buffalosMock={bufalos}
         />
 
         {/* Modal de criar búfalo */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg">
-              <h2 className="text-xl font-bold mb-4">Cadastrar Búfalo</h2>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                {/* Nome */}
-                <input
-                  type="text"
-                  name="nome"
-                  placeholder="Nome"
-                  value={formData.nome}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                  required
-                />
-
-                {/* Brinco */}
-                <input
-                  type="text"
-                  name="brinco"
-                  placeholder="Brinco"
-                  value={formData.brinco}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                  required
-                />
-
-                {/* Data de Nascimento */}
-                <input
-                  type="date"
-                  name="dt_nascimento"
-                  value={formData.dt_nascimento}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                  required
-                />
-
-                {/* Nível de Maturidade */}
-                <select
-                  name="nivel_maturidade"
-                  value={formData.nivel_maturidade}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                  required
-                >
-                  <option value="">Selecione o nível</option>
-                  <option value="Bezerro">Bezerro</option>
-                  <option value="Novilho">Novilho</option>
-                  <option value="Novilha">Novilha</option>
-                  <option value="Vaca">Vaca</option>
-                  <option value="Touro">Touro</option>
-                </select>
-
-                {/* Sexo */}
-                <select
-                  name="sexo"
-                  value={formData.sexo}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                  required
-                >
-                  <option value="">Selecione o sexo</option>
-                  <option value="M">Macho</option>
-                  <option value="F">Fêmea</option>
-                </select>
-
-                {/* Raça */}
-                <select
-                  name="id_raca"
-                  value={formData.id_raca}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                >
-                  <option value="">Selecione a raça</option>
-                  <option value="Murrah">Murrah</option>
-                  <option value="Jafarabadi">Jafarabadi</option>
-                  <option value="Mediterrâneo">Mediterrâneo</option>
-                  <option value="Surti">Surti</option>
-                </select>
-
-                {/* Propriedade */}
-                <input
-                  type="text"
-                  name="id_propriedade"
-                  placeholder="ID da Propriedade"
-                  value={formData.id_propriedade}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                />
-
-                {/* Grupo */}
-                <input
-                  type="text"
-                  name="id_grupo"
-                  placeholder="ID do Grupo"
-                  value={formData.id_grupo}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                />
-
-                {/* Pai */}
-                <input
-                  type="text"
-                  name="id_pai"
-                  placeholder="ID do Pai"
-                  value={formData.id_pai}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                />
-
-                {/* Mãe */}
-                <input
-                  type="text"
-                  name="id_mae"
-                  placeholder="ID da Mãe"
-                  value={formData.id_mae}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                />
-
-                {/* Status */}
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded"
-                >
-                  <option value={true}>Ativo</option>
-                  <option value={false}>Inativo</option>
-                </select>
-
-                {/* Botões */}
-                <div className="flex justify-end gap-2 mt-4">
-                  <button
-                    type="button"
-                    className="px-4 py-2 bg-gray-300 rounded"
-                    onClick={closeCreateModal}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded"
-                  >
-                    Salvar
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <CreateBuffaloModal 
+          open={showCreateModal} 
+          onClose={closeCreateModal} 
+          onSubmit={handleCreateBuffaloSubmit} 
+        />
       </div>
     </>
   );

@@ -225,74 +225,74 @@ export default function PropriedadePage() {
   const PropriedadeTab = () => (
     <>
       {/* Estatísticas Gerais */}
-      <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm mb-8">
-          <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
-                Total bufalos
-              </h2>
-              <span className="text-xs font-medium text-[var(--color-primary-dark]">
-                Cadastradas
-              </span>
-            </div>
-            <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-              150
-            </p>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-              Animais na propriedade
-            </p>
+      <div className="w-full flex flex-row gap-4 p-5 bg-white rounded-xl box-border border border-[#e0e0e0] shadow-sm ">
+        <div className="flex-1 bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+              Total búfalos
+            </h2>
+            <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+              Cadastradas
+            </span>
           </div>
+          <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+            150
+          </p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+            Animais na propriedade
+          </p>
+        </div>
 
-          <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
-                Área Total
-              </h2>
-              <span className="text-xs font-medium text-[var(--color-primary-dark)]">
-                Hectares
-              </span>
-            </div>
-            <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-              24.5
-            </p>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-              Hectares disponíveis
-            </p>
+        <div className="flex-1 bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+              Área Total
+            </h2>
+            <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+              Hectares
+            </span>
           </div>
+          <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+            24.5
+          </p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+            Hectares disponíveis
+          </p>
+        </div>
 
-          <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
-                Total de Lotes
-              </h2>
-              <span className="text-xs font-medium text-[var(--color-primary-dark)]">
-                Ativos
-              </span>
-            </div>
-            <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-              12
-            </p>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-              Lotes disponíveis
-            </p>
+        <div className="flex-1 bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+              Total de Lotes
+            </h2>
+            <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+              Ativos
+            </span>
           </div>
+          <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+            12
+          </p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+            Lotes disponíveis
+          </p>
+        </div>
 
-          <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
-                Ocupação Média
-              </h2>
-              <span className="text-xs font-medium text-[var(--color-primary-dark)]">
-                Atual
-              </span>
-            </div>
-            <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-              88%
-            </p>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-              Capacidade utilizada
-            </p>
+        <div className="flex-1 bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+              Ocupação Média
+            </h2>
+            <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+              Atual
+            </span>
           </div>
+          <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+            88%
+          </p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+            Capacidade utilizada
+          </p>
+        </div>
       </div>
 
       {/* Análise Detalhada */}
@@ -621,8 +621,8 @@ export default function PropriedadePage() {
   const AlimentacaoTab = () => (
     <>
       {/* Estatísticas de Alimentação */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+      <div className="w-full flex flex-row gap-4 p-5 bg-white rounded-xl box-border border border-[#e0e0e0] shadow-sm">
+        <div className="flex-1 bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
               Tipos de Ração
@@ -639,7 +639,7 @@ export default function PropriedadePage() {
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+        <div className="flex-1 bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
               Consumo Diário
@@ -656,7 +656,7 @@ export default function PropriedadePage() {
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+        <div className="flex-1 bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
               Estoque Crítico
@@ -671,7 +671,7 @@ export default function PropriedadePage() {
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+        <div className="flex-1 bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
               Custo Mensal
