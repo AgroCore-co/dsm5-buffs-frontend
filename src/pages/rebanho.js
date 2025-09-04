@@ -21,6 +21,7 @@ import BuffaloModal from "@/components/rebanho/BuffaloModal";
 import CreateBuffaloModal from "@/components/rebanho/CreateBuffaloModal";
 import Button from "@/components/Button";
 import buffaloService from "@/services/bufaloService";
+import racaService from "@/services/racaService";
 import HerdHealthAnalysis from "@/components/rebanho/HerdHealthAnalysis";
 
 // ==================== DADOS MOCK ====================
@@ -78,6 +79,12 @@ const HEALTH_DATA = {
 
 // ==================== FUNÇÕES UTILITÁRIAS ====================
 const getStatusColor = (status) => {
+  // Verificar se status é undefined, null ou não é uma string
+  if (status === undefined || status === null || typeof status !== 'string') {
+    console.warn("Aviso: Status inválido recebido em getStatusColor:", status);
+    return "bg-gray-200 text-gray-800"; // Retornar estilo padrão
+  }
+  
   switch (status.toLowerCase()) {
     case "ativo":
       return "bg-[#9DFFBE] text-gray-800";
@@ -178,7 +185,93 @@ export default function Rebanho() {
   const { user, isLoading, isAuthenticated, logout, token, getAccessToken } = useAuth();
 
   const [bufalos, setBufalos] = useState([]);
+  const [racas, setRacas] = useState([]);
   const [carregandoBufalos, setCarregandoBufalos] = useState(false);
+  const [carregandoRacas, setCarregandoRacas] = useState(false);
+
+  // Função para buscar raças
+  const fetchRacas = async () => {
+    try {
+      setCarregandoRacas(true);
+      
+      // Forçar obtenção de um token fresco do Supabase
+      const token = await getAccessToken();
+      
+      if (!token) {
+        console.warn("⚠️ Token não disponível para buscar raças");
+        return;
+      }
+      
+      // Fazer a chamada de API
+      const data = await racaService.listarRacas(token);
+      
+      // Atualizar estado com dados recebidos
+      if (Array.isArray(data)) {
+        setRacas(data);
+      } else {
+        console.warn("⚠️ Dados de raças recebidos não são um array válido");
+      }
+    } catch (error) {
+      console.error("Erro ao buscar raças:", error.message);
+    } finally {
+      setCarregandoRacas(false);
+    }
+  };
+
+  // Função para correlacionar búfalos com suas raças
+  const correlacionarBufalosComRacas = (bufalos, racas) => {
+    if (!Array.isArray(bufalos) || !Array.isArray(racas)) {
+      return bufalos;
+    }
+
+    try {
+      console.log("🔍 Iniciando correlação de búfalos com raças...");
+      
+      // Criar um mapa de raças para acesso rápido por ID
+      const mapRacas = racas.reduce((map, raca) => {
+        map[raca.id_raca] = raca;
+        return map;
+      }, {});
+
+      // Adicionar informação detalhada da raça a cada búfalo
+      const bufalosComRacas = bufalos.map(bufalo => {
+        const racaDetalhes = mapRacas[bufalo.id_raca] || null;
+        return {
+          ...bufalo,
+          raca: racaDetalhes ? {
+            id: racaDetalhes.id_raca,
+            nome: racaDetalhes.nome,
+          } : null
+        };
+      });
+
+      // Contabilizar e mostrar no console a quantidade de búfalos por raça
+      const contagemPorRaca = {};
+      bufalosComRacas.forEach(bufalo => {
+        if (bufalo.raca?.nome) {
+          const raca = bufalo.raca.nome;
+          contagemPorRaca[raca] = (contagemPorRaca[raca] || 0) + 1;
+        } else if (bufalo.id_raca) {
+          // Usar o nome da raça do mapa
+          const racaNome = mapRacas[bufalo.id_raca]?.nome || `Raça ${bufalo.id_raca}`;
+          contagemPorRaca[racaNome] = (contagemPorRaca[racaNome] || 0) + 1;
+        } else {
+          contagemPorRaca['Sem Raça'] = (contagemPorRaca['Sem Raça'] || 0) + 1;
+        }
+      });
+      
+      console.log("📊 Distribuição de búfalos por raça:");
+      Object.entries(contagemPorRaca).forEach(([raca, quantidade]) => {
+        console.log(`   ${raca}: ${quantidade} búfalos`);
+      });
+
+      console.log(`✅ Correlação concluída para ${bufalosComRacas.length} búfalos`);
+      return bufalosComRacas;
+    } catch (error) {
+      console.error("❌ Erro ao correlacionar búfalos com raças:", error);
+      return bufalos; // Retorna os búfalos originais em caso de erro
+    }
+  };
 
   // Função para buscar búfalos usando Promise e try/catch adequados
   const fetchBufalos = async () => {
@@ -196,9 +289,15 @@ export default function Rebanho() {
       // Fazer a chamada de API
       const data = await buffaloService.listarBufalos(token);
       
-      // Atualizar estado com dados recebidos
-      if (Array.isArray(data)) {
-        setBufalos(data);
+      // Correlacionar com raças se disponíveis
+      let bufalosProcessados = data;
+      if (Array.isArray(data) && racas.length > 0) {
+        bufalosProcessados = correlacionarBufalosComRacas(data, racas);
+      }
+      
+      // Atualizar estado com dados processados
+      if (Array.isArray(bufalosProcessados)) {
+        setBufalos(bufalosProcessados);
       } else {
         // Não atualizamos o estado se os dados não forem um array
         console.warn("⚠️ Dados recebidos não são um array válido");
@@ -221,7 +320,18 @@ export default function Rebanho() {
     // Mapear campos para os equivalentes na API
     const fieldMap = {
       'sexo': (b) => b.sexo === 'M' ? 'Macho' : b.sexo === 'F' ? 'Fêmea' : b.sexo,
-      'raca': (b) => b.raca || (b.id_raca ? `Raça ${b.id_raca}` : ''),
+      'raca': (b) => {
+        // Usar o nome da raça do objeto raca já correlacionado
+        if (b.raca?.nome) return b.raca.nome;
+        
+        // Se não tiver raca mas tiver id_raca, tentar buscar no array de raças
+        if (b.id_raca) {
+          const racaEncontrada = racas.find(r => r.id_raca === b.id_raca);
+          return racaEncontrada ? racaEncontrada.nome : `Raça ${b.id_raca}`;
+        }
+        
+        return '';
+      },
       'maturidade': (b) => {
         if (b.maturidade) return b.maturidade;
         if (b.nivel_maturidade === 'N') return 'Novilho(a)';
@@ -241,11 +351,58 @@ export default function Rebanho() {
   };
 
   useEffect(() => {
-    // Se autenticado, buscar búfalos
+    // Se autenticado, buscar raças e depois búfalos
     if (isAuthenticated && !isLoading) {
-      fetchBufalos();
+      const carregarDados = async () => {
+        await fetchRacas(); // Busca raças primeiro
+        await fetchBufalos(); // Depois busca búfalos para poder correlacionar
+      };
+      
+      carregarDados();
     }
   }, [isAuthenticated, isLoading]);
+  
+  // Atualizar búfalos quando as raças mudarem para garantir a correlação
+  useEffect(() => {
+    if (racas.length > 0 && bufalos.length > 0) {
+      // Reprocessar a correlação quando as raças estiverem disponíveis
+      const bufalosProcessados = correlacionarBufalosComRacas(bufalos, racas);
+      setBufalos(bufalosProcessados);
+      
+      // Exibir um resumo estilizado no console
+      console.log("%c 🐃 DISTRIBUIÇÃO DE BÚFALOS POR RAÇA 🐃 ", "background: #CE7D0A; color: white; font-weight: bold; padding: 5px; border-radius: 3px;");
+      
+      // Criar um mapa de raças para acesso rápido por ID
+      const mapRacasNomes = racas.reduce((map, raca) => {
+        map[raca.id_raca] = raca.nome;
+        return map;
+      }, {});
+      
+      // Criar contagem por raça novamente para o resumo estilizado
+      const contagem = {};
+      bufalosProcessados.forEach(b => {
+        const racaNome = b.raca?.nome || (b.id_raca ? mapRacasNomes[b.id_raca] || `${mapRacasNomes[b.id_raca]}` : 'Sem Raça');
+        contagem[racaNome] = (contagem[racaNome] || 0) + 1;
+      });
+      
+      // Ordenar raças por quantidade (maior para menor)
+      const racasOrdenadas = Object.entries(contagem)
+        .sort(([, a], [, b]) => b - a);
+      
+      // Exibir gráfico de barras simples no console
+      racasOrdenadas.forEach(([raca, quantidade]) => {
+        const porcentagem = Math.round((quantidade / bufalosProcessados.length) * 100);
+        const barras = '█'.repeat(Math.max(1, Math.round(porcentagem / 5)));
+        console.log(
+          `%c${raca.padEnd(15)}%c ${quantidade.toString().padStart(3)} búfalos %c${barras} %c(${porcentagem}%)`,
+          "color: #FFCF78; font-weight: bold;",
+          "color: black;",
+          "color: #CE7D0A;",
+          "color: gray;"
+        );
+      });
+    }
+  }, [racas]);
 
   // Estados
   const [currentPage, setCurrentPage] = useState(1);
@@ -278,7 +435,10 @@ export default function Rebanho() {
           (buffalo.sexo === filters.sexo || 
            (buffalo.sexo === "M" && filters.sexo === "Macho") || 
            (buffalo.sexo === "F" && filters.sexo === "Fêmea"))) &&
-        (filters.raca === "" || buffalo.raca === filters.raca || buffalo.id_raca?.toString() === filters.raca) &&
+        (filters.raca === "" || 
+          buffalo.raca === filters.raca || 
+          buffalo.raca?.nome === filters.raca || 
+          buffalo.id_raca?.toString() === filters.raca) &&
         (filters.maturidade === "" ||
           buffalo.maturidade === filters.maturidade ||
           buffalo.nivel_maturidade === filters.maturidade) &&
@@ -575,16 +735,74 @@ export default function Rebanho() {
               Distribuição por Raça
             </h2>
             <div className="flex flex-col items-center justify-center h-[200px] text-center">
-              <p className="text-gray-400 text-sm">Dados em tempo real serão implementados em breve</p>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={CHART_DATA.racas}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#FFCF78" />
-                </BarChart>
-              </ResponsiveContainer>
+              {carregandoBufalos ? (
+                <p className="text-gray-400 text-sm mt-10">Carregando dados...</p>
+              ) : bufalos.length === 0 ? (
+                <p className="text-gray-400 text-sm mt-10">Nenhum dado disponível</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={(() => {
+                    // Criar um mapa de raças para acesso rápido por ID
+                    const mapRacas = racas.reduce((map, raca) => {
+                      map[raca.id_raca] = raca.nome;
+                      return map;
+                    }, {});
+                    
+                    // Calcular dados de raça a partir dos dados reais
+                    const contagem = {};
+                    bufalos.forEach(b => {
+                      // Usar o nome da raça do objeto raca já correlacionado, ou buscar no mapa
+                      // se ainda não estiver correlacionado, ou usar 'Sem Raça' como último recurso
+                      const racaNome = b.raca?.nome || 
+                                     (b.id_raca ? mapRacas[b.id_raca] || `${mapRacas[b.id_raca]}` : 'Sem Raça');
+                      contagem[racaNome] = (contagem[racaNome] || 0) + 1;
+                    });
+                    
+                    // Converter para o formato esperado pelo gráfico
+                    return Object.entries(contagem)
+                      .sort(([, a], [, b]) => b - a) // Ordenar por quantidade (maior para menor)
+                      .map(([nome, quantidade], index) => ({
+                        name: nome,
+                        value: quantidade,
+                        color: ["#FFCF78", "#CE7D0A", "#F2B84D", "#FCA90F"][index % 4]
+                      }))
+                      .slice(0, 6); // Limitar a 6 raças para melhor visualização
+                  })()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 10 }} 
+                      tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
+                    />
+                    <YAxis />
+                    <Tooltip formatter={(value, name, props) => [`${value} búfalos`, props.payload.name]} />
+                    <Bar dataKey="value" fill="#FFCF78" name="Quantidade">
+                      {bufalos.length > 0 &&
+                        Object.entries((() => {
+                          // Criar um mapa de raças para acesso rápido por ID
+                          const mapRacas = racas.reduce((map, raca) => {
+                            map[raca.id_raca] = raca.nome;
+                            return map;
+                          }, {});
+                          
+                          const contagem = {};
+                          bufalos.forEach(b => {
+                            const racaNome = b.raca?.nome || 
+                                         (b.id_raca ? mapRacas[b.id_raca] || `${mapRacas[b.id_raca]}` : 'Sem Raça');
+                            contagem[racaNome] = (contagem[racaNome] || 0) + 1;
+                          });
+                          return contagem;
+                        })())
+                          .sort(([, a], [, b]) => b - a)
+                          .slice(0, 6)
+                          .map(([nome], index) => (
+                            <Cell key={`cell-${index}`} fill={["#FFCF78", "#CE7D0A", "#F2B84D", "#FCA90F"][index % 4]} />
+                          ))
+                      }
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </div>
@@ -774,7 +992,7 @@ export default function Rebanho() {
                           {buffalo.sexo === "M" ? "Macho" : buffalo.sexo === "F" ? "Fêmea" : buffalo.sexo}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
-                          {buffalo.raca || (buffalo.id_raca ? `Raça ${buffalo.id_raca}` : "N/D")}
+                          {buffalo.raca?.nome || (buffalo.id_raca ? `Raça ${buffalo.id_raca}` : "N/D")}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
                           {buffalo.maturidade || 

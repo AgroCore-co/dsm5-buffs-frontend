@@ -162,10 +162,10 @@ export default function BuffaloModal({
                   </h2>
                   <span
                     className={`text-xs px-2 py-1 rounded-full uppercase tracking-wide ${getStatusColor(
-                      buffalo.status
+                      typeof buffalo.status === "boolean" ? (buffalo.status ? "Ativo" : "Inativo") : buffalo.status
                     )}`}
                   >
-                    {buffalo.status}
+                    {typeof buffalo.status === "boolean" ? (buffalo.status ? "Ativo" : "Inativo") : buffalo.status}
                   </span>
                 </div>
                 <p className="text-sm text-gray-500">
