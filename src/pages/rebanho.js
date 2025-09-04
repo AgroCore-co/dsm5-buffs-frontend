@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/hooks/useProperty";
 import {
   BarChart,
   Bar,
@@ -183,8 +184,10 @@ const getDadosSanitarios = (buffalo) => ({
 export default function Rebanho() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout, token, getAccessToken } = useAuth();
+  const { propriedadeSelecionada } = useProperty();
 
   const [bufalos, setBufalos] = useState([]);
+  const [bufalosFilteredByProperty, setBufalosFilteredByProperty] = useState([]);
   const [racas, setRacas] = useState([]);
   const [carregandoBufalos, setCarregandoBufalos] = useState(false);
   const [carregandoRacas, setCarregandoRacas] = useState(false);
@@ -313,7 +316,7 @@ export default function Rebanho() {
   // Função para obter valores únicos para os filtros (agora dentro do componente)
   const getUniqueValues = (field) => {
     // Se não há dados da API, retornar array vazio para os filtros
-    if (bufalos.length === 0) {
+    if (bufalosFilteredByProperty.length === 0) {
       return [];
     }
     
@@ -346,7 +349,7 @@ export default function Rebanho() {
     const valueGetter = fieldMap[field] || (b => b[field]);
     
     // Obter valores únicos
-    const values = [...new Set(bufalos.map(valueGetter).filter(Boolean))];
+    const values = [...new Set(bufalosFilteredByProperty.map(valueGetter).filter(Boolean))];
     return values.sort();
   };
 
@@ -370,7 +373,7 @@ export default function Rebanho() {
       setBufalos(bufalosProcessados);
       
       // Exibir um resumo estilizado no console
-      console.log("%c 🐃 DISTRIBUIÇÃO DE BÚFALOS POR RAÇA 🐃 ", "background: #CE7D0A; color: white; font-weight: bold; padding: 5px; border-radius: 3px;");
+      console.log("%c  DISTRIBUIÇÃO DE BÚFALOS POR RAÇA  ", "background: #CE7D0A; color: white; font-weight: bold; padding: 5px; border-radius: 3px;");
       
       // Criar um mapa de raças para acesso rápido por ID
       const mapRacasNomes = racas.reduce((map, raca) => {
@@ -404,6 +407,30 @@ export default function Rebanho() {
     }
   }, [racas]);
 
+  // Filtrar búfalos com base na propriedade selecionada
+  useEffect(() => {
+    if (!bufalos || !Array.isArray(bufalos)) {
+      setBufalosFilteredByProperty([]);
+      return;
+    }
+
+    if (!propriedadeSelecionada) {
+      console.log("⚠️ Nenhuma propriedade selecionada, mostrando todos os búfalos.");
+      setBufalosFilteredByProperty(bufalos);
+      return;
+    }
+
+    const idPropriedade = propriedadeSelecionada.id_propriedade;
+    console.log(`🔍 Filtrando búfalos para propriedade ID: ${idPropriedade}`);
+
+    const filtered = bufalos.filter(bufalo => 
+      bufalo.id_propriedade === idPropriedade
+    );
+
+    console.log(`📊 Total de búfalos: ${bufalos.length}, Filtrados: ${filtered.length}`);
+    setBufalosFilteredByProperty(filtered);
+  }, [bufalos, propriedadeSelecionada]);
+
   // Estados
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -426,8 +453,8 @@ export default function Rebanho() {
 
   // Lógica de filtros e paginação
   const getFilteredBuffalos = () => {
-    // Usar sempre os dados da API quando disponíveis
-    const dataSource = bufalos.length > 0 ? bufalos : [];
+    // Usar búfalos filtrados por propriedade
+    const dataSource = bufalosFilteredByProperty.length > 0 ? bufalosFilteredByProperty : [];
     
     return dataSource.filter((buffalo) => {
       return (
@@ -537,10 +564,10 @@ export default function Rebanho() {
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                {bufalos.length || "-"}
+                {bufalosFilteredByProperty.length || "-"}
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                {carregandoBufalos ? "Carregando..." : "Búfalos no sistema"}
+                {carregandoBufalos ? "Carregando..." : propriedadeSelecionada ? `Búfalos na propriedade ${propriedadeSelecionada.nome}` : "Búfalos no sistema"}
               </p>
             </div>
 
@@ -558,11 +585,11 @@ export default function Rebanho() {
               ) : (
                 <>
                   <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                    {bufalos.filter(b => b.sexo === 'F').length}
+                    {bufalosFilteredByProperty.filter(b => b.sexo === 'F').length}
                   </p>
                   <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
-                    {bufalos.length > 0 
-                      ? `${Math.round((bufalos.filter(b => b.sexo === 'F').length / bufalos.length) * 100)}% do rebanho`
+                    {bufalosFilteredByProperty.length > 0 
+                      ? `${Math.round((bufalosFilteredByProperty.filter(b => b.sexo === 'F').length / bufalosFilteredByProperty.length) * 100)}% do rebanho`
                       : "0% do rebanho"}
                   </p>
                 </>
@@ -583,11 +610,11 @@ export default function Rebanho() {
               ) : (
                 <>
                   <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                    {bufalos.filter(b => b.sexo === 'M').length}
+                    {bufalosFilteredByProperty.filter(b => b.sexo === 'M').length}
                   </p>
                   <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
-                    {bufalos.length > 0 
-                      ? `${Math.round((bufalos.filter(b => b.sexo === 'M').length / bufalos.length) * 100)}% do rebanho`
+                    {bufalosFilteredByProperty.length > 0 
+                      ? `${Math.round((bufalosFilteredByProperty.filter(b => b.sexo === 'M').length / bufalosFilteredByProperty.length) * 100)}% do rebanho`
                       : "0% do rebanho"}
                   </p>
                 </>
@@ -607,7 +634,7 @@ export default function Rebanho() {
                 <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">-</p>
               ) : (
                 <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                  {bufalos.filter(b => 
+                  {bufalosFilteredByProperty.filter(b => 
                     b.sexo === 'F' && 
                     (b.nivel_maturidade === 'A' || b.nivel_maturidade === 'adulto' || b.nivel_maturidade === 'Adulto') && 
                     b.status === true
@@ -631,7 +658,7 @@ export default function Rebanho() {
             <div className="flex flex-col items-center justify-center h-[200px] text-center">
               {carregandoBufalos ? (
                 <p className="text-gray-400 text-sm mt-10">Carregando dados...</p>
-              ) : bufalos.length === 0 ? (
+              ) : bufalosFilteredByProperty.length === 0 ? (
                 <p className="text-gray-400 text-sm mt-10">Nenhum dado disponível</p>
               ) : (
                 <ResponsiveContainer width="100%" height={160}>
@@ -640,22 +667,22 @@ export default function Rebanho() {
                       data={[
                         { 
                           name: "Bezerros", 
-                          value: bufalos.filter(b => b.nivel_maturidade === 'B').length,
+                          value: bufalosFilteredByProperty.filter(b => b.nivel_maturidade === 'B').length,
                           color: "#FCA90F" 
                         },
                         { 
                           name: "Novilhos", 
-                          value: bufalos.filter(b => b.nivel_maturidade === 'N').length,
+                          value: bufalosFilteredByProperty.filter(b => b.nivel_maturidade === 'N').length,
                           color: "#FFCF78" 
                         },
                         { 
                           name: "Adultos", 
-                          value: bufalos.filter(b => b.nivel_maturidade === 'A').length,
+                          value: bufalosFilteredByProperty.filter(b => b.nivel_maturidade === 'A').length,
                           color: "#CE7D0A" 
                         },
                         { 
                           name: "Outros", 
-                          value: bufalos.filter(b => !['A', 'B', 'N'].includes(b.nivel_maturidade)).length,
+                          value: bufalosFilteredByProperty.filter(b => !['A', 'B', 'N'].includes(b.nivel_maturidade)).length,
                           color: "#F2B84D" 
                         }
                       ]}
@@ -690,7 +717,7 @@ export default function Rebanho() {
             <div className="flex flex-col items-center justify-center h-[200px] text-center">
               {carregandoBufalos ? (
                 <p className="text-gray-400 text-sm mt-10">Carregando dados...</p>
-              ) : bufalos.length === 0 ? (
+              ) : bufalosFilteredByProperty.length === 0 ? (
                 <p className="text-gray-400 text-sm mt-10">Nenhum dado disponível</p>
               ) : (
                 <ResponsiveContainer width="100%" height={160}>
@@ -699,12 +726,12 @@ export default function Rebanho() {
                       data={[
                         { 
                           name: "Fêmeas", 
-                          value: bufalos.filter(b => b.sexo === 'F').length, 
+                          value: bufalosFilteredByProperty.filter(b => b.sexo === 'F').length, 
                           color: "#FFCF78" 
                         },
                         { 
                           name: "Machos", 
-                          value: bufalos.filter(b => b.sexo === 'M').length, 
+                          value: bufalosFilteredByProperty.filter(b => b.sexo === 'M').length, 
                           color: "#CE7D0A" 
                         }
                       ]}
@@ -737,7 +764,7 @@ export default function Rebanho() {
             <div className="flex flex-col items-center justify-center h-[200px] text-center">
               {carregandoBufalos ? (
                 <p className="text-gray-400 text-sm mt-10">Carregando dados...</p>
-              ) : bufalos.length === 0 ? (
+              ) : bufalosFilteredByProperty.length === 0 ? (
                 <p className="text-gray-400 text-sm mt-10">Nenhum dado disponível</p>
               ) : (
                 <ResponsiveContainer width="100%" height={160}>
@@ -750,7 +777,7 @@ export default function Rebanho() {
                     
                     // Calcular dados de raça a partir dos dados reais
                     const contagem = {};
-                    bufalos.forEach(b => {
+                    bufalosFilteredByProperty.forEach(b => {
                       // Usar o nome da raça do objeto raca já correlacionado, ou buscar no mapa
                       // se ainda não estiver correlacionado, ou usar 'Sem Raça' como último recurso
                       const racaNome = b.raca?.nome || 
