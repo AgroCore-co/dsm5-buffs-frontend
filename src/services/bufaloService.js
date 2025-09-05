@@ -36,8 +36,38 @@ const listarBufalos = async (token) => {
   }
 };
 
+/**
+ * Busca um búfalo específico pelo ID.
+ *
+ * @param {number} id - ID do búfalo
+ * @param {string} token - JWT do usuário autenticado
+ * @returns {Promise<Object>} - Dados do búfalo
+ */
+const getBufaloById = async (id, token) => {
+  try {
+    console.log(`🔍 Iniciando busca do búfalo com ID ${id}...`);
+
+    const response = await apiFetch(`/bufalos/${id}`, {
+      method: "GET",
+      token,
+    });
+
+    console.log("✅ Dados do búfalo recebidos:", response);
+    return response;
+  } catch (error) {
+    console.error(`❌ Erro ao buscar búfalo com ID ${id}:`, error);
+    console.error("📝 Detalhes do erro:", {
+      message: error.message,
+      stack: error.stack,
+      status: error.status,
+    });
+    throw error;
+  }
+};
+
 const bufaloService = {
   listarBufalos,
+  getBufaloById,
 };
 
 export default bufaloService;

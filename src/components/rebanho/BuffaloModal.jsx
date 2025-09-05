@@ -2,50 +2,53 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import GenealogyTree from "./GenealogyTree";
+import { useAuth } from "@/hooks/useAuth";
+import bufaloService from "@/services/bufaloService";
 
 export default function BuffaloModal({
   open,
   buffalo,
   onClose,
   getStatusColor,
-  getDadosZootecnicos,
-  getDadosSanitarios,
   getSexIcon,
-  buffalosMock = [],
 }) {
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState("info");
+  const [bufaloDetalhado, setBufaloDetalhado] = useState(null);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState(null);
 
-  // --- Estados de paginação (itens por página configuráveis) ---
-  const PER_PAGE_SMALL = 5; // observações, linha do tempo, descendentes
-  const PER_PAGE_TABLE = 5; // tabelas (medicamentos, procedimentos, vacinas etc.)
-
-  const [timelinePage, setTimelinePage] = useState(1);
-  const [obsPage, setObsPage] = useState(1);
-  const [descPage, setDescPage] = useState(1);
-
-  const [medsPage, setMedsPage] = useState(1);
-  const [procsPage, setProcsPage] = useState(1);
-
-  const [vacPage, setVacPage] = useState(1);
-  const [vermPage, setVermPage] = useState(1);
-  const [examsPage, setExamsPage] = useState(1);
-  const [tratPage, setTratPage] = useState(1);
-
-  // reset de abas e paginações ao abrir/trocar animal
+  // reset de abas ao abrir/trocar animal
   useEffect(() => {
     if (open) {
       setActiveTab("info");
-      setTimelinePage(1);
-      setObsPage(1);
-      setDescPage(1);
-      setMedsPage(1);
-      setProcsPage(1);
-      setVacPage(1);
-      setVermPage(1);
-      setExamsPage(1);
-      setTratPage(1);
     }
   }, [open, buffalo]);
+
+  // Buscar dados detalhados do búfalo quando o modal for aberto
+  useEffect(() => {
+    if (open && buffalo?.id_bufalo && token) {
+      const fetchBufaloDetalhes = async () => {
+        try {
+          setCarregando(true);
+          setErro(null);
+          console.log(`Buscando detalhes do búfalo com ID: ${buffalo.id_bufalo}`);
+          const bufaloData = await bufaloService.getBufaloById(buffalo.id_bufalo, token);
+          setBufaloDetalhado(bufaloData);
+          console.log("Detalhes do búfalo obtidos com sucesso:", bufaloData);
+        } catch (error) {
+          console.error(`Erro ao buscar detalhes do búfalo ID ${buffalo.id_bufalo}:`, error);
+          setErro(`Não foi possível carregar os detalhes do búfalo: ${error.message}`);
+        } finally {
+          setCarregando(false);
+        }
+      };
+
+      fetchBufaloDetalhes();
+    } else {
+      setBufaloDetalhado(null);
+    }
+  }, [open, buffalo, token]);
 
   useEffect(() => {
     if (!open) return;
@@ -56,89 +59,9 @@ export default function BuffaloModal({
 
   const stop = useCallback((e) => e.stopPropagation(), []);
   if (!open || !buffalo) return null;
-
-  // --- Util: paginação simples de arrays ---
-  const paginate = (arr = [], page = 1, perPage = 10) => {
-    const total = arr.length;
-    const totalPages = Math.max(1, Math.ceil(total / perPage));
-    const p = Math.min(Math.max(page, 1), totalPages);
-    const start = (p - 1) * perPage;
-    const end = start + perPage;
-    return {
-      data: arr.slice(start, end),
-      total,
-      totalPages,
-      page: p,
-      start: start + 1,
-      end: Math.min(end, total),
-    };
-  };
-
-  // --------- DADOS FIXOS DE SAÚDE (exemplo) ---------
-  const SAUDE_FIXA = {
-    sinaisVitais: {
-      temperatura: "38.5 °C",
-      freqCardiaca: "60 bpm",
-      freqRespiratoria: "25 mpm",
-      ruminacao: "55 min/h",
-    },
-    avaliacao: {
-      escoreCorporal: "3/5",
-      escoreLocomocao: "2/5",
-      hidratacao: "Normal",
-      condicaoPele: "Sem lesões",
-    },
-    alergias: ["Nenhuma relatada", "—"], // adicione mais para testar paginação
-    risco: "Baixo",
-    proximaRevisao: "20/01/2025",
-    observacoes: [
-      "Mucosas róseas, sem secreções.",
-      "Apetite preservado, comportamento ativo.",
-      "Casco íntegro, sem rachaduras.",
-      "Sem alterações respiratórias.",
-      "Fezes pastosas, cor normal.",
-      "Hidratação adequada.",
-    ],
-    linhaDoTempo: [
-      {
-        data: "10/12/2024",
-        titulo: "Curativo superficial",
-        detalhe: "Região torácica — evolução satisfatória",
-        status: "Concluído",
-      },
-      {
-        data: "02/12/2024",
-        titulo: "Banho carrapaticida",
-        detalhe: "Ivermectina pour-on",
-        status: "Concluído",
-      },
-      {
-        data: "25/11/2024",
-        titulo: "Hemograma",
-        detalhe: "Resultados dentro da normalidade",
-        status: "Concluído",
-      },
-      {
-        data: "10/11/2024",
-        titulo: "Avaliação clínica",
-        detalhe: "Sem achados relevantes",
-        status: "Concluído",
-      },
-      {
-        data: "01/11/2024",
-        titulo: "Vermifugação",
-        detalhe: "Conforme protocolo",
-        status: "Concluído",
-      },
-      {
-        data: "20/10/2024",
-        titulo: "Vacinação",
-        detalhe: "Febre Aftosa",
-        status: "Concluído",
-      },
-    ],
-  };
-  // ---------------------------------------------------
+  
+  // Usar dados detalhados se disponíveis, senão usar os dados originais
+  const bufaloData = bufaloDetalhado || buffalo;
 
   return (
     <div
@@ -148,31 +71,53 @@ export default function BuffaloModal({
       aria-modal="true"
     >
       <div
-        className="w-[min(96vw,1200px)] max-h-[92vh] bg-white rounded-2xl shadow-2xl ring-1 ring-gray-200 flex flex-col"
+        className="w-[min(96vw,1200px)] max-h-[92vh] bg-white rounded-3xl shadow-2xl ring-1 ring-gray-200 flex flex-col overflow-hidden"
         onClick={stop}
       >
         {/* Header (sticky) */}
-        <div className="sticky top-0 z-10 border-b bg-white">
+        <div className="sticky top-0 z-10 border-b bg-white rounded-t-3xl">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-start gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">
-                    Prontuário • {buffalo.nome}
-                  </h2>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full uppercase tracking-wide ${getStatusColor(
-                      typeof buffalo.status === "boolean" ? (buffalo.status ? "Ativo" : "Inativo") : buffalo.status
-                    )}`}
-                  >
-                    {typeof buffalo.status === "boolean" ? (buffalo.status ? "Ativo" : "Inativo") : buffalo.status}
-                  </span>
+              {carregando ? (
+                <div className="flex items-center justify-center p-4">
+                  <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mr-2"></div>
+                  <p>Carregando detalhes...</p>
                 </div>
-                <p className="text-sm text-gray-500">
-                  Tag {buffalo.tag} • {getSexIcon(buffalo.sexo)} {buffalo.sexo}{" "}
-                  • {buffalo.raca}
-                </p>
-              </div>
+              ) : erro ? (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 w-full">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Erro ao carregar dados</h3>
+                      <p className="mt-1 text-sm text-red-700">{erro}</p>
+                      <p className="mt-2 text-xs text-red-600">Tente fechar e abrir novamente o modal ou atualize a página.</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">
+                      Prontuário • {bufaloData.nome}
+                    </h2>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full uppercase tracking-wide ${getStatusColor(
+                        typeof bufaloData.status === "boolean" ? (bufaloData.status ? "Ativo" : "Inativo") : bufaloData.status
+                      )}`}
+                    >
+                      {typeof bufaloData.status === "boolean" ? (bufaloData.status ? "Ativo" : "Inativo") : bufaloData.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Brinco: {bufaloData.brinco || "N/A"} • {getSexIcon(bufaloData.sexo === "F" ? "Fêmea" : "Macho")} {bufaloData.sexo === "F" ? "Fêmea" : "Macho"}{" "}
+                    • {buffalo.raca || "N/A"} • ID: {bufaloData.id || bufaloData.id_bufalo}
+                  </p>
+                </div>
+              )}
             </div>
             <button
               onClick={onClose}
@@ -190,7 +135,7 @@ export default function BuffaloModal({
               { id: "zootecnicos", label: "Zootécnicos" },
               { id: "saude", label: "Saúde" },
               { id: "sanitarios", label: "Sanitários" },
-              { id: "genealogia", label: "Genealogia" },
+              { id: "genealogia", label: "Genealogia" }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -208,12 +153,14 @@ export default function BuffaloModal({
           </div>
         </div>
 
-        {/* Conteúdo (rolável apenas aqui) */}
+        {/* Conteúdo com rolagem */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* RESUMO */}
+          {/* Resumo com dados básicos */}
           {activeTab === "info" && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Coluna principal - 2/3 do espaço */}
               <div className="lg:col-span-2 space-y-6">
+                {/* Dados Básicos */}
                 <div className="relative rounded-xl border border-gray-200 bg-white">
                   <div className="absolute left-0 top-0 h-full w-1.5 bg-amber-400 rounded-l-xl" />
                   <div className="p-5">
@@ -222,1108 +169,181 @@ export default function BuffaloModal({
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                       <div className="flex justify-between border-b pb-2">
-                        <span className="text-gray-500">Nome</span>
-                        <span className="font-medium">{buffalo.nome}</span>
+                        <span className="text-gray-500">ID</span>
+                        <span className="font-medium">{bufaloData.id || bufaloData.id_bufalo}</span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                        <span className="text-gray-500">Tag</span>
-                        <span className="font-medium">{buffalo.tag}</span>
+                        <span className="text-gray-500">Nome</span>
+                        <span className="font-medium">{bufaloData.nome}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Brinco</span>
+                        <span className="font-medium">{bufaloData.brinco || "N/A"}</span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span className="text-gray-500">Sexo</span>
-                        <span className="font-medium">{buffalo.sexo}</span>
+                        <span className="font-medium">{bufaloData.sexo === "F" ? "Fêmea" : "Macho"}</span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span className="text-gray-500">Raça</span>
-                        <span className="font-medium">{buffalo.raca}</span>
+                        <span className="font-medium">{buffalo.raca || "N/A"}</span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span className="text-gray-500">Maturidade</span>
                         <span className="font-medium">
-                          {buffalo.maturidade}
+                          {bufaloData.nivel_maturidade === "V" ? "Vaca" : 
+                           bufaloData.nivel_maturidade === "B" ? "Bezerra" : 
+                           bufaloData.nivel_maturidade === "N" ? "Novilha" : 
+                           bufaloData.nivel_maturidade || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                        <span className="text-gray-500">Peso Atual</span>
-                        <span className="font-medium">{buffalo.peso} kg</span>
+                        <span className="text-gray-500">Categoria</span>
+                        <span className="font-medium">{bufaloData.categoria || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Status</span>
+                        <span className="font-medium">
+                          {typeof bufaloData.status === "boolean" ? (bufaloData.status ? "Ativo" : "Inativo") : bufaloData.status || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Nascimento</span>
+                        <span className="font-medium">
+                          {bufaloData.dt_nascimento ? new Date(bufaloData.dt_nascimento).toLocaleDateString('pt-BR') : "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Origem</span>
+                        <span className="font-medium">
+                          {bufaloData.origem === "N" ? "Nascimento" : 
+                           bufaloData.origem === "C" ? "Compra" : 
+                           bufaloData.origem === "D" ? "Doação" : 
+                           bufaloData.origem || "N/A"}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
+                {/* Dados Complementares */}
+                <div className="relative rounded-xl border border-gray-200 bg-white">
+                  <div className="absolute left-0 top-0 h-full w-1.5 bg-purple-400 rounded-l-xl" />
+                  <div className="p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Dados Complementares
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Data de Baixa</span>
+                        <span className="font-medium">
+                          {bufaloData.data_baixa ? new Date(bufaloData.data_baixa).toLocaleDateString('pt-BR') : "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Motivo Inativo</span>
+                        <span className="font-medium">{bufaloData.motivo_inativo || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Brinco Original</span>
+                        <span className="font-medium">{bufaloData.brinco_original || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Registro Provisório</span>
+                        <span className="font-medium">{bufaloData.registro_prov || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Coluna lateral - 1/3 do espaço */}
+              <div className="lg:col-span-1 space-y-6">
+                {/* Informações do Sistema */}
+                <div className="relative rounded-xl border border-gray-200 bg-white">
+                  <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-400 rounded-l-xl" />
+                  <div className="p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Informações do Sistema
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4 text-sm">
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">ID da Raça</span>
+                        <span className="font-medium">{bufaloData.id_raca || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">ID Propriedade</span>
+                        <span className="font-medium">{bufaloData.id_propriedade || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">ID Grupo</span>
+                        <span className="font-medium">{bufaloData.id_grupo || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Criado em</span>
+                        <span className="font-medium">
+                          {bufaloData.created_at ? new Date(bufaloData.created_at).toLocaleDateString('pt-BR') : "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Última Atualização</span>
+                        <span className="font-medium">
+                          {bufaloData.updated_at ? new Date(bufaloData.updated_at).toLocaleDateString('pt-BR') : "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informações de Genealogia */}
                 <div className="relative rounded-xl border border-gray-200 bg-white">
                   <div className="absolute left-0 top-0 h-full w-1.5 bg-emerald-400 rounded-l-xl" />
                   <div className="p-5">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Informações Adicionais
+                      Informações de Genealogia
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 gap-4 text-sm">
                       <div className="flex justify-between border-b pb-2">
-                        <span className="text-gray-500">Nascimento</span>
-                        <span className="font-medium">
-                          {buffalo.nascimento}
-                        </span>
+                        <span className="text-gray-500">ID do Pai</span>
+                        <span className="font-medium">{bufaloData.id_pai || "N/A"}</span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                        <span className="text-gray-500">
-                          Última Atualização
-                        </span>
-                        <span className="font-medium">
-                          {buffalo.ultimaAtualizacao}
-                        </span>
+                        <span className="text-gray-500">ID da Mãe</span>
+                        <span className="font-medium">{bufaloData.id_mae || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Registro Definitivo</span>
+                        <span className="font-medium">{bufaloData.registro_def || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Microchip</span>
+                        <span className="font-medium">{bufaloData.microchip || "N/A"}</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+          )}
 
-              <div className="space-y-6">
-                <div className="rounded-xl border border-gray-200 bg-white p-5">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                    Etiquetas
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-2.5 py-1 rounded-full text-xs bg-amber-100 text-amber-900">
-                      Leiteiro
-                    </span>
-                    <span className="px-2.5 py-1 rounded-full text-xs bg-blue-100 text-blue-900">
-                      Dócil
-                    </span>
-                    <span className="px-2.5 py-1 rounded-full text-xs bg-emerald-100 text-emerald-900">
-                      Baixo risco
-                    </span>
-                  </div>
+          {/* Abas adicionais sem conteúdo */}
+          {(activeTab === "zootecnicos" || activeTab === "saude" || activeTab === "sanitarios") && (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center p-6 max-w-md">
+                <div className="mb-4 text-amber-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
                 </div>
-                <div className="rounded-xl border border-gray-200 bg-white p-5">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                    Contatos rápidos
-                  </h3>
-                  <div className="text-sm text-gray-600 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span>Responsável</span>
-                      <span className="font-medium">Equipe Fazenda</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Veterinário</span>
-                      <span className="font-medium">Dr. Almeida</span>
-                    </div>
-                  </div>
-                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Dados não disponíveis</h3>
+                <p className="text-gray-500">
+                  Esta seção será implementada em breve. Por enquanto, consulte as informações básicas na aba "Resumo".
+                </p>
               </div>
             </div>
           )}
 
-          {/* ZOOTÉCNICOS */}
-          {activeTab === "zootecnicos" && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {(() => {
-                const z = getDadosZootecnicos(buffalo);
-                return (
-                  <>
-                    {z.producaoLeite && (
-                      <div className="lg:col-span-3 rounded-xl border border-gray-200 bg-white p-5">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                          Produção de Leite
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {[
-                            {
-                              v: z.producaoLeite.producaoDiaria,
-                              l: "Produção Diária",
-                            },
-                            {
-                              v: z.producaoLeite.producaoMensal,
-                              l: "Produção Mensal",
-                            },
-                            { v: z.producaoLeite.gordura, l: "% Gordura" },
-                            { v: z.producaoLeite.proteina, l: "% Proteína" },
-                          ].map((it, i) => (
-                            <div
-                              key={i}
-                              className="text-center rounded-lg bg-amber-50 p-4 ring-1 ring-amber-100"
-                            >
-                              <div className="text-2xl font-extrabold text-amber-900">
-                                {it.v}
-                              </div>
-                              <div className="text-xs text-amber-900/70">
-                                {it.l}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="rounded-xl border border-gray-200 bg-white p-5">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Reprodução
-                      </h3>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between border-b pb-2">
-                          <span className="text-gray-500">Último Cio</span>
-                          <span className="font-medium">
-                            {z.reproducao.ultimoCio}
-                          </span>
-                        </div>
-                        <div className="flex justify-between border-b pb-2">
-                          <span className="text-gray-500">Gestante</span>
-                          <span className="font-medium">
-                            {z.reproducao.gestante}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">
-                            Número de Partos
-                          </span>
-                          <span className="font-medium">
-                            {z.reproducao.numeroPartos}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-gray-200 bg-white p-5">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Crescimento
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 text-center">
-                        {[
-                          {
-                            v: z.crescimento.pesoNascimento,
-                            l: "Peso Nascimento",
-                          },
-                          {
-                            v: z.crescimento.ganhoPesoDiario,
-                            l: "Ganho Peso/Dia",
-                          },
-                          { v: z.crescimento.alturaGarupa, l: "Altura Garupa" },
-                          {
-                            v: z.crescimento.condicaoCorporal,
-                            l: "Condição Corporal",
-                          },
-                        ].map((it, i) => (
-                          <div
-                            key={i}
-                            className="rounded-lg bg-gray-50 p-4 ring-1 ring-gray-100"
-                          >
-                            <div className="text-2xl font-extrabold text-gray-900">
-                              {it.v}
-                            </div>
-                            <div className="text-xs text-gray-500">{it.l}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-gray-200 bg-white p-5">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Notas
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        Dados simulados para visualização do prontuário.
-                        Integração futura com API do rebanho.
-                      </p>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* SAÚDE — FULL WIDTH (com paginação) */}
-          {activeTab === "saude" && (
-            <div className="space-y-6">
-              {/* Avaliação Clínica */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Avaliação Clínica
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-3">
-                    <div className="flex justify-between border-b pb-2">
-                      <span className="text-gray-500">Escore Corporal</span>
-                      <span className="font-medium">
-                        {SAUDE_FIXA.avaliacao.escoreCorporal}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-b pb-2">
-                      <span className="text-gray-500">Hidratação</span>
-                      <span className="font-medium">
-                        {SAUDE_FIXA.avaliacao.hidratacao}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between border-b pb-2">
-                      <span className="text-gray-500">Escore de Locomoção</span>
-                      <span className="font-medium">
-                        {SAUDE_FIXA.avaliacao.escoreLocomocao}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-b pb-2">
-                      <span className="text-gray-500">Condição da Pele</span>
-                      <span className="font-medium">
-                        {SAUDE_FIXA.avaliacao.condicaoPele}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Linha do Tempo + paginação */}
-              {(() => {
-                const { data, total, totalPages, page, start, end } = paginate(
-                  SAUDE_FIXA.linhaDoTempo,
-                  timelinePage,
-                  PER_PAGE_SMALL
-                );
-                return (
-                  <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Linha do Tempo
-                      </h3>
-                      <span className="text-xs text-gray-500">
-                        Mostrando {start}-{end} de {total}
-                      </span>
-                    </div>
-                    <div className="relative pl-6">
-                      <div className="absolute left-2 top-0 bottom-0 w-px bg-gray-200" />
-                      <ul className="space-y-4">
-                        {data.map((ev, i) => (
-                          <li key={i} className="relative">
-                            <span className="absolute left-0 top-1.5 inline-block h-2.5 w-2.5 rounded-full bg-amber-400 ring-4 ring-amber-100" />
-                            <div className="rounded-lg border border-gray-200 p-3 bg-white">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <div className="font-semibold text-gray-900">
-                                  {ev.titulo}
-                                </div>
-                                <span className="text-xs text-gray-500">
-                                  {ev.data}
-                                </span>
-                              </div>
-                              <div className="text-sm text-gray-600">
-                                {ev.detalhe}
-                              </div>
-                              <div className="mt-2">
-                                <span className="px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-800">
-                                  {ev.status}
-                                </span>
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                      {totalPages > 1 && (
-                        <div className="flex justify-center items-center space-x-2 mt-6">
-                          <button
-                            onClick={() => setTimelinePage(page - 1)}
-                            disabled={page === 1}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                              page === 1
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                            }`}
-                          >
-                            Anterior
-                          </button>
-                          {Array.from(
-                            { length: totalPages },
-                            (_, i) => i + 1
-                          ).map((p) => (
-                            <button
-                              key={p}
-                              onClick={() => setTimelinePage(p)}
-                              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                                p === page
-                                  ? "bg-[#CE7D0A] text-white"
-                                  : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          ))}
-                          <button
-                            onClick={() => setTimelinePage(page + 1)}
-                            disabled={page === totalPages}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                              page === totalPages
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                            }`}
-                          >
-                            Próximo
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Observações + paginação */}
-              {(() => {
-                const { data, total, totalPages, page, start, end } = paginate(
-                  SAUDE_FIXA.observacoes,
-                  obsPage,
-                  PER_PAGE_SMALL
-                );
-                return (
-                  <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Observações
-                      </h3>
-                      <span className="text-xs text-gray-500">
-                        Mostrando {start}-{end} de {total}
-                      </span>
-                    </div>
-                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
-                      {data.map((obs, i) => (
-                        <li key={i}>{obs}</li>
-                      ))}
-                    </ul>
-                    {totalPages > 1 && (
-                      <div className="flex justify-center items-center space-x-2 mt-6">
-                        <button
-                          onClick={() => setObsPage(page - 1)}
-                          disabled={page === 1}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            page === 1
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                          }`}
-                        >
-                          Anterior
-                        </button>
-                        {Array.from(
-                          { length: totalPages },
-                          (_, i) => i + 1
-                        ).map((p) => (
-                          <button
-                            key={p}
-                            onClick={() => setObsPage(p)}
-                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                              p === page
-                                ? "bg-[#CE7D0A] text-white"
-                                : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                            }`}
-                          >
-                            {p}
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => setObsPage(page + 1)}
-                          disabled={page === totalPages}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            page === totalPages
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                          }`}
-                        >
-                          Próximo
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Medicamentos + paginação (tabela zebra padronizada) */}
-              {(() => {
-                const rows = [
-                  {
-                    data: "12/12/2024",
-                    med: "Ivermectina",
-                    dose: "1 mL/50kg",
-                    via: "pour-on",
-                    status: "Concluído",
-                  },
-                  {
-                    data: "10/12/2024",
-                    med: "Antisséptico tópico",
-                    dose: "Conforme rótulo",
-                    via: "tópica",
-                    status: "Concluído",
-                  },
-                  {
-                    data: "01/12/2024",
-                    med: "Antibiótico (profilaxia)",
-                    dose: "IM 10 mL",
-                    via: "intramuscular",
-                    status: "Concluído",
-                  },
-                  {
-                    data: "20/11/2024",
-                    med: "Anti-inflamatório",
-                    dose: "IM 5 mL",
-                    via: "intramuscular",
-                    status: "Concluído",
-                  },
-                  {
-                    data: "10/11/2024",
-                    med: "Vitaminas ADE",
-                    dose: "10 mL",
-                    via: "subcutânea",
-                    status: "Concluído",
-                  },
-                  {
-                    data: "01/11/2024",
-                    med: "Probiótico",
-                    dose: "Conforme rótulo",
-                    via: "oral",
-                    status: "Concluído",
-                  },
-                ];
-                const { data, total, totalPages, page, start, end } = paginate(
-                  rows,
-                  medsPage,
-                  PER_PAGE_TABLE
-                );
-                return (
-                  <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Medicamentos Recentes
-                      </h3>
-                      <span className="text-xs text-gray-500">
-                        Mostrando {start}-{end} de {total}
-                      </span>
-                    </div>
-                    <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                      <thead className="bg-[#f0f0f0]">
-                        <tr>
-                          <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                            Data
-                          </th>
-                          <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                            Medicamento
-                          </th>
-                          <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                            Dose
-                          </th>
-                          <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                            Via
-                          </th>
-                          <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {data.map((r, i) => (
-                          <tr
-                            key={i}
-                            className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50"
-                          >
-                            <td className="p-3 text-gray-800 text-sm">
-                              {r.data}
-                            </td>
-                            <td className="p-3 text-gray-800 text-sm">
-                              {r.med}
-                            </td>
-                            <td className="p-3 text-gray-800 text-sm">
-                              {r.dose}
-                            </td>
-                            <td className="p-3 text-gray-800 text-sm">
-                              {r.via}
-                            </td>
-                            <td className="p-3 text-gray-800 text-sm">
-                              <span className="px-2.5 py-1.5 rounded-full text-xs font-bold inline-block bg-emerald-100 text-emerald-800">
-                                {r.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {totalPages > 1 && (
-                      <div className="flex justify-center items-center space-x-2">
-                        <button
-                          onClick={() => setMedsPage(page - 1)}
-                          disabled={page === 1}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            page === 1
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                          }`}
-                        >
-                          Anterior
-                        </button>
-                        {Array.from(
-                          { length: totalPages },
-                          (_, i) => i + 1
-                        ).map((p) => (
-                          <button
-                            key={p}
-                            onClick={() => setMedsPage(p)}
-                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                              p === page
-                                ? "bg-[#CE7D0A] text-white"
-                                : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                            }`}
-                          >
-                            {p}
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => setMedsPage(page + 1)}
-                          disabled={page === totalPages}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            page === totalPages
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                          }`}
-                        >
-                          Próximo
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Procedimentos + paginação */}
-              {(() => {
-                const rows = [
-                  {
-                    data: "10/12/2024",
-                    proc: "Curativo",
-                    resp: "Téc. João",
-                    obs: "Troca de curativo; sem exsudato",
-                  },
-                  {
-                    data: "25/11/2024",
-                    proc: "Coleta de sangue",
-                    resp: "Dr. Almeida",
-                    obs: "Hemograma OK",
-                  },
-                  {
-                    data: "20/11/2024",
-                    proc: "Exame físico",
-                    resp: "Dr. Almeida",
-                    obs: "Sem alterações",
-                  },
-                  {
-                    data: "10/11/2024",
-                    proc: "Casqueamento",
-                    resp: "Equipe Fazenda",
-                    obs: "Rotina",
-                  },
-                ];
-                const { data, total, totalPages, page, start, end } = paginate(
-                  rows,
-                  procsPage,
-                  PER_PAGE_TABLE
-                );
-                return (
-                  <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Procedimentos
-                      </h3>
-                      <span className="text-xs text-gray-500">
-                        Mostrando {start}-{end} de {total}
-                      </span>
-                    </div>
-                    <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                      <thead className="bg-[#f0f0f0]">
-                        <tr>
-                          <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                            Data
-                          </th>
-                          <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                            Procedimento
-                          </th>
-                          <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                            Responsável
-                          </th>
-                          <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                            Observações
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {data.map((r, i) => (
-                          <tr
-                            key={i}
-                            className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50"
-                          >
-                            <td className="p-3 text-gray-800 text-sm">
-                              {r.data}
-                            </td>
-                            <td className="p-3 text-gray-800 text-sm">
-                              {r.proc}
-                            </td>
-                            <td className="p-3 text-gray-800 text-sm">
-                              {r.resp}
-                            </td>
-                            <td className="p-3 text-gray-800 text-sm">
-                              {r.obs}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {totalPages > 1 && (
-                      <div className="flex justify-center items-center space-x-2">
-                        <button
-                          onClick={() => setProcsPage(page - 1)}
-                          disabled={page === 1}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            page === 1
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                          }`}
-                        >
-                          Anterior
-                        </button>
-                        {Array.from(
-                          { length: totalPages },
-                          (_, i) => i + 1
-                        ).map((p) => (
-                          <button
-                            key={p}
-                            onClick={() => setProcsPage(p)}
-                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                              p === page
-                                ? "bg-[#CE7D0A] text-white"
-                                : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                            }`}
-                          >
-                            {p}
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => setProcsPage(page + 1)}
-                          disabled={page === totalPages}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            page === totalPages
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                          }`}
-                        >
-                          Próximo
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* SANITÁRIOS — FULL WIDTH (com paginação) */}
-          {activeTab === "sanitarios" && (
-            <div className="space-y-6">
-              {(() => {
-                const s = getDadosSanitarios(buffalo);
-
-                // Vacinação
-                const vac = paginate(s.vacinacao, vacPage, PER_PAGE_TABLE);
-                // Vermifugação
-                const verm = paginate(s.vermifugacao, vermPage, PER_PAGE_TABLE);
-                // Exames
-                const ex = paginate(s.exames, examsPage, PER_PAGE_TABLE);
-                // Tratamentos
-                const tr = paginate(s.tratamentos, tratPage, PER_PAGE_TABLE);
-
-                return (
-                  <>
-                    {/* Vacinação */}
-                    <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Histórico de Vacinação
-                        </h3>
-                        <span className="text-xs text-gray-500">
-                          Mostrando {vac.start}-{vac.end} de {vac.total}
-                        </span>
-                      </div>
-                      <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                        <thead className="bg-[#f0f0f0]">
-                          <tr>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Vacina
-                            </th>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Última
-                            </th>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Próxima
-                            </th>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Status
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {vac.data.map((v, i) => (
-                            <tr
-                              key={i}
-                              className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50"
-                            >
-                              <td className="p-3 text-gray-800 text-sm">
-                                <strong>{v.vacina}</strong>
-                              </td>
-                              <td className="p-3 text-gray-800 text-sm">
-                                {v.data}
-                              </td>
-                              <td className="p-3 text-gray-800 text-sm">
-                                {v.proxima}
-                              </td>
-                              <td className="p-3 text-gray-800 text-sm">
-                                <span className="px-2.5 py-1.5 rounded-full text-xs font-bold inline-block bg-emerald-100 text-emerald-800">
-                                  {v.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {vac.totalPages > 1 && (
-                        <div className="flex justify-center items-center space-x-2">
-                          <button
-                            onClick={() => setVacPage(vac.page - 1)}
-                            disabled={vac.page === 1}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                              vac.page === 1
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                            }`}
-                          >
-                            Anterior
-                          </button>
-                          {Array.from(
-                            { length: vac.totalPages },
-                            (_, i) => i + 1
-                          ).map((p) => (
-                            <button
-                              key={p}
-                              onClick={() => setVacPage(p)}
-                              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                                p === vac.page
-                                  ? "bg-[#CE7D0A] text-white"
-                                  : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          ))}
-                          <button
-                            onClick={() => setVacPage(vac.page + 1)}
-                            disabled={vac.page === vac.totalPages}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                              vac.page === vac.totalPages
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                            }`}
-                          >
-                            Próximo
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Vermifugação */}
-                    <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Controle de Vermifugação
-                        </h3>
-                        <span className="text-xs text-gray-500">
-                          Mostrando {verm.start}-{verm.end} de {verm.total}
-                        </span>
-                      </div>
-                      <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                        <thead className="bg-[#f0f0f0]">
-                          <tr>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Produto
-                            </th>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Última
-                            </th>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Próxima
-                            </th>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Status
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {verm.data.map((v, i) => (
-                            <tr
-                              key={i}
-                              className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50"
-                            >
-                              <td className="p-3 text-gray-800 text-sm">
-                                <strong>{v.produto}</strong>
-                              </td>
-                              <td className="p-3 text-gray-800 text-sm">
-                                {v.data}
-                              </td>
-                              <td className="p-3 text-gray-800 text-sm">
-                                {v.proxima}
-                              </td>
-                              <td className="p-3 text-gray-800 text-sm">
-                                <span
-                                  className={`px-2.5 py-1.5 rounded-full text-xs font-bold inline-block ${
-                                    v.status === "Em dia"
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : "bg-red-100 text-red-800"
-                                  }`}
-                                >
-                                  {v.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {verm.totalPages > 1 && (
-                        <div className="flex justify-center items-center space-x-2">
-                          <button
-                            onClick={() => setVermPage(verm.page - 1)}
-                            disabled={verm.page === 1}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                              verm.page === 1
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                            }`}
-                          >
-                            Anterior
-                          </button>
-                          {Array.from(
-                            { length: verm.totalPages },
-                            (_, i) => i + 1
-                          ).map((p) => (
-                            <button
-                              key={p}
-                              onClick={() => setVermPage(p)}
-                              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                                p === verm.page
-                                  ? "bg-[#CE7D0A] text-white"
-                                  : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          ))}
-                          <button
-                            onClick={() => setVermPage(verm.page + 1)}
-                            disabled={verm.page === verm.totalPages}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                              verm.page === verm.totalPages
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                            }`}
-                          >
-                            Próximo
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Exames */}
-                    <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Histórico de Exames
-                        </h3>
-                        <span className="text-xs text-gray-500">
-                          Mostrando {ex.start}-{ex.end} de {ex.total}
-                        </span>
-                      </div>
-                      <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                        <thead className="bg-[#f0f0f0]">
-                          <tr>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Exame
-                            </th>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Data
-                            </th>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Resultado
-                            </th>
-                            <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                              Status
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {ex.data.map((e, i) => (
-                            <tr
-                              key={i}
-                              className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50"
-                            >
-                              <td className="p-3 text-gray-800 text-sm">
-                                <strong>{e.exame}</strong>
-                              </td>
-                              <td className="p-3 text-gray-800 text-sm">
-                                {e.data}
-                              </td>
-                              <td className="p-3 text-gray-800 text-sm">
-                                {e.resultado}
-                              </td>
-                              <td className="p-3 text-gray-800 text-sm">
-                                <span className="px-2.5 py-1.5 rounded-full text-xs font-bold inline-block bg-emerald-100 text-emerald-800">
-                                  {e.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {ex.totalPages > 1 && (
-                        <div className="flex justify-center items-center space-x-2">
-                          <button
-                            onClick={() => setExamsPage(ex.page - 1)}
-                            disabled={ex.page === 1}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                              ex.page === 1
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                            }`}
-                          >
-                            Anterior
-                          </button>
-                          {Array.from(
-                            { length: ex.totalPages },
-                            (_, i) => i + 1
-                          ).map((p) => (
-                            <button
-                              key={p}
-                              onClick={() => setExamsPage(p)}
-                              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                                p === ex.page
-                                  ? "bg-[#CE7D0A] text-white"
-                                  : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          ))}
-                          <button
-                            onClick={() => setExamsPage(ex.page + 1)}
-                            disabled={ex.page === ex.totalPages}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                              ex.page === ex.totalPages
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                            }`}
-                          >
-                            Próximo
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Tratamentos */}
-                    {s.tratamentos.length > 0 && (
-                      <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Tratamentos em Andamento
-                          </h3>
-                          <span className="text-xs text-gray-500">
-                            Mostrando {tr.start}-{tr.end} de {tr.total}
-                          </span>
-                        </div>
-                        <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                          <thead className="bg-[#f0f0f0]">
-                            <tr>
-                              <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                                Tratamento
-                              </th>
-                              <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                                Início
-                              </th>
-                              <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                                Fim
-                              </th>
-                              <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                                Status
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {tr.data.map((t, i) => (
-                              <tr
-                                key={i}
-                                className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50"
-                              >
-                                <td className="p-3 text-gray-800 text-sm">
-                                  <strong>{t.tratamento}</strong>
-                                </td>
-                                <td className="p-3 text-gray-800 text-sm">
-                                  {t.inicio}
-                                </td>
-                                <td className="p-3 text-gray-800 text-sm">
-                                  {t.fim}
-                                </td>
-                                <td className="p-3 text-gray-800 text-sm">
-                                  <span className="px-2.5 py-1.5 rounded-full text-xs font-bold inline-block bg-amber-100 text-amber-800">
-                                    {t.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {tr.totalPages > 1 && (
-                          <div className="flex justify-center items-center space-x-2">
-                            <button
-                              onClick={() => setTratPage(tr.page - 1)}
-                              disabled={tr.page === 1}
-                              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                                tr.page === 1
-                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                  : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                              }`}
-                            >
-                              Anterior
-                            </button>
-                            {Array.from(
-                              { length: tr.totalPages },
-                              (_, i) => i + 1
-                            ).map((p) => (
-                              <button
-                                key={p}
-                                onClick={() => setTratPage(p)}
-                                className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                                  p === tr.page
-                                    ? "bg-[#CE7D0A] text-white"
-                                    : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                                }`}
-                              >
-                                {p}
-                              </button>
-                            ))}
-                            <button
-                              onClick={() => setTratPage(tr.page + 1)}
-                              disabled={tr.page === tr.totalPages}
-                              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                                tr.page === tr.totalPages
-                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                  : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                              }`}
-                            >
-                              Próximo
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* GENEALOGIA (descendentes com paginação) */}
+          {/* Genealogia */}
           {activeTab === "genealogia" && (
             <div className="space-y-6">
               <div className="rounded-2xl border border-gray-200 bg-white p-6">
@@ -1333,10 +353,7 @@ export default function BuffaloModal({
                       Árvore Genealógica
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {buffalo.nome} • 3 gerações
-                      <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                        Consanguinidade: 12%
-                      </span>
+                      {bufaloData.nome}
                     </p>
                   </div>
                 </div>
@@ -1344,61 +361,51 @@ export default function BuffaloModal({
                 {/* GenealogyTree recebe o búfalo atual e dados básicos dos antepassados */}
                 <GenealogyTree
                   current={{
-                    nome: buffalo.nome,
-                    tag: buffalo.tag,
-                    raca: buffalo.raca,
-                    maturidade: buffalo.maturidade,
-                    sexo: buffalo.sexo,
+                    nome: bufaloData.nome,
+                    tag: bufaloData.brinco || "N/A",
+                    raca: buffalo.raca || "N/A",
+                    maturidade: bufaloData.nivel_maturidade || "N/A",
+                    sexo: bufaloData.sexo === "F" ? "Fêmea" : "Macho",
                   }}
                   parents={{
                     pai: {
-                      nome: buffalo.pai || "—",
-                      raca: buffalo.raca || "—",
-                      prod: "3.200L",
+                      nome: bufaloData.id_pai ? `ID: ${bufaloData.id_pai}` : "—",
+                      raca: "N/A",
                       risk: "low",
                     },
                     mae: {
-                      nome: buffalo.mae || "—",
-                      raca: buffalo.raca || "—",
-                      prod: "2.950L",
-                      risk: "med",
+                      nome: bufaloData.id_mae ? `ID: ${bufaloData.id_mae}` : "—",
+                      raca: "N/A",
+                      risk: "low",
                     },
                   }}
                   grandparents={{
                     avoPai: {
-                      nome: "Titã",
-                      raca: "Murrah",
-                      prod: "2.950L",
+                      nome: "—",
+                      raca: "—",
                       risk: "low",
                     },
                     avoPaiF: {
-                      nome: "Vitória",
-                      raca: "Murrah",
-                      prod: "3.100L",
+                      nome: "—",
+                      raca: "—",
                       risk: "low",
                     },
                     avoMae: {
-                      nome: "Magnus",
-                      raca: "Híbrido",
-                      prod: "2.800L",
-                      risk: "med",
+                      nome: "—",
+                      raca: "—",
+                      risk: "low",
                     },
                     avoMaeF: {
-                      nome: "Ísis",
-                      raca: "Jafarabadi",
-                      prod: "2.650L",
+                      nome: "—",
+                      raca: "—",
                       risk: "low",
                     },
                   }}
                   greatGrandparents={{
-                    bisavoP1: { nome: "Brutus", raca: "Murrah", risk: "low" },
-                    bisavoP2: { nome: "Dalila", raca: "Murrah", risk: "low" },
-                    bisavoM1: {
-                      nome: "César",
-                      raca: "Jafarabadi",
-                      risk: "low",
-                    },
-                    bisavoM2: { nome: "Lara", raca: "Jafarabadi", risk: "low" },
+                    bisavoP1: { nome: "—", raca: "—", risk: "low" },
+                    bisavoP2: { nome: "—", raca: "—", risk: "low" },
+                    bisavoM1: { nome: "—", raca: "—", risk: "low" },
+                    bisavoM2: { nome: "—", raca: "—", risk: "low" },
                   }}
                 />
               </div>

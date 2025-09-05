@@ -54,11 +54,11 @@ export default function CreateBuffaloModal({ open, onClose, onSubmit }) {
       aria-modal="true"
     >
       <div
-        className="w-[min(96vw,800px)] max-h-[92vh] bg-white rounded-2xl shadow-2xl ring-1 ring-gray-200 flex flex-col"
+        className="w-[min(96vw,800px)] max-h-[92vh] bg-white rounded-3xl shadow-2xl ring-1 ring-gray-200 flex flex-col overflow-hidden"
         onClick={stop}
       >
         {/* Header (sticky) */}
-        <div className="sticky top-0 z-10 border-b bg-white">
+        <div className="sticky top-0 z-10 border-b bg-white rounded-t-3xl">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-start gap-4">
               <div>
@@ -74,7 +74,7 @@ export default function CreateBuffaloModal({ open, onClose, onSubmit }) {
             </div>
             <button
               onClick={onClose}
-              className="h-10 w-10 grid place-items-center rounded-xl border border-gray-200 hover:bg-gray-50 text-xl font-bold text-gray-600"
+              className="h-10 w-10 grid place-items-center rounded-2xl border border-gray-200 hover:bg-gray-50 text-xl font-bold text-gray-600"
               aria-label="Fechar modal"
             >
               ×
@@ -300,17 +300,17 @@ export default function CreateBuffaloModal({ open, onClose, onSubmit }) {
             )}
 
             {/* Botões (fixos na parte inferior) */}
-            <div className="sticky bottom-0 flex justify-end gap-2 pt-4 border-t bg-white">
+            <div className="sticky bottom-0 flex justify-end gap-2 pt-4 border-t bg-white rounded-b-3xl">
               <button
                 type="button"
-                className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                 onClick={onClose}
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 transition-colors shadow-sm"
+                className="px-5 py-2.5 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 transition-colors shadow-sm"
               >
                 Salvar Búfalo
               </button>
