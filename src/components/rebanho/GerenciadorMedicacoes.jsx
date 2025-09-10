@@ -1,12 +1,36 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import medicacaoService from "@/services/medicacaoService";
+import Button from "@/components/Button";
+import MedicacaoModal from "./MedicacaoModal";
 
-export default function GerenciadorMedicacoes({ token }) {
+export default function GerenciadorMedicacoes() {
   const [medicacoes, setMedicacoes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [medicacaoParaEditar, setMedicacaoParaEditar] = useState(null);
+  const [token, setToken] = useState(null);
+
+  // Sempre busca o token mais recente do Supabase
+  useEffect(() => {
+    const getToken = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setToken(session?.access_token || null);
+    };
+    getToken();
+    // Atualiza token em mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => getToken());
+    return () => subscription.unsubscribe();
+  }, []);
 
   const fetchMedicacoes = async () => {
+    if (!token) {
+      setError("Sessão expirada ou não autenticada. Faça login novamente.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -74,39 +98,36 @@ export default function GerenciadorMedicacoes({ token }) {
     fetchMedicacoes();
   }, [token]);
       
-      // Tentar criar usando a API conforme documentação
-      let novaMedicacao;
-      
-      try {
-        // Criar medicação usando o endpoint POST /medicamentos
-        novaMedicacao = await medicacaoService.criarMedicacao(token, formData);
-        console.log("✅ Medicação criada com sucesso:", novaMedicacao);
-        
-        // Garantir que o objeto tenha uma data de cadastro para exibição
-        if (!novaMedicacao.data_cadastro && !novaMedicacao.created_at) {
-          novaMedicacao.data_cadastro = new Date().toISOString().split('T')[0];
-        }
-        
-        // Adicionar à lista local
-        setMedicacoes([...medicacoes, novaMedicacao]);
-        setShowModal(false);
-        return;
-      } catch (apiError) {
-        // Analisar erro específico
-        if (apiError.response?.status === 500) {
-          console.error("� Erro interno do servidor ao criar medicação");
-          throw new Error("O servidor encontrou um erro ao processar sua solicitação. Tente novamente mais tarde.");
-        } else if (apiError.response?.status === 401) {
-          console.error("🔴 Erro de autenticação ao criar medicação");
-          throw new Error("Sessão expirada. Por favor, faça login novamente.");
-        } else {
-          console.error("🔴 Erro na API ao criar medicação:", apiError);
-          throw new Error("Não foi possível criar a medicação. Verifique sua conexão e tente novamente.");
-        }
+
+  // Função para criar uma nova medicação
+  const handleCreateMedicacao = async (formData) => {
+    let novaMedicacao;
+    try {
+      // Criar medicação usando o endpoint POST /medicamentos
+      novaMedicacao = await medicacaoService.criarMedicacao(token, formData);
+      console.log("✅ Medicação criada com sucesso:", novaMedicacao);
+
+      // Garantir que o objeto tenha uma data de cadastro para exibição
+      if (!novaMedicacao.data_cadastro && !novaMedicacao.created_at) {
+        novaMedicacao.data_cadastro = new Date().toISOString().split('T')[0];
       }
-    } catch (err) {
-      console.error("Erro ao criar medicação:", err);
-      throw err; // Propaga o erro para ser tratado pelo componente do modal
+
+      // Adicionar à lista local
+      setMedicacoes([...medicacoes, novaMedicacao]);
+      setShowModal(false);
+      return;
+    } catch (apiError) {
+      // Analisar erro específico
+      if (apiError.response?.status === 500) {
+        console.error("� Erro interno do servidor ao criar medicação");
+        throw new Error("O servidor encontrou um erro ao processar sua solicitação. Tente novamente mais tarde.");
+      } else if (apiError.response?.status === 401) {
+        console.error("🔴 Erro de autenticação ao criar medicação");
+        throw new Error("Sessão expirada. Por favor, faça login novamente.");
+      } else {
+        console.error("🔴 Erro na API ao criar medicação:", apiError);
+        throw new Error("Não foi possível criar a medicação. Verifique sua conexão e tente novamente.");
+      }
     }
   };
 
