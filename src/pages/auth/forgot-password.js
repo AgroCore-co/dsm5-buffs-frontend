@@ -86,8 +86,9 @@ export default function ForgotPassword() {
       <div className={styles.imageSection}>
         <Image
           src="/images/bg2.png"
-          alt="Imagem de recuperação"
-          className={styles.image}
+          alt="Background"
+          width={1920}
+          height={1080}
         />
       </div>
       <div className={styles.formSection}>
@@ -120,7 +121,12 @@ export default function ForgotPassword() {
               Email
             </label>
             <span className={styles.icon} aria-hidden="true">
-              <Image src="/images/icon_email.svg" alt="" />
+              <Image
+                src="/images/icon_email.svg"
+                alt="Email"
+                width={24}
+                height={24}
+              />
             </span>
           </div>
 
