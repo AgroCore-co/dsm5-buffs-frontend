@@ -106,81 +106,9 @@ const getSexIcon = (sexo) => {
 
 // A função getUniqueValues foi movida para dentro do componente Rebanho
 
-const getDadosZootecnicos = (buffalo) => ({
-  producaoLeite:
-    buffalo.sexo === "Fêmea" &&
-    (buffalo.maturidade === "Vaca" || buffalo.maturidade === "Novilha")
-      ? {
-          producaoDiaria: Math.floor(Math.random() * 15) + 5 + " L",
-          producaoMensal: Math.floor(Math.random() * 300) + 150 + " L",
-          gordura: (Math.random() * 2 + 4).toFixed(1) + "%",
-          proteina: (Math.random() * 1 + 3).toFixed(1) + "%",
-        }
-      : null,
-  reproducao: {
-    ultimoCio: buffalo.sexo === "Fêmea" ? "12/11/2024" : "N/A",
-    gestante:
-      buffalo.sexo === "Fêmea" ? (Math.random() > 0.7 ? "Sim" : "Não") : "N/A",
-    ultimoParto:
-      buffalo.sexo === "Fêmea" && buffalo.maturidade === "Vaca"
-        ? "15/06/2024"
-        : "N/A",
-    numeroPartos:
-      buffalo.sexo === "Fêmea" && buffalo.maturidade === "Vaca"
-        ? Math.floor(Math.random() * 5) + 1
-        : 0,
-  },
-  crescimento: {
-    pesoNascimento:
-      buffalo.maturidade === "Bezerro" || buffalo.maturidade === "Bezerra"
-        ? "35 kg"
-        : "N/A",
-    ganhoPesoDiario:
-      buffalo.maturidade === "Bezerro" || buffalo.maturidade === "Bezerra"
-        ? "0.8 kg/dia"
-        : "N/A",
-    alturaGarupa: Math.floor(Math.random() * 30) + 120 + " cm",
-    condicaoCorporal: Math.floor(Math.random() * 3) + 3 + "/5",
-  },
-});
+const getDadosZootecnicos = (buffalo) => ({});
 
-const getDadosSanitarios = (buffalo) => ({
-  vacinacao: [
-    {
-      vacina: "Febre Aftosa",
-      data: "15/10/2024",
-      proxima: "15/04/2025",
-      status: "Em dia",
-    },
-  ],
-  vermifugacao: [
-    {
-      produto: "Ivermectina",
-      data: "01/11/2024",
-      proxima: "01/02/2025",
-      status: "Em dia",
-    },
-  ],
-  exames: [
-    {
-      exame: "Hemograma",
-      data: "25/11/2024",
-      resultado: "Normal",
-      status: "Normal",
-    },
-  ],
-  tratamentos:
-    buffalo.status === "Doente"
-      ? [
-          {
-            tratamento: "Antibiótico",
-            inicio: "01/12/2024",
-            fim: "10/12/2024",
-            status: "Em andamento",
-          },
-        ]
-      : [],
-});
+const getDadosSanitarios = (buffalo) => ({});
 
 // ==================== COMPONENTE PRINCIPAL ====================
 export default function Rebanho() {
@@ -486,7 +414,7 @@ export default function Rebanho() {
     const dataSource =
       bufalosFilteredByProperty.length > 0 ? bufalosFilteredByProperty : [];
 
-    return dataSource.filter((buffalo) => {
+    const filtered = dataSource.filter((buffalo) => {
       return (
         (filters.sexo === "" ||
           buffalo.sexo === filters.sexo ||
@@ -503,6 +431,20 @@ export default function Rebanho() {
           (buffalo.status === true && filters.status === "Ativo") ||
           (buffalo.status === false && filters.status === "Inativo"))
       );
+    });
+
+    // Ordenar para mostrar primeiro os búfalos ativos (status: true)
+    // Depois ordenar por nome para manter consistência
+    return filtered.sort((a, b) => {
+      // Primeiro critério: status (ativos primeiro)
+      if (a.status !== b.status) {
+        return b.status - a.status; // true (1) vem antes de false (0)
+      }
+
+      // Segundo critério: ordenar por nome alfabeticamente
+      const nomeA = (a.nome || "").toLowerCase();
+      const nomeB = (b.nome || "").toLowerCase();
+      return nomeA.localeCompare(nomeB);
     });
   };
 
@@ -1225,7 +1167,9 @@ export default function Rebanho() {
         </div>
 
         {/* Gerenciador de Medicações */}
-        <GerenciadorMedicacoes token={token || (isAuthenticated ? getAccessToken() : null)} />
+        <GerenciadorMedicacoes
+          token={token || (isAuthenticated ? getAccessToken() : null)}
+        />
 
         <HerdHealthAnalysis records={records} />
 
@@ -1235,10 +1179,7 @@ export default function Rebanho() {
           buffalo={selectedBuffalo}
           onClose={closeViewModal}
           getStatusColor={getStatusColor}
-          getDadosZootecnicos={getDadosZootecnicos}
-          getDadosSanitarios={getDadosSanitarios}
           getSexIcon={getSexIcon}
-          buffalosMock={bufalos}
         />
 
         {/* Modal de criar búfalo */}

@@ -1,104 +1,114 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/router"
-import Image from "next/image"
-import { useAuth } from "@/hooks/useAuth"
-import Button from "@/components/Button"
-import styles from "@/styles/Login.module.css" // usando o mesmo CSS das outras telas
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Image from "next/image";
+import { useAuth } from "@/hooks/useAuth";
+import Button from "@/components/Button";
+import styles from "@/styles/Login.module.css"; // usando o mesmo CSS das outras telas
 
 export default function ResetPassword() {
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [error, setError] = useState("")
-  const [successMessage, setSuccessMessage] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const { updatePassword, isLoading } = useAuth()
-  const router = useRouter()
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { updatePassword, isLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     // Verificar se há um hash fragment na URL (token de reset)
     if (!window.location.hash) {
-      router.push("/login")
+      router.push("/auth/login");
     }
-  }, [router])
+  }, [router]);
 
   useEffect(() => {
-    document.body.setAttribute("data-page", "reset-password")
+    document.body.setAttribute("data-page", "reset-password");
     return () => {
-      document.body.removeAttribute("data-page")
-    }
-  }, [])
+      document.body.removeAttribute("data-page");
+    };
+  }, []);
 
-  if (isLoading) return null
+  if (isLoading) return null;
 
   const validateForm = () => {
     if (!password) {
-      setError("Por favor, digite sua nova senha")
-      return false
+      setError("Por favor, digite sua nova senha");
+      return false;
     }
 
     if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres")
-      return false
+      setError("A senha deve ter pelo menos 6 caracteres");
+      return false;
     }
 
     if (password !== confirmPassword) {
-      setError("As senhas não coincidem")
-      return false
+      setError("As senhas não coincidem");
+      return false;
     }
 
-    return true
-  }
+    return true;
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError("")
-    setSuccessMessage("")
+    e.preventDefault();
+    setError("");
+    setSuccessMessage("");
 
-    if (!validateForm()) return
+    if (!validateForm()) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const result = await updatePassword(password)
+      const result = await updatePassword(password);
 
       if (result.success) {
-        setSuccessMessage("✅ Senha atualizada com sucesso! Redirecionando para o login...")
+        setSuccessMessage(
+          "✅ Senha atualizada com sucesso! Redirecionando para o login..."
+        );
 
         setTimeout(() => {
-          router.push("/auth/login")
-        }, 3000)
+          router.push("/auth/login");
+        }, 3000);
       } else {
-        setError(result.error || "❌ Erro ao atualizar senha")
+        setError(result.error || "❌ Erro ao atualizar senha");
       }
     } catch (err) {
-      setError("❌ Erro inesperado. Tente novamente.")
+      setError("❌ Erro inesperado. Tente novamente.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleInputChange = (setter) => (e) => {
-    setter(e.target.value)
-    if (error) setError("")
-    if (successMessage) setSuccessMessage("")
-  }
+    setter(e.target.value);
+    if (error) setError("");
+    if (successMessage) setSuccessMessage("");
+  };
 
-  const togglePasswordVisibility = () => setShowPassword((prev) => !prev)
-  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword((prev) => !prev)
+  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
+  const toggleConfirmPasswordVisibility = () =>
+    setShowConfirmPassword((prev) => !prev);
 
   return (
     <div className={`${styles.container} ${styles.loginPage}`}>
       <div className={styles.imageSection}>
-        <Image src="/images/bg2.png" alt="Redefinir Senha" className={styles.image} />
+        <Image
+          src="/images/bg2.png"
+          alt="Background"
+          fill
+          style={{ objectFit: "cover" }}
+        />
       </div>
 
       <div className={styles.formSection}>
         <h1 className={styles.title}>Redefinir Senha</h1>
-        <p className={styles.description}>Digite sua nova senha abaixo para redefinir o acesso à sua conta.</p>
+        <p className={styles.description}>
+          Digite sua nova senha abaixo para redefinir o acesso à sua conta.
+        </p>
 
         {error && <p className={styles.error}>{error}</p>}
         {successMessage && <p className={styles.success}>{successMessage}</p>}
@@ -129,8 +139,14 @@ export default function ResetPassword() {
               disabled={isSubmitting}
             >
               <Image
-                src={showPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
-                alt=""
+                src={
+                  showPassword
+                    ? "/images/not-view-password.svg"
+                    : "/images/not-view-password-bloqued.svg"
+                }
+                alt="Ícone de senha"
+                width={24}
+                height={24}
               />
             </button>
           </div>
@@ -156,28 +172,42 @@ export default function ResetPassword() {
               type="button"
               className={styles.icon}
               onClick={toggleConfirmPasswordVisibility}
-              aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+              aria-label={
+                showConfirmPassword ? "Ocultar senha" : "Mostrar senha"
+              }
               disabled={isSubmitting}
             >
               <Image
-                src={showConfirmPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
-                alt=""
+                src={
+                  showPassword
+                    ? "/images/not-view-password.svg"
+                    : "/images/not-view-password-bloqued.svg"
+                }
+                alt="Ícone de senha"
+                width={24}
+                height={24}
               />
             </button>
           </div>
 
-          <Button type="submit" variant="primary" size="full" loading={isSubmitting} disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="full"
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
             {isSubmitting ? "Atualizando..." : "Atualizar Senha"}
           </Button>
         </form>
 
         <p className={styles.signupLink}>
           Lembrou da sua senha?{" "}
-          <a href="/login" className={styles.link}>
+          <a href="/auth/login" className={styles.link}>
             Fazer login
           </a>
         </p>
       </div>
     </div>
-  )
+  );
 }
