@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import propriedadeService from "@/services/propriedadeService";
 import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/hooks/useAuth";
 
 export const PropertyContext = createContext(null);
 
@@ -20,6 +21,8 @@ let __dev_lastLoadAt = 0;
 // -------------------------------------------------------------------------
 
 export const PropertyProvider = ({ children }) => {
+  const { isAuthenticated, needsProfile, userProfile, isLoading: authLoading } = useAuth();
+  
   const [propriedades, setPropriedades] = useState([]); // lista do usuário
   const [propriedadeSelecionada, setPropriedadeSelecionada] = useState(null); // objeto selecionado
   const [selectedId, setSelectedId] = useState(null); // id da selecionada (persistido)
@@ -31,6 +34,16 @@ export const PropertyProvider = ({ children }) => {
 
   const carregarPropriedades = useCallback(async () => {
     if (inFlightRef.current) return;
+    
+    // Don't load properties if user is not authenticated or needs to complete profile
+    if (!isAuthenticated || needsProfile || authLoading) {
+      setPropriedades([]);
+      setSelectedId(null);
+      setPropriedadeSelecionada(null);
+      if (typeof window !== "undefined") localStorage.removeItem(LS_SELECTED_ID);
+      return;
+    }
+    
     inFlightRef.current = true;
     setLoadingPropriedade(true);
     setErroPropriedade("");
@@ -114,7 +127,7 @@ export const PropertyProvider = ({ children }) => {
       setLoadingPropriedade(false);
       inFlightRef.current = false;
     }
-  }, [selectedId]);
+  }, [selectedId, isAuthenticated, needsProfile, authLoading]);
 
   // Seleção manual exposta no contexto
   const selectProperty = useCallback(
@@ -189,6 +202,13 @@ export const PropertyProvider = ({ children }) => {
     });
     return () => sub.subscription?.unsubscribe();
   }, [carregarPropriedades]);
+
+  // Load properties when user completes profile
+  useEffect(() => {
+    if (isAuthenticated && !needsProfile && !authLoading && userProfile) {
+      void carregarPropriedades();
+    }
+  }, [isAuthenticated, needsProfile, authLoading, userProfile, carregarPropriedades]);
 
   return (
     <PropertyContext.Provider

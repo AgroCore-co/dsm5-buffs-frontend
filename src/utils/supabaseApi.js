@@ -62,7 +62,9 @@ export class SupabaseAuth {
         error,
       } = await supabase.auth.getSession();
       if (error) throw error;
-      return session?.access_token || null;
+      
+      const token = session?.access_token || null;
+      return token;
     } catch (error) {
       console.error("Erro ao obter token de acesso:", error.message);
       return null;

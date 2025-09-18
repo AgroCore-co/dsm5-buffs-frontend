@@ -93,32 +93,7 @@ export default function Equipe() {
           </div>
         </div>
 
-        {/* Gráfico de Distribuição */}
-        <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Distribuição da Equipe</h2>
-          <div className="w-full">
-            <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Distribuição por Cargos</h3>
-              <ResponsiveContainer width="100%" height={400}>
-                <PieChart>
-                  <Pie
-                    data={distribuicaoCargos}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={150}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {distribuicaoCargos.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `${value} funcionários`} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
+        
 
 
 

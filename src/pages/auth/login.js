@@ -102,6 +102,8 @@ export default function Login() {
           src="/images/bg2.png"
           alt="Imagem de login"
           className={styles.image}
+          width={500}
+          height={600}
         />
       </div>
       <div className={styles.formSection}>
@@ -131,7 +133,7 @@ export default function Login() {
               Email
             </label>
             <span className={styles.icon} aria-hidden="true">
-              <Image src="/images/icon_email.svg" alt="" />
+              <Image src="/images/icon_email.svg" alt="" width={20} height={20} />
             </span>
           </div>
 
@@ -166,6 +168,8 @@ export default function Login() {
                     : "/images/not-view-password-bloqued.svg"
                 }
                 alt=""
+                width={20}
+                height={20}
               />
             </button>
           </div>
@@ -204,6 +208,8 @@ export default function Login() {
                 src="/images/google-icon.svg" 
                 alt="Google" 
                 className={styles.googleIcon}
+                width={18}
+                height={18}
               />
               
             </>

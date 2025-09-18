@@ -20,9 +20,7 @@ const Navbar = () => {
     { label: "Propriedades", path: "/propriedades" },
     { label: "Rebanho", path: "/rebanho" },
     { label: "Lactação", path: "/lactacao" },
-    { label: "Alimentação", path: "/alimentacao" },
     { label: "Controle Reprodução", path: "/reproducao" },
-    { label: "Manejo", path: "/manejo" },
     { label: "Equipe", path: "/equipe" },
     { label: "Industria", path: "/industria" },
   ];
@@ -133,6 +131,8 @@ const Navbar = () => {
                 src="/images/Logo-buffs.svg"
                 alt="Buffs Logo"
                 className="h-8 w-auto cursor-pointer transition-transform duration-200 hover:scale-105"
+                width={200}
+                height={80}
               />
             </Link>
 
@@ -336,6 +336,8 @@ const Navbar = () => {
                 src="/images/Logo-buffs.svg"
                 alt="Buffs Logo"
                 className="h-8 w-auto"
+                width={200}
+                height={80}
               />
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
