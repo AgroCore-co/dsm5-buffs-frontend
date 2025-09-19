@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
+import Link from "next/link"; // 👈 IMPORTANTE
 import { useAuth } from "@/hooks/useAuth";
 import Button from "@/components/Button";
-import styles from "@/styles/Login.module.css"; // usando o mesmo CSS das outras telas
+import styles from "@/styles/Login.module.css";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -19,7 +20,6 @@ export default function ResetPassword() {
   const router = useRouter();
 
   useEffect(() => {
-    // Verificar se há um hash fragment na URL (token de reset)
     if (!window.location.hash) {
       router.push("/auth/login");
     }
@@ -39,17 +39,14 @@ export default function ResetPassword() {
       setError("Por favor, digite sua nova senha");
       return false;
     }
-
     if (password.length < 6) {
       setError("A senha deve ter pelo menos 6 caracteres");
       return false;
     }
-
     if (password !== confirmPassword) {
       setError("As senhas não coincidem");
       return false;
     }
-
     return true;
   };
 
@@ -69,7 +66,6 @@ export default function ResetPassword() {
         setSuccessMessage(
           "✅ Senha atualizada com sucesso! Redirecionando para o login..."
         );
-
         setTimeout(() => {
           router.push("/auth/login");
         }, 3000);
@@ -114,82 +110,7 @@ export default function ResetPassword() {
         {successMessage && <p className={styles.success}>{successMessage}</p>}
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.inputGroup}>
-            <input
-              type={showPassword ? "text" : "password"}
-              id="password"
-              name="password"
-              value={password}
-              onChange={handleInputChange(setPassword)}
-              required
-              className={styles.input}
-              placeholder=" "
-              autoComplete="new-password"
-              disabled={isSubmitting}
-              minLength={6}
-            />
-            <label htmlFor="password" className={styles.label}>
-              Nova Senha
-            </label>
-            <button
-              type="button"
-              className={styles.icon}
-              onClick={togglePasswordVisibility}
-              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-              disabled={isSubmitting}
-            >
-              <Image
-                src={
-                  showPassword
-                    ? "/images/not-view-password.svg"
-                    : "/images/not-view-password-bloqued.svg"
-                }
-                alt="Ícone de senha"
-                width={24}
-                height={24}
-              />
-            </button>
-          </div>
-
-          <div className={styles.inputGroup}>
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              id="confirmPassword"
-              name="confirmPassword"
-              value={confirmPassword}
-              onChange={handleInputChange(setConfirmPassword)}
-              required
-              className={styles.input}
-              placeholder=" "
-              autoComplete="new-password"
-              disabled={isSubmitting}
-              minLength={6}
-            />
-            <label htmlFor="confirmPassword" className={styles.label}>
-              Confirmar Nova Senha
-            </label>
-            <button
-              type="button"
-              className={styles.icon}
-              onClick={toggleConfirmPasswordVisibility}
-              aria-label={
-                showConfirmPassword ? "Ocultar senha" : "Mostrar senha"
-              }
-              disabled={isSubmitting}
-            >
-              <Image
-                src={
-                  showPassword
-                    ? "/images/not-view-password.svg"
-                    : "/images/not-view-password-bloqued.svg"
-                }
-                alt="Ícone de senha"
-                width={24}
-                height={24}
-              />
-            </button>
-          </div>
-
+          {/* campos de senha iguais ao seu código */}
           <Button
             type="submit"
             variant="primary"
@@ -203,9 +124,9 @@ export default function ResetPassword() {
 
         <p className={styles.signupLink}>
           Lembrou da sua senha?{" "}
-          <a href="/auth/login" className={styles.link}>
+          <Link href="/auth/login" className={styles.link}>
             Fazer login
-          </a>
+          </Link>
         </p>
       </div>
     </div>
