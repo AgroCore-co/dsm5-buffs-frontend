@@ -126,33 +126,33 @@ export default function MedicacaoModal({ open, onClose, onSubmit, initialData })
                 required
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FFCF78]"
               >
-                <option value="">Selecione o tipo</option>
-                <optgroup label="Controle Parasitário">
-                  <option value="Vermifugação">Vermifugação</option>
-                  <option value="Carrapaticida">Carrapaticida</option>
-                  <option value="Bernicida">Bernicida</option>
+                <option key="empty" value="">Selecione o tipo</option>
+                <optgroup key="parasitario" label="Controle Parasitário">
+                  <option key="vermifugacao" value="Vermifugação">Vermifugação</option>
+                  <option key="carrapaticida" value="Carrapaticida">Carrapaticida</option>
+                  <option key="bernicida" value="Bernicida">Bernicida</option>
                 </optgroup>
-                <optgroup label="Tratamentos Medicamentosos">
-                  <option value="Antibiótico">Antibiótico</option>
-                  <option value="Anti-inflamatório">Anti-inflamatório</option>
-                  <option value="Antitérmico">Antitérmico</option>
-                  <option value="Antidiarreico">Antidiarreico</option>
-                  <option value="Antitóxico">Antitóxico</option>
+                <optgroup key="medicamentosos" label="Tratamentos Medicamentosos">
+                  <option key="antibiotico" value="Antibiótico">Antibiótico</option>
+                  <option key="anti-inflamatorio" value="Anti-inflamatório">Anti-inflamatório</option>
+                  <option key="antitermico" value="Antitérmico">Antitérmico</option>
+                  <option key="antidiarreico" value="Antidiarreico">Antidiarreico</option>
+                  <option key="antitoxico" value="Antitóxico">Antitóxico</option>
                 </optgroup>
-                <optgroup label="Prevenção">
-                  <option value="Vacina">Vacina</option>
-                  <option value="Profilaxia">Profilaxia</option>
+                <optgroup key="prevencao" label="Prevenção">
+                  <option key="vacina" value="Vacina">Vacina</option>
+                  <option key="profilaxia" value="Profilaxia">Profilaxia</option>
                 </optgroup>
-                <optgroup label="Suplementação">
-                  <option value="Suplemento Mineral">Suplemento Mineral</option>
-                  <option value="Suplemento Vitamínico">Suplemento Vitamínico</option>
-                  <option value="Suplemento Energético">Suplemento Energético</option>
-                  <option value="Probiótico">Probiótico</option>
+                <optgroup key="suplementacao" label="Suplementação">
+                  <option key="suplemento-mineral" value="Suplemento Mineral">Suplemento Mineral</option>
+                  <option key="suplemento-vitaminico" value="Suplemento Vitamínico">Suplemento Vitamínico</option>
+                  <option key="suplemento-energetico" value="Suplemento Energético">Suplemento Energético</option>
+                  <option key="probiotico" value="Probiótico">Probiótico</option>
                 </optgroup>
-                <optgroup label="Outros">
-                  <option value="Hormonal">Hormonal</option>
-                  <option value="Tópico">Tópico</option>
-                  <option value="Outro">Outro</option>
+                <optgroup key="outros" label="Outros">
+                  <option key="hormonal" value="Hormonal">Hormonal</option>
+                  <option key="topico" value="Tópico">Tópico</option>
+                  <option key="outro" value="Outro">Outro</option>
                 </optgroup>
               </select>
             </div>

@@ -13,10 +13,10 @@ export const useAuth = () => {
   const [needsProfile, setNeedsProfile] = useState(false)
   const [error, setError] = useState(null)
   const [authInitialized, setAuthInitialized] = useState(false)
-  const didHandleRef = useRef(false)
   const router = useRouter()
+  const firstCheckRef = useRef(true) // marca se é o primeiro checkAuth
+  const didHandleEventRef = useRef(false) // impede loop de eventos
 
-  // Função para verificar se o usuário tem perfil criado na API
   const checkUserProfile = async (token) => {
     try {
       const profile = await apiFetch("/usuarios/me", { token })
@@ -25,7 +25,6 @@ export const useAuth = () => {
       return true
     } catch (error) {
       if (error.status === 404) {
-        // Usuário não tem perfil ainda
         setNeedsProfile(true)
         setUserProfile(null)
         return false
@@ -40,15 +39,14 @@ export const useAuth = () => {
         const {
           data: { session },
         } = await supabase.auth.getSession()
+
         if (session) {
           setUser(session.user)
           setIsAuthenticated(true)
-
-          // Verificar se o usuário tem perfil
           try {
             await checkUserProfile(session.access_token)
-          } catch (error) {
-            console.error("Erro ao verificar perfil do usuário:", error)
+          } catch (err) {
+            console.error("Erro ao verificar perfil do usuário:", err)
           }
         } else {
           setUser(null)
@@ -56,8 +54,8 @@ export const useAuth = () => {
           setIsAuthenticated(false)
           setNeedsProfile(false)
         }
-      } catch (error) {
-        console.error("Erro na verificação de autenticação:", error)
+      } catch (err) {
+        console.error("Erro na verificação de autenticação:", err)
         setUser(null)
         setUserProfile(null)
         setIsAuthenticated(false)
@@ -65,49 +63,46 @@ export const useAuth = () => {
       } finally {
         setIsLoading(false)
         setAuthInitialized(true)
+        firstCheckRef.current = false
       }
     }
 
     checkAuth()
 
-    // Escutar mudanças na autenticação
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!authInitialized || didHandleEventRef.current) return
+      didHandleEventRef.current = true
+
       switch (event) {
         case "SIGNED_IN":
-          setIsLoading(true)
           setUser(session.user)
           setIsAuthenticated(true)
           try {
             await checkUserProfile(session.access_token)
-          } catch (error) {
-            console.error("Erro ao verificar perfil do usuário:", error)
+          } catch (err) {
+            console.error("Erro ao verificar perfil do usuário:", err)
           }
-          setIsLoading(false)
           break
         case "SIGNED_OUT":
-          setIsLoading(true)
           setUser(null)
           setUserProfile(null)
           setIsAuthenticated(false)
           setNeedsProfile(false)
-          setIsLoading(false)
           break
         case "TOKEN_REFRESHED":
         case "USER_UPDATED":
-          // Eventos neutros: NÃO tocar em isLoading/isAuthenticated/authInitialized
-          return
+          // eventos neutros, não mexe em isLoading/isAuthenticated
+          break
         default:
-          return
+          break
       }
-      setAuthInitialized(true)
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [authInitialized])
 
-  // Login com email e senha
   const login = async (email, password) => {
     setIsLoading(true)
     try {
@@ -116,249 +111,51 @@ export const useAuth = () => {
         password,
       })
 
-      if (error) {
-        return { success: false, error: error.message }
-      }
+      if (error) return { success: false, error: error.message }
 
       if (data.session) {
         setUser(data.user)
         setIsAuthenticated(true)
-
-        // Verificar se o usuário tem perfil
-        try {
-          const hasProfile = await checkUserProfile(data.session.access_token)
-          return {
-            success: true,
-            user: data.user,
-            needsProfile: !hasProfile,
-            redirectTo: hasProfile ? "/dashboard" : "/complete-profile",
-          }
-        } catch (error) {
-          console.error("Erro ao verificar perfil:", error)
-          return {
-            success: true,
-            user: data.user,
-            needsProfile: true,
-            redirectTo: "/complete-profile",
-          }
+        const hasProfile = await checkUserProfile(data.session.access_token)
+        return {
+          success: true,
+          user: data.user,
+          needsProfile: !hasProfile,
+          redirectTo: hasProfile ? "/dashboard" : "/complete-profile",
         }
       } else {
         return { success: false, error: "Falha na autenticação" }
       }
-    } catch (error) {
+    } catch (err) {
       return { success: false, error: "Erro ao fazer login" }
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Login com Google
-  const loginWithGoogle = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-
-      if (error) {
-        return { success: false, error: error.message }
-      }
-
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: "Erro ao fazer login com Google" }
-    }
-  }
-
-  // Cadastro (apenas cria conta no Supabase)
-  const signUp = async (email, password, userData = {}) => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      console.log("Iniciando signUp no Supabase para:", email)
-      console.log("Dados do usuário:", userData)
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin,
-          data: userData, // Dados adicionais do usuário
-        },
-      })
-
-      console.log("Resposta do Supabase signUp:", { data, error })
-
-      if (error) {
-        console.error("Erro no signUp:", error)
-        setError(error.message)
-        return { success: false, error: error.message }
-      }
-
-      if (data.user) {
-        console.log("Usuário criado com sucesso:", data.user)
-        console.log("Email confirmado?", !!data.user.email_confirmed_at)
-
-        if (data.user.email_confirmed_at) {
-          setUser(data.user)
-          setIsAuthenticated(true)
-          setNeedsProfile(true) // Novo usuário sempre precisa completar perfil
-        }
-
-        const result = {
-          success: true,
-          user: data.user,
-          session: data.session,
-          needsConfirmation: !data.user.email_confirmed_at,
-        }
-
-        console.log("Resultado final do signUp:", result)
-        return result
-      }
-
-      console.error("Nenhum usuário retornado pelo Supabase")
-      return { success: false, error: "Falha ao criar usuário" }
-    } catch (err) {
-      console.error("Erro inesperado no signUp:", err)
-      setError(err.message)
-      return { success: false, error: err.message }
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Criar perfil do usuário na API
-  const createProfile = async (profileData) => {
-    try {
-      const token = await getAccessToken()
-      if (!token) {
-        return { success: false, error: "Token não encontrado" }
-      }
-
-      const profile = await apiFetch("/usuarios", {
-        method: "POST",
-        data: profileData,
-        token,
-      })
-
-      setUserProfile(profile)
-      setNeedsProfile(false)
-
-      return { success: true, profile }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
-
-  // Logout
+  // logout simplificado
   const logout = async () => {
+    setIsLoading(true)
     try {
-      setIsLoading(true)
       const { error } = await supabase.auth.signOut()
-
-      if (error) {
-        return { success: false, error: error.message }
-      }
-
+      if (error) return { success: false, error: error.message }
       setUser(null)
       setUserProfile(null)
       setIsAuthenticated(false)
       setNeedsProfile(false)
       router.push("/auth/login")
-
       return { success: true }
-    } catch (error) {
-      return { success: false, error: "Erro no logout" }
     } finally {
       setIsLoading(false)
     }
-  }
-
-  // Reset de senha
-  const resetPassword = async (email) => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      console.log("Iniciando reset de senha para:", email)
-
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
-
-      console.log("Resposta do reset password:", { data, error })
-
-      if (error) {
-        console.error("Erro no reset password:", error)
-        setError(error.message)
-        return { success: false, error: error.message }
-      }
-
-      console.log("Email de reset enviado com sucesso")
-      return { success: true }
-    } catch (err) {
-      console.error("Erro inesperado no reset password:", err)
-      setError(err.message)
-      return { success: false, error: err.message }
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Atualizar senha
-  const updatePassword = async (newPassword) => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      console.log("Atualizando senha do usuário")
-
-      const { data, error } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
-
-      console.log("Resposta do update password:", { data, error })
-
-      if (error) {
-        console.error("Erro ao atualizar senha:", error)
-        setError(error.message)
-        return { success: false, error: error.message }
-      }
-
-      console.log("Senha atualizada com sucesso")
-      return { success: true, user: data.user }
-    } catch (err) {
-      console.error("Erro inesperado ao atualizar senha:", err)
-      setError(err.message)
-      return { success: false, error: err.message }
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const checkAuthStatus = () => {
-    return isAuthenticated
-  }
-
-  const getCurrentUser = () => {
-    return user
-  }
-
-  const getUserProfile = () => {
-    return userProfile
   }
 
   const getAccessToken = async () => {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession()
       return session?.access_token || null
-    } catch (error) {
-      console.error("Erro ao obter token:", error)
+    } catch (err) {
+      console.error("Erro ao obter token:", err)
       return null
     }
   }
@@ -372,15 +169,7 @@ export const useAuth = () => {
     error,
     authInitialized,
     login,
-    loginWithGoogle,
-    signUp,
-    createProfile,
     logout,
-    resetPassword,
-    updatePassword,
-    checkAuthStatus,
-    getCurrentUser,
-    getUserProfile,
     getAccessToken,
     checkUserProfile,
   }
