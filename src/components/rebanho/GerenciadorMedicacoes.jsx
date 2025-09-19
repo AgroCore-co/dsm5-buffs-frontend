@@ -4,6 +4,8 @@ import medicacaoService from "@/services/medicacaoService";
 import Button from "@/components/Button";
 import MedicacaoModal from "./MedicacaoModal";
 
+const ITEMS_PER_PAGE = 5; // Número de medicações por página
+
 export default function GerenciadorMedicacoes() {
   const [medicacoes, setMedicacoes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -11,6 +13,7 @@ export default function GerenciadorMedicacoes() {
   const [showModal, setShowModal] = useState(false);
   const [medicacaoParaEditar, setMedicacaoParaEditar] = useState(null);
   const [token, setToken] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Sempre busca o token mais recente do Supabase
   useEffect(() => {
@@ -97,7 +100,16 @@ export default function GerenciadorMedicacoes() {
   useEffect(() => {
     fetchMedicacoes();
   }, [token]);
-      
+
+  // Lógica de paginação
+  const totalPages = Math.ceil(medicacoes.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentMedicacoes = medicacoes.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   // Função para criar uma nova medicação
   const handleCreateMedicacao = async (formData) => {
@@ -115,6 +127,7 @@ export default function GerenciadorMedicacoes() {
       // Adicionar à lista local
       setMedicacoes([...medicacoes, novaMedicacao]);
       setShowModal(false);
+      setCurrentPage(1); // Resetar para primeira página
       return;
     } catch (apiError) {
       // Analisar erro específico
@@ -273,19 +286,20 @@ export default function GerenciadorMedicacoes() {
           </Button>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white rounded-lg overflow-hidden">
-            <thead className="bg-[#f0f0f0]">
-              <tr>
-                <th className="p-3 text-center font-medium text-gray-800">Tipo</th>
-                <th className="p-3 text-center font-medium text-gray-800">Medicação</th>
-                <th className="p-3 text-center font-medium text-gray-800">Descrição</th>
-                <th className="p-3 text-center font-medium text-gray-800">Data de Cadastro</th>
-                <th className="p-3 text-center font-medium text-gray-800">Ações</th>
-              </tr>
-            </thead>
+        <>
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white rounded-lg overflow-hidden">
+              <thead className="bg-[#f0f0f0]">
+                <tr>
+                  <th className="p-3 text-center font-medium text-gray-800">Tipo</th>
+                  <th className="p-3 text-center font-medium text-gray-800">Medicação</th>
+                  <th className="p-3 text-center font-medium text-gray-800">Descrição</th>
+                  <th className="p-3 text-center font-medium text-gray-800">Data de Cadastro</th>
+                  <th className="p-3 text-center font-medium text-gray-800">Ações</th>
+                </tr>
+              </thead>
             <tbody className="divide-y divide-gray-200">
-              {medicacoes.map((med, index) => (
+              {currentMedicacoes.map((med, index) => (
                 <tr key={med.id || `medicacao-${index}`} className="odd:bg-white even:bg-[#fafafa]">
                   <td className="p-3 text-center text-gray-800">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -427,10 +441,59 @@ export default function GerenciadorMedicacoes() {
             </tbody>
           </table>
         </div>
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center space-x-2 mt-6">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                currentPage === 1
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+              }`}
+            >
+              Anterior
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                  currentPage === page
+                    ? "bg-[#CE7D0A] text-white"
+                    : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                currentPage === totalPages
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+              }`}
+            >
+              Próximo
+            </button>
+          </div>
+        )}
+
+        {totalPages > 0 && (
+          <div className="text-center text-sm text-gray-600 mt-4">
+            Mostrando {startIndex + 1} a {Math.min(endIndex, medicacoes.length)} de {medicacoes.length} medicações
+          </div>
+        )}
+        </>
       )}
 
       <MedicacaoModal
-        open={showModal}
         onClose={() => setShowModal(false)}
         onSubmit={medicacaoParaEditar ? handleEditMedicacao : handleCreateMedicacao}
         initialData={medicacaoParaEditar}

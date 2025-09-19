@@ -105,12 +105,6 @@ const getSexIcon = (sexo) => {
   return sexo === "Fêmea" ? "♀" : "♂";
 };
 
-// A função getUniqueValues foi movida para dentro do componente Rebanho
-
-const getDadosZootecnicos = (buffalo) => ({});
-
-const getDadosSanitarios = (buffalo) => ({});
-
 // ==================== COMPONENTE PRINCIPAL ====================
 export default function Rebanho() {
   const router = useRouter();
@@ -400,52 +394,49 @@ export default function Rebanho() {
   const [selectedBuffalo, setSelectedBuffalo] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
   const [showViewModal, setShowViewModal] = useState(false); // modal de visualizar (BuffaloModal)
-  const [showCreateModal, setShowCreateModal] = useState(false); // modal de criar
+  const [showCreateModal, setShowCreateModal] = useState(false); // modal de criar (CreateBuffaloModal)
 
-  // Função para lidar com o envio do formulário do modal de criar búfalo
-  const handleCreateBuffaloSubmit = (formData) => {
-    // Removida lógica de POST do búfalo
-    setShowCreateModal(false);
-    alert("✅ Modal fechado - lógica de cadastro removida");
+  // Filtrar búfalos ativos para os indicadores
+  const bufalosAtivos = bufalosFilteredByProperty.filter(
+    (b) => b.status === true
+  );
+
+  // Lógica de filtros e paginação
+  const getFilteredBuffalos = () => {
+    // Usar búfalos filtrados por propriedade
+    const dataSource =
+      bufalosFilteredByProperty.length > 0 ? bufalosFilteredByProperty : [];
+
+    // Filtrar búfalos de acordo com os filtros selecionados
+    const filtered = dataSource.filter((buffalo) => {
+      return (
+        (filters.sexo === "" ||
+          buffalo.sexo === filters.sexo ||
+          (buffalo.sexo === "M" && filters.sexo === "Macho") ||
+          (buffalo.sexo === "F" && filters.sexo === "Fêmea")) &&
+        (filters.raca === "" ||
+          buffalo.raca === filters.raca ||
+          buffalo.raca?.nome === filters.raca ||
+          buffalo.id_raca?.toString() === filters.raca) &&
+        (filters.maturidade === "" ||
+          buffalo.maturidade === filters.maturidade ||
+          buffalo.nivel_maturidade === filters.maturidade) &&
+        (filters.status === "" ||
+          (buffalo.status === true && filters.status === "Ativo") ||
+          (buffalo.status === false && filters.status === "Inativo"))
+      );
+    });
+
+    // Ordenar para mostrar primeiro os búfalos ativos, depois por nome
+    return filtered.sort((a, b) => {
+      if (a.status !== b.status) {
+        return b.status - a.status; // true (1) vem antes de false (0)
+      }
+      const nomeA = (a.nome || "").toLowerCase();
+      const nomeB = (b.nome || "").toLowerCase();
+      return nomeA.localeCompare(nomeB);
+    });
   };
-
-// Lógica de filtros e paginação
-const getFilteredBuffalos = () => {
-  // Usar búfalos filtrados por propriedade
-  const dataSource =
-    bufalosFilteredByProperty.length > 0 ? bufalosFilteredByProperty : [];
-
-  // Filtrar búfalos de acordo com os filtros selecionados
-  const filtered = dataSource.filter((buffalo) => {
-    return (
-      (filters.sexo === "" ||
-        buffalo.sexo === filters.sexo ||
-        (buffalo.sexo === "M" && filters.sexo === "Macho") ||
-        (buffalo.sexo === "F" && filters.sexo === "Fêmea")) &&
-      (filters.raca === "" ||
-        buffalo.raca === filters.raca ||
-        buffalo.raca?.nome === filters.raca ||
-        buffalo.id_raca?.toString() === filters.raca) &&
-      (filters.maturidade === "" ||
-        buffalo.maturidade === filters.maturidade ||
-        buffalo.nivel_maturidade === filters.maturidade) &&
-      (filters.status === "" ||
-        (buffalo.status === true && filters.status === "Ativo") ||
-        (buffalo.status === false && filters.status === "Inativo"))
-    );
-  });
-
-  // Ordenar para mostrar primeiro os búfalos ativos, depois por nome
-  return filtered.sort((a, b) => {
-    if (a.status !== b.status) {
-      return b.status - a.status; // true (1) vem antes de false (0)
-    }
-    const nomeA = (a.nome || "").toLowerCase();
-    const nomeB = (b.nome || "").toLowerCase();
-    return nomeA.localeCompare(nomeB);
-  });
-};
-
 
   const filteredBuffalos = getFilteredBuffalos();
   const totalPages = Math.ceil(filteredBuffalos.length / ITEMS_PER_PAGE);
@@ -465,10 +456,6 @@ const getFilteredBuffalos = () => {
     setSelectedBuffalo(null);
     setActiveTab("info");
   };
-
-  // abrir modal de criação (botão + Adicionar Búfalo)
-  const openCreateModal = () => setShowCreateModal(true);
-  const closeCreateModal = () => setShowCreateModal(false);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -535,14 +522,14 @@ const getFilteredBuffalos = () => {
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                {bufalosFilteredByProperty.length || "-"}
+                {bufalosAtivos.length || "-"}
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
                 {carregandoBufalos
                   ? "Carregando..."
                   : propriedadeSelecionada
-                  ? `Búfalos na propriedade ${propriedadeSelecionada.nome}`
-                  : "Búfalos no sistema"}
+                  ? `Búfalos ativos na propriedade ${propriedadeSelecionada.nome}`
+                  : "Búfalos ativos no sistema"}
               </p>
             </div>
 
@@ -562,18 +549,13 @@ const getFilteredBuffalos = () => {
               ) : (
                 <>
                   <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                    {
-                      bufalosFilteredByProperty.filter((b) => b.sexo === "F")
-                        .length
-                    }
+                    {bufalosAtivos.filter((b) => b.sexo === "F").length}
                   </p>
                   <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
-                    {bufalosFilteredByProperty.length > 0
+                    {bufalosAtivos.length > 0
                       ? `${Math.round(
-                          (bufalosFilteredByProperty.filter(
-                            (b) => b.sexo === "F"
-                          ).length /
-                            bufalosFilteredByProperty.length) *
+                          (bufalosAtivos.filter((b) => b.sexo === "F").length /
+                            bufalosAtivos.length) *
                             100
                         )}% do rebanho`
                       : "0% do rebanho"}
@@ -598,18 +580,13 @@ const getFilteredBuffalos = () => {
               ) : (
                 <>
                   <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                    {
-                      bufalosFilteredByProperty.filter((b) => b.sexo === "M")
-                        .length
-                    }
+                    {bufalosAtivos.filter((b) => b.sexo === "M").length}
                   </p>
                   <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
-                    {bufalosFilteredByProperty.length > 0
+                    {bufalosAtivos.length > 0
                       ? `${Math.round(
-                          (bufalosFilteredByProperty.filter(
-                            (b) => b.sexo === "M"
-                          ).length /
-                            bufalosFilteredByProperty.length) *
+                          (bufalosAtivos.filter((b) => b.sexo === "M").length /
+                            bufalosAtivos.length) *
                             100
                         )}% do rebanho`
                       : "0% do rebanho"}
@@ -634,13 +611,13 @@ const getFilteredBuffalos = () => {
               ) : (
                 <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
                   {
-                    bufalosFilteredByProperty.filter(
+                    bufalosAtivos.filter(
                       (b) =>
                         b.sexo === "F" &&
                         (b.nivel_maturidade === "A" ||
+                          b.nivel_maturidade === "V" ||
                           b.nivel_maturidade === "adulto" ||
-                          b.nivel_maturidade === "Adulto") &&
-                        b.status === true
+                          b.nivel_maturidade === "Adulto")
                     ).length
                   }
                 </p>
@@ -664,7 +641,7 @@ const getFilteredBuffalos = () => {
                 <p className="text-gray-400 text-sm mt-10">
                   Carregando dados...
                 </p>
-              ) : bufalosFilteredByProperty.length === 0 ? (
+              ) : bufalosAtivos.length === 0 ? (
                 <p className="text-gray-400 text-sm mt-10">
                   Nenhum dado disponível
                 </p>
@@ -675,28 +652,28 @@ const getFilteredBuffalos = () => {
                       data={[
                         {
                           name: "Bezerros",
-                          value: bufalosFilteredByProperty.filter(
+                          value: bufalosAtivos.filter(
                             (b) => b.nivel_maturidade === "B"
                           ).length,
                           color: "#FCA90F",
                         },
                         {
                           name: "Novilhos",
-                          value: bufalosFilteredByProperty.filter(
+                          value: bufalosAtivos.filter(
                             (b) => b.nivel_maturidade === "N"
                           ).length,
                           color: "#FFCF78",
                         },
                         {
                           name: "Adultos",
-                          value: bufalosFilteredByProperty.filter(
+                          value: bufalosAtivos.filter(
                             (b) => b.nivel_maturidade === "A"
                           ).length,
                           color: "#CE7D0A",
                         },
                         {
                           name: "Outros",
-                          value: bufalosFilteredByProperty.filter(
+                          value: bufalosAtivos.filter(
                             (b) => !["A", "B", "N"].includes(b.nivel_maturidade)
                           ).length,
                           color: "#F2B84D",
@@ -901,7 +878,7 @@ const getFilteredBuffalos = () => {
                 Registro de Búfalos
               </h2>
 
-              <Button variant="primary" size="medium" onClick={openCreateModal}>
+              <Button onClick={() => setShowCreateModal(true)}>
                 + Adicionar Búfalo
               </Button>
             </div>
@@ -1057,53 +1034,54 @@ const getFilteredBuffalos = () => {
                     </tr>
                   </thead>
 
-<tbody className="divide-y divide-gray-200">
-  {currentBuffalos.map((buffalo) => (
-    <tr
-      key={buffalo.id_bufalo || buffalo.tag}
-      className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50 cursor-pointer"
-      onClick={() => handleViewBuffalo(buffalo)}
-    >
-      <td className="p-3 text-center text-gray-800 text-base font-medium">
-        {buffalo.brinco || buffalo.tag}
-      </td>
-      <td className="p-3 text-center text-gray-800 text-base">
-        {buffalo.nome}
-      </td>
-      <td className="p-3 text-center text-gray-800 text-base">
-        {buffalo.sexo === "M"
-          ? "Macho"
-          : buffalo.sexo === "F"
-          ? "Fêmea"
-          : buffalo.sexo}
-      </td>
-      <td className="p-3 text-center text-gray-800 text-base">
-        {buffalo.raca?.nome ||
-          (buffalo.id_raca ? `Raça ${buffalo.id_raca}` : "N/D")}
-      </td>
-      <td className="p-3 text-center text-gray-800 text-base">
-        {buffalo.maturidade ||
-          (buffalo.nivel_maturidade === "N"
-            ? "Novilho(a)"
-            : buffalo.nivel_maturidade === "B"
-            ? "Bezerro(a)"
-            : buffalo.nivel_maturidade === "A"
-            ? "Adulto"
-            : buffalo.nivel_maturidade)}
-      </td>
-      <td className="p-3 text-center text-gray-800 text-base">
-        <span
-          className={`px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-28 ${getStatusColor(
-            buffalo.status === true ? "Ativo" : "Inativo"
-          )}`}
-        >
-          {buffalo.status === true ? "Ativo" : "Inativo"}
-        </span>
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+                  <tbody className="divide-y divide-gray-200">
+                    {currentBuffalos.map((buffalo) => (
+                      <tr
+                        key={buffalo.id_bufalo || buffalo.tag}
+                        className="odd:bg-white even:bg-[#fafafa] hover:bg-gray-50 cursor-pointer"
+                        onClick={() => handleViewBuffalo(buffalo)}
+                      >
+                        <td className="p-3 text-center text-gray-800 text-base font-medium">
+                          {buffalo.brinco || buffalo.tag}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          {buffalo.nome}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          {buffalo.sexo === "M"
+                            ? "Macho"
+                            : buffalo.sexo === "F"
+                            ? "Fêmea"
+                            : buffalo.sexo}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          {buffalo.raca?.nome ||
+                            (buffalo.id_raca
+                              ? `Raça ${buffalo.id_raca}`
+                              : "N/D")}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          {buffalo.maturidade ||
+                            (buffalo.nivel_maturidade === "N"
+                              ? "Novilho(a)"
+                              : buffalo.nivel_maturidade === "B"
+                              ? "Bezerro(a)"
+                              : buffalo.nivel_maturidade === "A"
+                              ? "Adulto"
+                              : buffalo.nivel_maturidade)}
+                        </td>
+                        <td className="p-3 text-center text-gray-800 text-base">
+                          <span
+                            className={`px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-28 ${getStatusColor(
+                              buffalo.status === true ? "Ativo" : "Inativo"
+                            )}`}
+                          >
+                            {buffalo.status === true ? "Ativo" : "Inativo"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
 
@@ -1164,25 +1142,28 @@ const getFilteredBuffalos = () => {
         </div>
 
         {/* Gerenciador de Medicações */}
-<GerenciadorMedicacoes token={token || (isAuthenticated ? getAccessToken() : null)} />
+        <GerenciadorMedicacoes
+          token={token || (isAuthenticated ? getAccessToken() : null)}
+        />
 
-<HerdHealthAnalysis records={records} />
+        <HerdHealthAnalysis records={records} />
 
-{/* Modal do Búfalo */}
-<BuffaloModal
-  open={showViewModal}
-  buffalo={selectedBuffalo}
-  onClose={closeViewModal}
-  getStatusColor={getStatusColor}
-  getSexIcon={getSexIcon}
-/>
-
+        {/* Modal do Búfalo */}
+        <BuffaloModal
+          open={showViewModal}
+          buffalo={selectedBuffalo}
+          onClose={closeViewModal}
+          getStatusColor={getStatusColor}
+          getSexIcon={getSexIcon}
+        />
 
         {/* Modal de criar búfalo */}
         <CreateBuffaloModal
           open={showCreateModal}
-          onClose={closeCreateModal}
-          onSubmit={handleCreateBuffaloSubmit}
+          onClose={() => setShowCreateModal(false)}
+          propriedadeId={propriedadeSelecionada?.id_propriedade}
+          racas={racas}
+          token={token}
         />
       </div>
     </>
