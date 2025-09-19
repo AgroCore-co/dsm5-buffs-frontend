@@ -285,8 +285,8 @@ export default function GerenciadorMedicacoes() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {medicacoes.map((med) => (
-                <tr key={med.id} className="odd:bg-white even:bg-[#fafafa]">
+              {medicacoes.map((med, index) => (
+                <tr key={med.id || `medicacao-${index}`} className="odd:bg-white even:bg-[#fafafa]">
                   <td className="p-3 text-center text-gray-800">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                       med.tipo_tratamento === "Vermifugação"
@@ -358,12 +358,14 @@ export default function GerenciadorMedicacoes() {
                           stroke="currentColor"
                         >
                           <path
+                            key="eye-path-1"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
                             d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                           />
                           <path
+                            key="eye-path-2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}

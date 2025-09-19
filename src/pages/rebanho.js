@@ -5,6 +5,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
 import { useProperty } from "@/hooks/useProperty";
+
 import {
   BarChart,
   Bar,
