@@ -14,8 +14,8 @@ export const useAuth = () => {
   const [error, setError] = useState(null)
   const [authInitialized, setAuthInitialized] = useState(false)
   const router = useRouter()
-  const firstCheckRef = useRef(true) // marca se é o primeiro checkAuth
-  const didHandleEventRef = useRef(false) // impede loop de eventos
+  const firstCheckRef = useRef(true) 
+  const didHandleEventRef = useRef(false) 
 
   const checkUserProfile = async (token) => {
     try {
@@ -93,7 +93,6 @@ export const useAuth = () => {
           break
         case "TOKEN_REFRESHED":
         case "USER_UPDATED":
-          // eventos neutros, não mexe em isLoading/isAuthenticated
           break
         default:
           break
@@ -133,7 +132,26 @@ export const useAuth = () => {
     }
   }
 
-  // logout simplificado
+  const loginWithGoogle = async () => {
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`, // ajuste conforme sua rota de callback
+        },
+      })
+
+      if (error) return { success: false, error: error.message }
+
+      return { success: true, data }
+    } catch (err) {
+      return { success: false, error: "Erro ao iniciar login com Google" }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const logout = async () => {
     setIsLoading(true)
     try {
@@ -169,6 +187,7 @@ export const useAuth = () => {
     error,
     authInitialized,
     login,
+    loginWithGoogle, // agora está disponível
     logout,
     getAccessToken,
     checkUserProfile,
