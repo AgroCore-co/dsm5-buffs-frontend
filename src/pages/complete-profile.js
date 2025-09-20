@@ -1,13 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
 
 const CompleteProfile = () => {
-  const [formData, setFormData] = useState({
-    nome: "",
-    telefone: "",
-    cargo: "",
-  });
+  const [formData, setFormData] = useState({ nome: "", telefone: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -16,11 +12,14 @@ const CompleteProfile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  const isFormValid = useMemo(() => {
+    const nome = String(formData.nome).trim();
+    const telefone = String(formData.telefone).trim();
+    return nome.length > 0 && nome.length <= 100 && telefone.length > 0;
+  }, [formData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,14 +27,21 @@ const CompleteProfile = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await createProfile(formData);
+      const payload = {
+        nome: String(formData.nome || "")
+          .trim()
+          .slice(0, 100),
+        telefone: String(formData.telefone || "").trim(),
+        id_endereco: 1, // fixo
+      };
 
-      if (result.success) {
-        router.push("/dashboard");
-      } else {
-        setError(result.error || "Erro ao criar perfil");
-      }
-    } catch (error) {
+      console.log("Payload enviado:", payload); // verificar no console
+      const result = await createProfile(payload);
+
+      if (result.success) router.push("/dashboard");
+      else setError(result.error || "Erro ao criar perfil");
+    } catch (err) {
+      console.error("Erro ao criar perfil:", err);
       setError("Erro inesperado ao criar perfil");
     } finally {
       setIsSubmitting(false);
@@ -76,10 +82,11 @@ const CompleteProfile = () => {
                   name="nome"
                   type="text"
                   required
+                  maxLength={100}
                   value={formData.nome}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Seu nome completo"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -99,29 +106,8 @@ const CompleteProfile = () => {
                   required
                   value={formData.telefone}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="(11) 99999-9999"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="cargo"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Cargo/Função *
-              </label>
-              <div className="mt-1">
-                <input
-                  id="cargo"
-                  name="cargo"
-                  type="text"
-                  required
-                  value={formData.cargo}
-                  onChange={handleChange}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Ex: Gerente da Fazenda"
                 />
               </div>
             </div>
@@ -129,7 +115,7 @@ const CompleteProfile = () => {
             <div>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isFormValid}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? "Salvando..." : "Completar Perfil"}
