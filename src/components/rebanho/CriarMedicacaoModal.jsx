@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import medicacaoService from "@/services/medicacaoService";
 
-export default function CriarMedicacaoModal({ open, onClose, onSubmit, initialData }) {
+export default function CriarMedicacaoModal({ open, onClose, onMedicacaoCriada, initialData }) {
   const { getAccessToken } = useAuth();
   const [formData, setFormData] = useState({
     tipo_tratamento: "",
@@ -31,7 +32,11 @@ export default function CriarMedicacaoModal({ open, onClose, onSubmit, initialDa
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let val = value;
+    if (name === "medicacao" || name === "tipo_tratamento") {
+      val = String(val).slice(0, 30);
+    }
+    setFormData((prev) => ({ ...prev, [name]: val }));
     if (erro) setErro(null);
     if (sucesso) setSucesso(false);
   };
@@ -41,12 +46,42 @@ export default function CriarMedicacaoModal({ open, onClose, onSubmit, initialDa
     setIsSubmitting(true);
     setErro(null);
     setSucesso(false);
+    // Validação local
+    const tipo_tratamento = formData.tipo_tratamento?.trim() || "";
+    const medicacao = formData.medicacao?.trim() || "";
+    if (!tipo_tratamento) {
+      setErro("O campo Tipo de Tratamento é obrigatório.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (tipo_tratamento.length > 30) {
+      setErro("Tipo de Tratamento deve ter no máximo 30 caracteres.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!medicacao) {
+      setErro("O campo Nome da Medicação é obrigatório.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (medicacao.length > 30) {
+      setErro("Nome da Medicação deve ter no máximo 30 caracteres.");
+      setIsSubmitting(false);
+      return;
+    }
     try {
       const token = await getAccessToken();
       if (!token) throw new Error("Token não disponível");
-      await onSubmit(formData, token);
+      // Sanitiza os valores para garantir que sejam string e <= 30 caracteres
+      const payload = {
+        tipo_tratamento: String(tipo_tratamento).slice(0, 30),
+        medicacao: String(medicacao).slice(0, 30),
+        descricao: formData.descricao || ""
+      };
+      const response = await medicacaoService.criarMedicacao(token, payload);
       setSucesso(true);
       setFormData({ tipo_tratamento: "", medicacao: "", descricao: "" });
+      if (onMedicacaoCriada) onMedicacaoCriada(response);
       setTimeout(() => {
         onClose();
       }, 1200);
@@ -75,31 +110,7 @@ export default function CriarMedicacaoModal({ open, onClose, onSubmit, initialDa
             <h2 className="text-2xl font-bold text-amber-700 tracking-tight">
               Cadastrar Medicação
             </h2>
-            <button
-              onClick={onClose}
-              className="h-10 w-10 grid place-items-center rounded-xl border border-gray-200 hover:bg-gray-50 text-xl font-bold text-gray-600"
-              aria-label="Fechar modal"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        {/* Conteúdo */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Mensagens */}
-          {erro && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
-              <p className="font-semibold">Erro</p>
-              <p>{erro}</p>
             </div>
-          )}
-          {sucesso && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-700">
-              <p className="font-semibold">Sucesso</p>
-              <p>Medicação cadastrada com sucesso!</p>
-            </div>
-          )}
 
           {/* Formulário de cadastro */}
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -112,7 +123,7 @@ export default function CriarMedicacaoModal({ open, onClose, onSubmit, initialDa
                 value={formData.tipo_tratamento}
                 onChange={handleChange}
                 required
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className={`border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 ${!formData.tipo_tratamento ? "border-red-300 bg-red-50" : "border-gray-300"}`}
               >
                 <option value="">Selecione...</option>
                 <optgroup label="Controle Parasitário">
@@ -143,6 +154,7 @@ export default function CriarMedicacaoModal({ open, onClose, onSubmit, initialDa
                   <option value="Outro">Outro</option>
                 </optgroup>
               </select>
+              <div className="text-xs text-gray-500 mt-1">{formData.tipo_tratamento.length}/30 caracteres</div>
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold text-gray-700">
@@ -154,9 +166,11 @@ export default function CriarMedicacaoModal({ open, onClose, onSubmit, initialDa
                 value={formData.medicacao}
                 onChange={handleChange}
                 required
+                maxLength={30}
                 placeholder="Ex: Ivermectina"
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className={`border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 ${!formData.medicacao ? "border-red-300 bg-red-50" : "border-gray-300"}`}
               />
+              <div className="text-xs text-gray-500 mt-1">{formData.medicacao.length}/30 caracteres</div>
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold text-gray-700">
@@ -181,7 +195,7 @@ export default function CriarMedicacaoModal({ open, onClose, onSubmit, initialDa
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !formData.tipo_tratamento || !formData.medicacao}
                 className="px-4 py-2 rounded-lg bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
               >
                 {isSubmitting ? "Salvando..." : "Salvar"}

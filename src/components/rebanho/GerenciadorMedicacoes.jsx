@@ -95,37 +95,16 @@ export default function GerenciadorMedicacoes() {
     setCurrentPage(page);
   };
 
-  // Função para criar uma nova medicação
-  const handleCreateMedicacao = async (formData) => {
-    let novaMedicacao;
-    try {
-      // Criar medicação usando o endpoint POST /medicamentos
-      novaMedicacao = await medicacaoService.criarMedicacao(token, formData);
-      console.log("✅ Medicação criada com sucesso:", novaMedicacao);
-
-      // Garantir que o objeto tenha uma data de cadastro para exibição
-      if (!novaMedicacao.data_cadastro && !novaMedicacao.created_at) {
-        novaMedicacao.data_cadastro = new Date().toISOString().split('T')[0];
+  // Função para adicionar medicação criada à lista
+  const adicionarMedicacaoNaLista = (novaMedicacao) => {
+    setMedicacoes((prev) => [
+      ...prev,
+      {
+        ...novaMedicacao,
+        data_cadastro: novaMedicacao.data_cadastro || novaMedicacao.created_at || new Date().toISOString().split('T')[0]
       }
-
-      // Adicionar à lista local
-      setMedicacoes([...medicacoes, novaMedicacao]);
-      setShowModal(false);
-      setCurrentPage(1); // Resetar para primeira página
-      return;
-    } catch (apiError) {
-      // Analisar erro específico
-      if (apiError.response?.status === 500) {
-        console.error("� Erro interno do servidor ao criar medicação");
-        throw new Error("O servidor encontrou um erro ao processar sua solicitação. Tente novamente mais tarde.");
-      } else if (apiError.response?.status === 401) {
-        console.error("🔴 Erro de autenticação ao criar medicação");
-        throw new Error("Sessão expirada. Por favor, faça login novamente.");
-      } else {
-        console.error("🔴 Erro na API ao criar medicação:", apiError);
-        throw new Error("Não foi possível criar a medicação. Verifique sua conexão e tente novamente.");
-      }
-    }
+    ]);
+    setCurrentPage(1);
   };
 
   const handleEditMedicacao = async (formData) => {
@@ -478,7 +457,7 @@ export default function GerenciadorMedicacoes() {
           setShowModal(false);
           setMedicacaoParaEditar(null);
         }}
-        onSubmit={handleCreateMedicacao}
+        onMedicacaoCriada={adicionarMedicacaoNaLista}
       />
 
       {/* Modal de editar */}

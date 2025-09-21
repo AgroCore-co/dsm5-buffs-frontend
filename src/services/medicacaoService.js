@@ -76,18 +76,16 @@ const medicacaoService = {
       const response = await apiClient.apiFetch("medicamentos", {
         method: "POST",
         token: token || undefined,  // Passar undefined fará apiClient buscar o token
-        data: dados,
+        body: dados,
       });
       console.log("✅ Medicação criada com sucesso:", dados.medicacao);
       return response;
     } catch (error) {
       console.error("🔴 Erro ao criar medicação:", error.status || error.message);
-      
       // Verificação de erro interno do servidor
       if (error.status === 500) {
         console.error("⚠️ Erro interno do servidor ao criar medicação");
       }
-      
       throw error;
     }
   },
