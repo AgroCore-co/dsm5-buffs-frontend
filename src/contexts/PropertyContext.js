@@ -6,145 +6,48 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import propriedadeService from "@/services/propriedadeService";
-import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "@/hooks/useAuth";
+import propriedadeService from "../services/propriedadeService";
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../hooks/useAuth";
 
-export const PropertyContext = createContext(null);
+export const PropertyContext = createContext();
 
 const LS_SELECTED_ID = "selectedPropertyId";
-
-// --- Dedup só em DESENVOLVIMENTO (evita duplicidade do StrictMode/HMR) ---
 const DEV_SKIP_DUP_MS = 2000;
 let __dev_lastUserId = null;
 let __dev_lastLoadAt = 0;
-// -------------------------------------------------------------------------
 
-export const PropertyProvider = ({ children }) => {
-  const { isAuthenticated, needsProfile, userProfile, isLoading: authLoading } = useAuth();
-  
-  const [propriedades, setPropriedades] = useState([]); // lista do usuário
-  const [propriedadeSelecionada, setPropriedadeSelecionada] = useState(null); // objeto selecionado
-  const [selectedId, setSelectedId] = useState(null); // id da selecionada (persistido)
+const PropertyProvider = ({ children }) => {
+  const [propriedades, setPropriedades] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [propriedadeSelecionada, setPropriedadeSelecionada] = useState(null);
   const [loadingPropriedade, setLoadingPropriedade] = useState(false);
   const [erroPropriedade, setErroPropriedade] = useState("");
-
-  // evita chamadas concorrentes/duplicadas
   const inFlightRef = useRef(false);
+  const { isAuthenticated, needsProfile, authLoading, userProfile } = useAuth();
 
-  const carregarPropriedades = useCallback(async () => {
-    if (inFlightRef.current) return;
-    
-    // Don't load properties if user is not authenticated or needs to complete profile
-    if (!isAuthenticated || needsProfile || authLoading) {
-      setPropriedades([]);
-      setSelectedId(null);
-      setPropriedadeSelecionada(null);
-      if (typeof window !== "undefined") localStorage.removeItem(LS_SELECTED_ID);
-      return;
-    }
-    
-    inFlightRef.current = true;
-    setLoadingPropriedade(true);
-    setErroPropriedade("");
-
-    try {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) throw new Error(error.message || "Falha ao obter sessão");
-      const token = data.session?.access_token;
-      const userId = data.session?.user?.id || "anon";
-
-      // Guard de DEV: ignora carregamentos duplicados do mesmo user numa janela curta
-      if (process.env.NODE_ENV === "development") {
-        const now = Date.now();
-        if (__dev_lastUserId === userId && now - __dev_lastLoadAt < DEV_SKIP_DUP_MS) {
-          if (process.env.NODE_ENV !== "production") {
-          }
-          setLoadingPropriedade(false);
-          inFlightRef.current = false;
-          return;
-        }
-        __dev_lastUserId = userId;
-        __dev_lastLoadAt = now;
-      }
-
-      if (!token) {
-        setPropriedades([]);
-        setSelectedId(null);
-        setPropriedadeSelecionada(null);
-        if (typeof window !== "undefined") localStorage.removeItem(LS_SELECTED_ID);
-        return;
-      }
-
-      const lista = await propriedadeService.listarPropriedades(token);
-      const arr = Array.isArray(lista) ? lista : [];
-      if (process.env.NODE_ENV !== "production") {
-        console.log("✅ Propriedades carregadas:", arr);
-      }
-      setPropriedades(arr);
-
-      // 1) tenta restaurar seleção prévia do localStorage
-      let nextId = selectedId;
-      if (typeof window !== "undefined" && nextId == null) {
-        const saved = localStorage.getItem(LS_SELECTED_ID);
-        if (saved) nextId = Number(saved);
-      }
-
-      // 2) se não houver selecionada OU id salvo não existe mais, selecione a primeira
-      const exists =
-        nextId && arr.some((p) => Number(p.id_propriedade) === Number(nextId));
-      if (!exists) {
-        nextId = arr.length ? Number(arr[0].id_propriedade) : null;
-      }
-
-      // 3) aplica seleção final
-      if (nextId) {
-        setSelectedId(nextId);
-        if (typeof window !== "undefined")
-          localStorage.setItem(LS_SELECTED_ID, String(nextId));
-        const found =
-          arr.find((p) => Number(p.id_propriedade) === Number(nextId)) || null;
-        setPropriedadeSelecionada(found);
-
-        if (found && process.env.NODE_ENV !== "production") {
-          console.log("✅ Propriedade selecionada automaticamente:", {
-            id: found.id_propriedade,
-            nome: found.nome,
-            cnpj: found.cnpj,
-          });
-        }
-      } else {
-        setSelectedId(null);
-        setPropriedadeSelecionada(null);
-        if (typeof window !== "undefined") localStorage.removeItem(LS_SELECTED_ID);
-      }
-    } catch (e) {
-      setErroPropriedade(e?.message || "Erro ao carregar propriedades.");
-      setPropriedades([]);
-      setSelectedId(null);
-      setPropriedadeSelecionada(null);
-    } finally {
-      setLoadingPropriedade(false);
-      inFlightRef.current = false;
-    }
-  }, [selectedId, isAuthenticated, needsProfile, authLoading]);
-
-  // Seleção manual exposta no contexto
   const selectProperty = useCallback(
     (id) => {
-      setSelectedId(id ?? null);
-      if (!id) {
+      const idStr = id != null ? String(id) : null;
+      setSelectedId(idStr);
+      if (!idStr) {
         setPropriedadeSelecionada(null);
         if (typeof window !== "undefined") localStorage.removeItem(LS_SELECTED_ID);
+        if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+          console.log("[DEBUG] Removendo selectedPropertyId do localStorage");
+        }
         return;
       }
-      if (typeof window !== "undefined")
-        localStorage.setItem(LS_SELECTED_ID, String(id));
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LS_SELECTED_ID, idStr);
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[DEBUG] Salvando selectedPropertyId no localStorage:", idStr);
+        }
+      }
       const found =
-        propriedades.find((p) => Number(p.id_propriedade) === Number(id)) ||
+        propriedades.find((p) => String(p.id_propriedade) === idStr) ||
         null;
       setPropriedadeSelecionada(found);
-
       if (found && process.env.NODE_ENV !== "production") {
         console.log("🟢 Propriedade selecionada manualmente:", {
           id: found.id_propriedade,
@@ -155,8 +58,109 @@ export const PropertyProvider = ({ children }) => {
     },
     [propriedades]
   );
+  const carregarPropriedades = useCallback(async () => {
+    if (inFlightRef.current) return;
+    // Don't load properties if user is not authenticated or needs to complete profile
+    if (!isAuthenticated || needsProfile || authLoading) {
+      setPropriedades([]);
+      setSelectedId(null);
+      setPropriedadeSelecionada(null);
+      if (typeof window !== "undefined") localStorage.removeItem(LS_SELECTED_ID);
+      return;
+    }
+    inFlightRef.current = true;
+    setLoadingPropriedade(true);
+    setErroPropriedade("");
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw new Error(error.message || "Falha ao obter sessão");
+      const token = data.session?.access_token;
+      const userId = data.session?.user?.id || "anon";
+      // Guard de DEV: ignora carregamentos duplicados do mesmo user numa janela curta
+      if (process.env.NODE_ENV === "development") {
+        const now = Date.now();
+        if (__dev_lastUserId === userId && now - __dev_lastLoadAt < DEV_SKIP_DUP_MS) {
+          setLoadingPropriedade(false);
+          inFlightRef.current = false;
+          return;
+        }
+        __dev_lastUserId = userId;
+        __dev_lastLoadAt = now;
+      }
+      if (!token) {
+        setPropriedades([]);
+        setSelectedId(null);
+        setPropriedadeSelecionada(null);
+        if (typeof window !== "undefined") localStorage.removeItem(LS_SELECTED_ID);
+        return;
+      }
+      const lista = await propriedadeService.listarPropriedades(token);
+      const arr = Array.isArray(lista) ? lista : [];
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[DEBUG] IDs das propriedades recebidas:", arr.map(p => p.id_propriedade));
+      }
+      if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+        console.log("[DEBUG] Valor salvo no localStorage[selectedPropertyId]:", localStorage.getItem(LS_SELECTED_ID));
+      }
+      if (process.env.NODE_ENV !== "production") {
+        console.log("✅ Propriedades carregadas:", arr);
+      }
+      setPropriedades(arr);
 
-  // Log sempre que a selecionada mudar
+      let nextId = selectedId;
+      if (typeof window !== "undefined" && nextId == null) {
+        const saved = localStorage.getItem(LS_SELECTED_ID);
+        if (saved) nextId = saved;
+      }
+
+      // Só seleciona automaticamente se não houver nada salvo
+      let found = null;
+      if (nextId) {
+        found = arr.find((p) => String(p.id_propriedade) === String(nextId)) || null;
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[DEBUG] Tentando restaurar seleção pelo ID:", nextId, "Encontrado:", !!found);
+        }
+      }
+      if (!nextId && arr.length) {
+        // Primeiro acesso: seleciona a primeira
+        nextId = String(arr[0].id_propriedade);
+        found = arr[0];
+        setSelectedId(nextId);
+        if (typeof window !== "undefined")
+          localStorage.setItem(LS_SELECTED_ID, nextId);
+        setPropriedadeSelecionada(found);
+        if (found && process.env.NODE_ENV !== "production") {
+          console.log("✅ Propriedade selecionada automaticamente:", {
+            id: found.id_propriedade,
+            nome: found.nome,
+            cnpj: found.cnpj,
+          });
+        }
+      } else if (found) {
+        setSelectedId(nextId);
+        setPropriedadeSelecionada(found);
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[DEBUG] Seleção restaurada pelo localStorage:", found);
+        }
+      } else {
+        // Não seleciona nada se o ID salvo não existir
+        setSelectedId(null);
+        setPropriedadeSelecionada(null);
+        if (typeof window !== "undefined") localStorage.removeItem(LS_SELECTED_ID);
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[DEBUG] Nenhuma propriedade selecionada após verificação de localStorage.");
+        }
+      }
+    } catch (e) {
+      setErroPropriedade(e?.message || "Erro ao carregar propriedades.");
+      setPropriedades([]);
+      setSelectedId(null);
+      setPropriedadeSelecionada(null);
+    } finally {
+      setLoadingPropriedade(false);
+    }
+  }, [selectedId, isAuthenticated, needsProfile, authLoading]);
+  // Remove duplicidade da definição de selectProperty
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;
     if (propriedadeSelecionada) {
@@ -219,11 +223,9 @@ export const PropertyProvider = ({ children }) => {
         propriedadeSelecionada,
         // alias p/ retrocompatibilidade
         propriedade: propriedadeSelecionada,
-
         // estados
         loadingPropriedade,
         erroPropriedade,
-
         // ações
         selectProperty,
         refresh: carregarPropriedades,
@@ -232,4 +234,7 @@ export const PropertyProvider = ({ children }) => {
       {children}
     </PropertyContext.Provider>
   );
+  // Fim do PropertyProvider
 };
+
+export default PropertyProvider;

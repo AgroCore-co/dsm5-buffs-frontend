@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import medicacaoService from "@/services/medicacaoService";
 import Button from "@/components/Button";
-import MedicacaoModal from "./MedicacaoModal";
+import CriarMedicacaoModal from "./CriarMedicacaoModal";
+import EditarMedicacaoModal from "./EditarMedicacaoModal";
+import VisualizarMedicacaoModal from "./VisualizarMedicacaoModal";
+import ApagarMedicacaoModal from "./ApagarMedicacaoModal";
 
 const ITEMS_PER_PAGE = 5; // Número de medicações por página
 
@@ -12,8 +15,13 @@ export default function GerenciadorMedicacoes() {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [medicacaoParaEditar, setMedicacaoParaEditar] = useState(null);
+  const [modalModo, setModalModo] = useState("criar");
   const [token, setToken] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  // Estado para modal de visualização
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [medicacaoParaVisualizar, setMedicacaoParaVisualizar] = useState(null);
+  const [visualizarModo, setVisualizarModo] = useState(false);
 
   // Sempre busca o token mais recente do Supabase
   useEffect(() => {
@@ -37,14 +45,13 @@ export default function GerenciadorMedicacoes() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const data = await medicacaoService.listarMedicacoes(token);
         if (Array.isArray(data)) {
           // Formatar os dados conforme esperado pela interface
           const formattedData = data.map(item => ({
             ...item,
-            // Garantir que há uma data de cadastro, ou usar a data atual
             data_cadastro: item.data_cadastro || item.created_at || new Date().toISOString().split('T')[0]
           }));
           setMedicacoes(formattedData);
@@ -58,40 +65,17 @@ export default function GerenciadorMedicacoes() {
           setMedicacoes(formattedData);
           return;
         }
+        // Se não veio array nem objeto, considera erro
+        throw new Error("Dados de medicações inválidos");
       } catch (apiError) {
         console.error("Erro na API de medicações:", apiError);
-        
-        // Usar dados fictícios se a API falhar ou retornar dados inválidos
-        console.log("🔶 Usando dados fictícios para medicações");
-        const mockData = [
-          {
-            id: 1,
-            tipo_tratamento: "Vermifugação",
-            medicacao: "Ivermectina",
-            descricao: "Antiparasitário de amplo espectro",
-            data_cadastro: "2025-08-15",
-          },
-          {
-            id: 2,
-            tipo_tratamento: "Vacina",
-            medicacao: "Febre Aftosa",
-            descricao: "Imunização contra febre aftosa",
-            data_cadastro: "2025-09-01",
-          },
-          {
-            id: 3,
-            tipo_tratamento: "Antibiótico",
-            medicacao: "Terramicina",
-            descricao: "Para tratamento de infecções bacterianas",
-            data_cadastro: "2025-08-28",
-          }
-        ];
-        
-        setMedicacoes(mockData);
+        setError("Não foi possível carregar as medicações. Tente novamente mais tarde.");
+        setMedicacoes([]); // Não usa mock, apenas limpa
       }
     } catch (err) {
       console.error("Erro ao buscar medicações:", err);
       setError("Não foi possível carregar as medicações. Tente novamente mais tarde.");
+      setMedicacoes([]);
     } finally {
       setIsLoading(false);
     }
@@ -255,7 +239,11 @@ export default function GerenciadorMedicacoes() {
             Mantenha um registro das medicações para facilitar a aplicação de protocolos sanitários e tratamentos veterinários
           </p>
         </div>
-        <Button variant="primary" size="medium" onClick={() => setShowModal(true)}>
+        <Button variant="primary" size="medium" onClick={() => {
+          setModalModo("criar");
+          setMedicacaoParaEditar(null);
+          setShowModal(true);
+        }}>
           + Nova Medicação
         </Button>
       </div>
@@ -323,42 +311,27 @@ export default function GerenciadorMedicacoes() {
                   </td>
                   <td className="p-3 text-center">
                     <div className="flex items-center justify-center space-x-2">
-                      {/* Ver detalhes */}
+                      {/* Ver detalhes - agora abre o MedicacaoModal em modo visualização */}
                       <button
-                        onClick={() => {
-                          // Tentar buscar detalhes completos usando o endpoint GET /medicamentos/{id}
+                        onClick={async () => {
+                          setModalModo("visualizar");
                           if (token && med.id) {
                             setIsLoading(true);
-                            medicacaoService.obterMedicacao(token, med.id)
-                              .then(detalhes => {
-                                alert(
-                                  `Detalhes da medicação: ${detalhes.medicacao || med.medicacao}\n\n` +
-                                  `Tipo: ${detalhes.tipo_tratamento || med.tipo_tratamento}\n` +
-                                  `Descrição: ${detalhes.descricao || med.descricao}\n` +
-                                  `Data de cadastro: ${new Date(detalhes.data_cadastro || med.data_cadastro).toLocaleDateString('pt-BR')}\n` +
-                                  `ID: ${detalhes.id || med.id}`
-                                );
-                              })
-                              .catch(err => {
-                                console.error(`Erro ao buscar detalhes da medicação ${med.id}:`, err);
-                                
-                                // Mostrar detalhes locais em caso de erro
-                                alert(
-                                  `Detalhes da medicação: ${med.medicacao}\n\n` +
-                                  `Tipo: ${med.tipo_tratamento}\n` +
-                                  `Descrição: ${med.descricao}\n` +
-                                  `Data de cadastro: ${new Date(med.data_cadastro).toLocaleDateString('pt-BR')}`
-                                );
-                              })
-                              .finally(() => setIsLoading(false));
+                            try {
+                              const detalhes = await medicacaoService.obterMedicacao(token, med.id);
+                              setMedicacaoParaVisualizar({
+                                ...med,
+                                ...detalhes,
+                              });
+                            } catch (err) {
+                              setMedicacaoParaVisualizar(med);
+                            } finally {
+                              setIsLoading(false);
+                              setShowViewModal(true);
+                            }
                           } else {
-                            // Fallback para dados locais
-                            alert(
-                              `Detalhes da medicação: ${med.medicacao}\n\n` +
-                              `Tipo: ${med.tipo_tratamento}\n` +
-                              `Descrição: ${med.descricao}\n` +
-                              `Data de cadastro: ${new Date(med.data_cadastro).toLocaleDateString('pt-BR')}`
-                            );
+                            setMedicacaoParaVisualizar(med);
+                            setShowViewModal(true);
                           }
                         }}
                         className="text-blue-600 hover:text-blue-800"
@@ -391,6 +364,7 @@ export default function GerenciadorMedicacoes() {
                       {/* Editar */}
                       <button
                         onClick={() => {
+                          setModalModo("editar");
                           setMedicacaoParaEditar(med);
                           setShowModal(true);
                         }}
@@ -415,7 +389,11 @@ export default function GerenciadorMedicacoes() {
                       
                       {/* Excluir */}
                       <button
-                        onClick={() => handleDeleteMedicacao(med.id)}
+                        onClick={() => {
+                          setModalModo("apagar");
+                          setMedicacaoParaEditar(med);
+                          setShowModal(true);
+                        }}
                         className="text-red-600 hover:text-red-800"
                         title="Excluir medicação"
                       >
@@ -493,10 +471,50 @@ export default function GerenciadorMedicacoes() {
         </>
       )}
 
-      <MedicacaoModal
-        onClose={() => setShowModal(false)}
-        onSubmit={medicacaoParaEditar ? handleEditMedicacao : handleCreateMedicacao}
+      {/* Modal de criar */}
+      <CriarMedicacaoModal
+        open={showModal && modalModo === "criar"}
+        onClose={() => {
+          setShowModal(false);
+          setMedicacaoParaEditar(null);
+        }}
+        onSubmit={handleCreateMedicacao}
+      />
+
+      {/* Modal de editar */}
+      <EditarMedicacaoModal
+        open={showModal && modalModo === "editar"}
+        onClose={() => {
+          setShowModal(false);
+          setMedicacaoParaEditar(null);
+        }}
+        onSubmit={handleEditMedicacao}
         initialData={medicacaoParaEditar}
+      />
+
+      {/* Modal de apagar */}
+      <ApagarMedicacaoModal
+        open={showModal && modalModo === "apagar"}
+        onClose={() => {
+          setShowModal(false);
+          setMedicacaoParaEditar(null);
+        }}
+        onSubmit={async (data, token) => {
+          await medicacaoService.deletarMedicacao(token, data.id);
+          setMedicacoes(medicacoes.filter(med => med.id !== data.id));
+          setShowModal(false);
+        }}
+        initialData={medicacaoParaEditar}
+      />
+
+      {/* Modal de visualizar */}
+      <VisualizarMedicacaoModal
+        open={showViewModal && modalModo === "visualizar"}
+        onClose={() => {
+          setShowViewModal(false);
+          setMedicacaoParaVisualizar(null);
+        }}
+        initialData={medicacaoParaVisualizar}
       />
     </div>
   );

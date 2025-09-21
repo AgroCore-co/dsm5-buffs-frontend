@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import { useRouter } from "next/router";
 import { useRouteProtection } from "@/hooks/useRouteProtection";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { PropertyProvider } from "@/contexts/PropertyContext";
+import PropertyProvider from "@/contexts/PropertyContext";
 // (import AuthProvider se você tiver um)
 
 function App({ Component, pageProps }) {
