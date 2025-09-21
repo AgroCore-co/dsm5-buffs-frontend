@@ -1057,18 +1057,21 @@ export default function Rebanho() {
                         <td className="p-3 text-center text-gray-800 text-base">
                           {buffalo.raca?.nome ||
                             (buffalo.id_raca
-                              ? `Raça ${buffalo.id_raca}`
+                              ? (racas.find(r => r.id_raca === buffalo.id_raca)?.nome || `Raça ${buffalo.id_raca}`)
                               : "N/D")}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
-                          {buffalo.maturidade ||
-                            (buffalo.nivel_maturidade === "N"
-                              ? "Novilho(a)"
-                              : buffalo.nivel_maturidade === "B"
-                              ? "Bezerro(a)"
-                              : buffalo.nivel_maturidade === "A"
-                              ? "Adulto"
-                              : buffalo.nivel_maturidade)}
+                          {(() => {
+                            if (buffalo.maturidade) return buffalo.maturidade;
+                            switch (buffalo.nivel_maturidade) {
+                              case "B": return "Bezerro(a)";
+                              case "N": return "Novilho(a)";
+                              case "V": return "Vaca Produtora";
+                              case "T": return "Touro";
+                              case "A": return "Adulto";
+                              default: return buffalo.nivel_maturidade || "N/D";
+                            }
+                          })()}
                         </td>
                         <td className="p-3 text-center text-gray-800 text-base">
                           <span

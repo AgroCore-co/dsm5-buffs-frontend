@@ -1,137 +1,205 @@
-"use client";
-import { useState, useEffect, useContext } from "react";
-import { PropertyContext } from "@/contexts/PropertyContext";
-import racaService from "@/services/racaService";
-import grupoService from "@/services/grupoService";
-import { supabase } from "@/lib/supabaseClient";
+"use client"
+import { useState, useEffect } from "react"
+import bufaloService from "@/services/bufaloService"
+import racaService from "@/services/racaService"
+import grupoService from "@/services/grupoService"
+import { supabase } from "@/lib/supabaseClient"
+import { useProperty } from "@/hooks/useProperty"
 
 export default function CreateBuffaloModal({ open, onClose }) {
-  const { propriedadeSelecionada } = useContext(PropertyContext);
+  const { propriedadeSelecionada } = useProperty()
 
-  const [activeTab, setActiveTab] = useState("basicInfo");
-  const [loading, setLoading] = useState(false);
-  const [racas, setRacas] = useState([]);
-  const [grupos, setGrupos] = useState([]);
+  const [activeTab, setActiveTab] = useState("basicInfo")
+  const [loading, setLoading] = useState(false)
+
+  const [racas, setRacas] = useState([])
+  const [grupos, setGrupos] = useState([])
+  const [pais, setPais] = useState([])
+  const [maes, setMaes] = useState([])
+
   const [formData, setFormData] = useState({
     nome: "",
     brinco: "",
     microchip: "",
-    dt_nascimento: "",
+    dtNascimento: "",
     sexo: "",
-    raca: "",
-    grupo: "",
-    categoria: "",
-    propriedade: "", // armazena o ID
-    pai: "",
-    mae: "",
+    nivelMaturidade: "",
+    idRaca: "",
+    idPropriedade: "",
+    idGrupo: "",
+    idPai: "",
+    idMae: "",
     status: true,
-  });
+    categoria: "",
+  })
 
-  // Atualiza o formData sempre que a propriedade do contexto mudar
   useEffect(() => {
-    if (propriedadeSelecionada) {
+    if (propriedadeSelecionada && propriedadeSelecionada.id_propriedade) {
       setFormData((prev) => ({
         ...prev,
-        propriedade: propriedadeSelecionada.id_propriedade,
-      }));
+        idPropriedade: propriedadeSelecionada.id_propriedade,
+      }))
     }
-  }, [propriedadeSelecionada]);
+  }, [propriedadeSelecionada])
 
-  // Carrega raças e grupos ao abrir o modal
+  // Carrega dados ao abrir
   useEffect(() => {
-    if (!open) return;
-
-    const carregarDados = async () => {
+    const fetchData = async () => {
       try {
-        const { data: session } = await supabase.auth.getSession();
-        const token = session?.session?.access_token;
-        if (!token) return;
+        const { data: session } = await supabase.auth.getSession()
+        const token = session?.session?.access_token
+        if (!token) throw new Error("Token de autenticação não encontrado")
 
-        // Raças
-        const listaRacas = await racaService.listarRacas(token);
-        setRacas(listaRacas);
+        const listaRacas = await racaService.listarRacas(token)
+        setRacas(Array.isArray(listaRacas) ? listaRacas.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : [])
 
-        // Grupos
-        const listaGrupos = await grupoService.listarGrupos(token);
-        setGrupos(listaGrupos);
-      } catch (error) {
-        console.error("Erro ao carregar raças ou grupos:", error);
+        const listaGrupos = await grupoService.listarGrupos(token)
+        setGrupos(
+          Array.isArray(listaGrupos)
+            ? listaGrupos.sort((a, b) => a.nome_grupo.localeCompare(b.nome_grupo, "pt-BR"))
+            : [],
+        )
+
+        const listaBufalos = await bufaloService.listarBufalos(token)
+        const ativos = Array.isArray(listaBufalos) ? listaBufalos.filter((b) => b.status === true) : []
+        setPais(ativos.filter((b) => b.sexo === "M"))
+        setMaes(ativos.filter((b) => b.sexo === "F"))
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err)
       }
-    };
+    }
 
-    carregarDados();
-  }, [open]);
+    if (open) fetchData()
+  }, [open])
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
       [name]: name === "status" ? value === "true" : value,
-    }));
-  };
+    }))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
+    setLoading(true)
 
-    const requiredFields = [
-      "nome",
-      "brinco",
-      "dt_nascimento",
-      "sexo",
-      "raca",
-      "grupo",
-      "categoria",
-      "propriedade",
-    ];
-
-    for (const field of requiredFields) {
-      if (!formData[field]) {
-        alert("Preencha todos os campos obrigatórios!");
-        return;
-      }
-    }
-
-    setLoading(true);
     try {
-      const res = await fetch("/api/bufalos", {
+      // Validações
+      let nome = formData.nome?.trim() || ""
+      if (!nome) {
+        alert("O campo Nome é obrigatório.")
+        setLoading(false)
+        return
+      }
+      if (nome.length > 50) {
+        alert("O campo Nome deve ter no máximo 50 caracteres.")
+        setLoading(false)
+        return
+      }
+
+      let sexo = formData.sexo?.trim() || ""
+      if (!["F", "M"].includes(sexo)) {
+        alert("O campo Sexo é obrigatório e deve ser 'M' ou 'F'.")
+        setLoading(false)
+        return
+      }
+
+      let idPropriedade = Number(propriedadeSelecionada?.id_propriedade)
+      if (!idPropriedade || isNaN(idPropriedade) || idPropriedade <= 0) {
+        alert("Nenhuma propriedade válida selecionada.")
+        setLoading(false)
+        return
+      }
+
+      const { data: session } = await supabase.auth.getSession()
+      const token = session?.session?.access_token
+      if (!token) throw new Error("Token de autenticação não encontrado")
+
+      // Monta payload
+      const payload = {
+        nome: String(nome),
+        sexo: String(sexo),
+        id_propriedade: idPropriedade,
+        status: formData.status === true || formData.status === "true",
+      }
+      if (formData.brinco?.trim()) payload.brinco = formData.brinco.trim()
+      if (formData.microchip?.trim()) payload.microchip = formData.microchip.trim()
+      if (formData.dtNascimento) payload.dt_nascimento = new Date(formData.dtNascimento).toISOString()
+      if (formData.nivelMaturidade) payload.nivel_maturidade = formData.nivelMaturidade
+      if (formData.idRaca) payload.id_raca = Number(formData.idRaca)
+      if (formData.idGrupo) payload.id_grupo = Number(formData.idGrupo)
+      if (formData.idPai) payload.id_pai = Number(formData.idPai)
+      if (formData.idMae) payload.id_mae = Number(formData.idMae)
+      if (formData.categoria?.trim()) payload.categoria = formData.categoria.trim()
+
+      console.log("Payload final (snake_case):", payload)
+
+      // Faz o POST direto
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/bufalos`
+      const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      })
 
-      if (!res.ok) throw new Error("Falha ao criar búfalo");
+      const data = await response.json() // só chamamos uma vez!
 
-      const data = await res.json();
-      console.log("Búfalo criado:", data);
-      onClose?.();
+      if (!response.ok) {
+        throw new Error(data.message || `Erro HTTP: ${response.status}`)
+      }
+
+      console.log("Status:", response.status)
+      console.log("Resposta:", data)
+
+      alert("Búfalo criado com sucesso!")
+
+      // Reset form
+      setFormData({
+        nome: "",
+        brinco: "",
+        microchip: "",
+        dtNascimento: "",
+        sexo: "",
+        nivelMaturidade: "",
+        idRaca: "",
+        idPropriedade: idPropriedade,
+        idGrupo: "",
+        idPai: "",
+        idMae: "",
+        status: true,
+        categoria: "",
+      })
+
+      onClose?.()
     } catch (err) {
-      console.error(err);
-      alert("Erro ao criar búfalo. Veja o console para mais detalhes.");
+      if (err.message?.includes("nome must be")) {
+        alert("Erro: Verifique o campo Nome. Deve ter entre 1 e 50 caracteres.")
+      } else if (err.message?.includes("sexo")) {
+        alert("Erro: Selecione o sexo do animal (Macho ou Fêmea).")
+      } else if (err.message?.includes("idPropriedade")) {
+        alert("Erro: Problema com a propriedade. Verifique se uma propriedade está selecionada.")
+      } else {
+        alert(`Erro: ${err.message || "Erro desconhecido"}`)
+      }
+      console.error("Erro ao criar búfalo:", err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  if (!open) return null;
+  if (!open) return null
 
   return (
     <div className="fixed inset-0 z-[1001] flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
-      <div>
-        <h2>Propriedade selecionada:</h2>
-        {propriedadeSelecionada ? (
-          <p>{propriedadeSelecionada.nome}</p>
-        ) : (
-          <p>Nenhuma propriedade selecionada</p>
-        )}
-      </div>
-
       <div className="w-[min(96vw,800px)] max-h-[92vh] bg-white rounded-3xl shadow-2xl ring-1 ring-gray-200 flex flex-col overflow-hidden">
         {/* Header e Tabs */}
         <div className="sticky top-0 z-10 border-b bg-white rounded-t-3xl">
           <div className="flex items-center justify-between px-6 py-4">
-            <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">
-              Cadastrar Novo Búfalo
-            </h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">Cadastrar Novo Búfalo</h2>
             <button
               onClick={onClose}
               className="h-10 w-10 grid place-items-center rounded-2xl border border-gray-200 hover:bg-gray-50 text-xl font-bold text-gray-600"
@@ -146,76 +214,85 @@ export default function CreateBuffaloModal({ open, onClose }) {
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                  activeTab === tab
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                  activeTab === tab ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                 }`}
               >
-                {tab === "basicInfo"
-                  ? "Dados Básicos"
-                  : tab === "additionalInfo"
-                  ? "Detalhes Adicionais"
-                  : "Filiação"}
+                {tab === "basicInfo" && "Dados Básicos"}
+                {tab === "additionalInfo" && "Detalhes Adicionais"}
+                {tab === "parentage" && "Filiação"}
               </button>
             ))}
           </div>
         </div>
 
         {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-6 space-y-6"
-        >
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Basic Info */}
           {activeTab === "basicInfo" && (
             <div className="space-y-6">
               <div className="relative rounded-xl border border-gray-200 bg-white p-5 space-y-4">
                 <div className="absolute left-0 top-0 h-full w-1.5 bg-amber-400 rounded-l-xl" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Informações Principais
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações Principais</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input
-                    name="nome"
-                    value={formData.nome}
-                    onChange={handleChange}
-                    placeholder="Nome do animal"
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
+                  <div className="relative">
+                    <input
+                      name="nome"
+                      value={formData.nome}
+                      onChange={handleChange}
+                      placeholder="Nome *"
+                      maxLength="50"
+                      className={`w-full border rounded-lg px-3 py-2 ${
+                        !formData.nome ? "border-red-300 bg-red-50" : "border-gray-300"
+                      }`}
+                      required
+                    />
+                    <div className="text-xs text-gray-500 mt-1">{formData.nome.length}/50 caracteres</div>
+                  </div>
                   <input
                     name="brinco"
                     value={formData.brinco}
                     onChange={handleChange}
-                    placeholder="Brinco/Tag"
-                    required
+                    placeholder="Brinco"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   />
                   <input
                     name="microchip"
                     value={formData.microchip}
                     onChange={handleChange}
-                    placeholder="Microchip (opcional)"
+                    placeholder="Microchip"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   />
                   <input
                     type="date"
-                    name="dt_nascimento"
-                    value={formData.dt_nascimento}
+                    name="dtNascimento"
+                    value={formData.dtNascimento}
                     onChange={handleChange}
-                    required
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   />
                   <select
                     name="sexo"
                     value={formData.sexo}
                     onChange={handleChange}
+                    className={`w-full border rounded-lg px-3 py-2 ${
+                      !formData.sexo ? "border-red-300 bg-red-50" : "border-gray-300"
+                    }`}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   >
-                    <option value="">Selecione o sexo</option>
+                    <option value="">Selecione o sexo *</option>
                     <option value="M">Macho</option>
                     <option value="F">Fêmea</option>
+                  </select>
+                  <select
+                    name="nivelMaturidade"
+                    value={formData.nivelMaturidade}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  >
+                    <option value="">Selecione o nível de maturidade</option>
+                    <option value="B">Bezerro(a)</option>
+                    <option value="N">Novilho(a)</option>
+                    <option value="V">Vaca/Vaca Jovem</option>
+                    <option value="T">Touro</option>
                   </select>
                 </div>
               </div>
@@ -226,38 +303,32 @@ export default function CreateBuffaloModal({ open, onClose }) {
           {activeTab === "additionalInfo" && (
             <div className="relative rounded-xl border border-gray-200 bg-white p-5 space-y-4">
               <div className="absolute left-0 top-0 h-full w-1.5 bg-emerald-400 rounded-l-xl" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Detalhes Adicionais
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes Adicionais</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Raça */}
                 <select
-                  name="raca"
-                  value={formData.raca}
+                  name="idRaca"
+                  value={formData.idRaca}
                   onChange={handleChange}
-                  required
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 >
                   <option value="">Selecione a Raça</option>
-                  {racas.map((r) => (
-                    <option key={r.id_raca} value={r.id_raca}>
-                      {r.nome}
+                  {racas.map((raca) => (
+                    <option key={raca.id_raca} value={raca.id_raca}>
+                      {raca.nome}
                     </option>
                   ))}
                 </select>
 
-                {/* Grupo */}
                 <select
-                  name="grupo"
-                  value={formData.grupo}
+                  name="idGrupo"
+                  value={formData.idGrupo}
                   onChange={handleChange}
-                  required
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 >
                   <option value="">Selecione o Grupo</option>
-                  {grupos.map((g) => (
-                    <option key={g.id_grupo} value={g.id_grupo}>
-                      {g.nome_grupo} ({g.nivel_maturidade})
+                  {grupos.map((grupo) => (
+                    <option key={grupo.id_grupo} value={grupo.id_grupo}>
+                      {grupo.nome_grupo} ({grupo.nivel_maturidade})
                     </option>
                   ))}
                 </select>
@@ -266,23 +337,33 @@ export default function CreateBuffaloModal({ open, onClose }) {
                   name="categoria"
                   value={formData.categoria}
                   onChange={handleChange}
-                  required
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 >
                   <option value="">Selecione a Categoria</option>
-                  <option>PO</option>
-                  <option>PC</option>
-                  <option>PA</option>
-                  <option>CCG</option>
-                  <option>SRD</option>
+                  <option value="PO">PO</option>
+                  <option value="PC">PC</option>
+                  <option value="PA">PA</option>
+                  <option value="CCG">CCG</option>
+                  <option value="SRD">SRD</option>
                 </select>
 
-                <input
-                  name="propriedade"
-                  value={propriedadeSelecionada?.nome || ""}
-                  readOnly
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-                />
+                <div className="relative">
+                  <input
+                    name="idPropriedade"
+                    value={
+                      propriedadeSelecionada
+                        ? `${propriedadeSelecionada.id_propriedade} - ${propriedadeSelecionada.nome}`
+                        : "Nenhuma propriedade selecionada"
+                    }
+                    readOnly
+                    className={`w-full border rounded-lg px-3 py-2 cursor-not-allowed ${
+                      !propriedadeSelecionada ? "border-red-300 bg-red-50" : "border-gray-300 bg-gray-100"
+                    }`}
+                  />
+                  {!propriedadeSelecionada && (
+                    <div className="text-xs text-red-600 mt-1">* Propriedade é obrigatória</div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -291,27 +372,39 @@ export default function CreateBuffaloModal({ open, onClose }) {
           {activeTab === "parentage" && (
             <div className="relative rounded-xl border border-gray-200 bg-white p-5 space-y-4">
               <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-400 rounded-l-xl" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Filiação
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Filiação</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input
-                  name="pai"
-                  value={formData.pai}
+                <select
+                  name="idPai"
+                  value={formData.idPai}
                   onChange={handleChange}
-                  placeholder="Pai"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                />
-                <input
-                  name="mae"
-                  value={formData.mae}
+                >
+                  <option value="">Selecione o Pai</option>
+                  {pais.map((p) => (
+                    <option key={p.id_bufalo} value={p.id_bufalo}>
+                      {p.nome} ({p.brinco}) {p.categoria ? `- ${p.categoria}` : ""}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  name="idMae"
+                  value={formData.idMae}
                   onChange={handleChange}
-                  placeholder="Mãe"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                />
+                >
+                  <option value="">Selecione a Mãe</option>
+                  {maes.map((m) => (
+                    <option key={m.id_bufalo} value={m.id_bufalo}>
+                      {m.nome} ({m.brinco}) {m.categoria ? `- ${m.categoria}` : ""}
+                    </option>
+                  ))}
+                </select>
+
                 <select
                   name="status"
-                  value={formData.status}
+                  value={formData.status === true ? "true" : "false"}
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 >
@@ -333,8 +426,8 @@ export default function CreateBuffaloModal({ open, onClose }) {
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="px-5 py-2.5 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 transition-colors shadow-sm disabled:opacity-50"
+              disabled={loading || !formData.nome || !formData.sexo || !propriedadeSelecionada}
+              className="px-5 py-2.5 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Salvando..." : "Salvar Búfalo"}
             </button>
@@ -342,5 +435,5 @@ export default function CreateBuffaloModal({ open, onClose }) {
         </form>
       </div>
     </div>
-  );
+  )
 }

@@ -318,7 +318,7 @@ export default function BuffaloModal({
                     Brinco: {bufaloData.brinco || "N/A"} •{" "}
                     {getSexIcon(bufaloData.sexo === "F" ? "Fêmea" : "Macho")}{" "}
                     {bufaloData.sexo === "F" ? "Fêmea" : "Macho"} •{" "}
-                    {buffalo.raca || "N/A"} • ID:{" "}
+                    {buffalo.raca?.nome || bufaloData.raca?.nome || "N/A"} • ID:{" "}
                     {bufaloData.id || bufaloData.id_bufalo}
                   </p>
                 </div>
@@ -397,7 +397,7 @@ export default function BuffaloModal({
                       <div className="flex justify-between border-b pb-2">
                         <span className="text-gray-500">Raça</span>
                         <span className="font-medium">
-                          {buffalo.raca || "N/A"}
+                          {buffalo.raca?.nome || bufaloData.raca?.nome || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
@@ -415,7 +415,25 @@ export default function BuffaloModal({
                       <div className="flex justify-between border-b pb-2">
                         <span className="text-gray-500">Categoria</span>
                         <span className="font-medium">
-                          {bufaloData.categoria || "N/A"}
+                          {(() => {
+                            switch (bufaloData.categoria) {
+                              case "R": return "Reprodutor";
+                              case "V": return "Vaca Produtora";
+                              case "N": return "Novilho(a)";
+                              case "B": return "Bezerro(a)";
+                              case "T": return "Touro";
+                              case "A": return "Adulto";
+                              default:
+                                switch (bufaloData.nivel_maturidade) {
+                                  case "V": return "Vaca Produtora";
+                                  case "B": return "Bezerro(a)";
+                                  case "N": return "Novilho(a)";
+                                  case "T": return "Touro";
+                                  case "A": return "Adulto";
+                                  default: return bufaloData.categoria || bufaloData.nivel_maturidade || "N/A";
+                                }
+                            }
+                          })()}
                         </span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
@@ -996,7 +1014,7 @@ export default function BuffaloModal({
                   current={{
                     nome: bufaloData.nome,
                     tag: bufaloData.brinco || "N/A",
-                    raca: buffalo.raca || "N/A",
+                    raca: buffalo.raca?.nome || bufaloData.raca?.nome || "N/A",
                     maturidade: bufaloData.nivel_maturidade || "N/A",
                     sexo: bufaloData.sexo === "F" ? "Fêmea" : "Macho",
                   }}
