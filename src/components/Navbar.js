@@ -226,7 +226,7 @@ const Navbar = () => {
 
               {isUserMenuOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-[1003]"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="py-1">
@@ -325,7 +325,7 @@ const Navbar = () => {
 
           {/* Sidebar */}
           <div
-            className={`xl:hidden fixed top-0 left-0 h-full w-80 bg-[var(--color-primary)] shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
+            className={`xl:hidden fixed top-0 left-0 h-full w-80 bg-[var(--color-primary)] shadow-xl z-[1003] transform transition-transform duration-300 ease-in-out ${
               isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
             }`}
             onClick={(e) => e.stopPropagation()}
