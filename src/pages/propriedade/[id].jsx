@@ -16,6 +16,8 @@ import {
   Cell,
 } from "recharts";
 import dynamic from "next/dynamic";
+import loteService from "@/services/loteService";
+import TodosPiquetesModal from "@/components/propriedades/TodosPiquetesModal";
 
 const MapaPiquetes = dynamic(() => import("@/components/MapaPiquetes"), {
   ssr: false, // desativa renderização no servidor
@@ -24,6 +26,8 @@ const MapaPiquetes = dynamic(() => import("@/components/MapaPiquetes"), {
 export default function PropriedadePage() {
   const { user, isLoading, isAuthenticated, getAccessToken } = useAuth();
   const [activeTab, setActiveTab] = useState("propriedade");
+  const [lotes, setLotes] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const router = useRouter();
   const { id } = router.query || {};
@@ -34,6 +38,20 @@ export default function PropriedadePage() {
       router.push("/auth/login");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    async function fetchLotes() {
+      if (id) {
+        try {
+          const lotesData = await loteService.listarLotesPorPropriedade(id);
+          setLotes(lotesData);
+        } catch (err) {
+          setLotes([]);
+        }
+      }
+    }
+    fetchLotes();
+  }, [id]);
 
   const lotesMock = [
     {
@@ -446,94 +464,51 @@ export default function PropriedadePage() {
       {/* Mapa dos Piquetes */}
       <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Mapa dos Piquetes
-          </h2>
-          <p className="text-gray-600">
-            Visualização geográfica dos lotes e piquetes da propriedade.
-          </p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Mapa dos Piquetes</h2>
+          <p className="text-gray-600">Visualização geográfica dos lotes e piquetes da propriedade.</p>
         </div>
-
         {/* Área do Mapa */}
-        <MapaPiquetes propriedadeId={id} />
+        <MapaPiquetes propriedadeId={id} lotesExternos={lotes} />
       </div>
-
       {/* Visão Geral dos Lotes */}
       <div className="w-full flex flex-col bg-white rounded-xl p-4 gap-3 box-border border border-[#e0e0e0] shadow-sm">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-bold text-gray-800">
-              Visão Geral dos Lotes
-            </h2>
-            <p className="text-sm text-gray-600">
-              {lotesMock.length} lotes ativos
-            </p>
+            <h2 className="text-lg font-bold text-gray-800">Visão Geral dos Lotes</h2>
+            <p className="text-sm text-gray-600">{lotes.length} lotes ativos</p>
           </div>
-          <button className="bg-[#FFCF78] text-gray-800 py-1 px-3 rounded text-xs font-bold hover:bg-[#F2B84D] transition-colors">
+          <button className="bg-[#FFCF78] text-gray-800 py-1 px-3 rounded text-xs font-bold hover:bg-[#F2B84D] transition-colors" onClick={() => setModalOpen(true)}>
             Ver Todos
           </button>
         </div>
-
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {lotesMock.slice(0, 6).map((lote) => (
-            <div
-              key={lote.id}
-              className="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:bg-gray-100 transition-colors"
-            >
+          {lotes.slice(0, 6).map((lote) => (
+            <div key={lote.id_lote} className="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:bg-gray-100 transition-colors">
               <div className="flex justify-between items-start mb-2">
-                <h3 className="text-sm font-semibold text-gray-800 truncate">
-                  {lote.nome}
-                </h3>
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    lote.status === "Em uso"
-                      ? "bg-green-500"
-                      : lote.status === "Disponível"
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
-                  }`}
-                ></span>
+                <h3 className="text-sm font-semibold text-gray-800 truncate">{lote.nome_lote}</h3>
+                <span className={`w-2 h-2 rounded-full ${lote.status === "Em uso" ? "bg-green-500" : lote.status === "Disponível" ? "bg-yellow-500" : "bg-red-500"}`}></span>
               </div>
-
               <div className="space-y-2">
                 {/* Ocupação Compacta */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs text-gray-600">Ocup.</span>
-                    <span className="text-xs font-bold text-[#CE7D0A]">
-                      {calcularOcupacaoPercentual(
-                        lote.ocupacao,
-                        lote.capacidade
-                      )}
-                      %
-                    </span>
+                    <span className="text-xs font-bold text-[#CE7D0A]">{lote.qtd_max || 0}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div
-                      className="bg-[#FFCF78] h-1 rounded-full"
-                      style={{
-                        width: `${calcularOcupacaoPercentual(
-                          lote.ocupacao,
-                          lote.capacidade
-                        )}%`,
-                      }}
-                    ></div>
+                    <div className="bg-[#FFCF78] h-1 rounded-full" style={{ width: `${lote.qtd_max || 0}%` }}></div>
                   </div>
                 </div>
-
                 {/* Informações Mínimas */}
                 <div className="text-xs text-gray-600">
-                  <div>
-                    {lote.ocupacao}/{lote.capacidade} búfalos
-                  </div>
-                  <div className="truncate">
-                    {lote.area} {lote.unidade}
-                  </div>
+                  <div>{lote.qtd_max || 0} búfalos</div>
+                  <div className="truncate">{lote.area_m2 || "-"} m²</div>
                 </div>
               </div>
             </div>
           ))}
         </div>
+        <TodosPiquetesModal open={modalOpen} onClose={() => setModalOpen(false)} lotes={lotes} />
       </div>
       {/* Tabela de Ciclos */}
       <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">

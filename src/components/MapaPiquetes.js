@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { MapContainer, TileLayer, Polygon, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Polygon, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import loteService from "@/services/loteService";
 
-/* ========================= Leaflet icon fix ========================= */
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -13,7 +12,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-/* ========================= Helper: Converter GeoJSON para coordenadas Leaflet ========================= */
 const parseGeoJSONPolygon = (geoJson) => {
   if (!geoJson) return null;
   try {
@@ -28,11 +26,57 @@ const parseGeoJSONPolygon = (geoJson) => {
   }
 };
 
-/* ========================= Componente Principal ========================= */
+function MapCenterUpdater({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView(center);
+    }
+  }, [center, map]);
+  return null;
+}
+
+function ResetViewControl({ center, zoom = 15 }) {
+  const map = useMap();
+  useEffect(() => {
+    const control = L.control({ position: "topleft" });
+    control.onAdd = function () {
+      const div = L.DomUtil.create("div", "leaflet-bar leaflet-control leaflet-control-custom");
+      div.style.backgroundColor = "white";
+      div.style.width = "32px";
+      div.style.height = "32px";
+      div.style.display = "flex";
+      div.style.alignItems = "center";
+      div.style.justifyContent = "center";
+      div.style.cursor = "pointer";
+      div.title = "Centralizar nos piquetes";
+      div.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>';
+      div.onclick = () => {
+        map.setView(center, zoom);
+      };
+      return div;
+    };
+    control.addTo(map);
+    return () => {
+      control.remove();
+    };
+  }, [center, zoom, map]);
+  return null;
+}
+
 export default function MapaPiquetes({ propriedadeId }) {
   const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [mapCenter, setMapCenter] = useState([-24.738, -47.86]);
+
+  const calcularCentro = (lotes) => {
+    const todasCoords = lotes.flatMap((lote) => lote.coordenadas || []);
+    if (todasCoords.length === 0) return [-24.738, -47.86];
+    const latSum = todasCoords.reduce((sum, [lat]) => sum + lat, 0);
+    const lngSum = todasCoords.reduce((sum, [, lng]) => sum + lng, 0);
+    return [latSum / todasCoords.length, lngSum / todasCoords.length];
+  };
 
   const carregarLotes = useCallback(async () => {
     if (!propriedadeId) {
@@ -50,7 +94,6 @@ export default function MapaPiquetes({ propriedadeId }) {
         propriedadeId,
         null // ou token se necessário
       );
-
       const lotesProcessados = lotesData
         .map((lote) => {
           const coordenadas = parseGeoJSONPolygon(lote.geo_mapa);
@@ -61,8 +104,8 @@ export default function MapaPiquetes({ propriedadeId }) {
           };
         })
         .filter((lote) => lote.coordenadas);
-
       setLotes(lotesProcessados);
+      setMapCenter(calcularCentro(lotesProcessados));
     } catch (err) {
       console.error("Erro ao carregar lotes:", err);
       setError(err.message || "Erro ao carregar lotes");
@@ -73,8 +116,16 @@ export default function MapaPiquetes({ propriedadeId }) {
   }, [propriedadeId]);
 
   useEffect(() => {
-    carregarLotes();
-  }, [propriedadeId, carregarLotes]);
+    if (propriedadeId) {
+      carregarLotes();
+    }
+  }, [propriedadeId]); // Executa quando propriedadeId muda
+
+  useEffect(() => {
+    if (lotes.length > 0) {
+      setMapCenter(calcularCentro(lotes));
+    }
+  }, [lotes]); // Centraliza o mapa nos piquetes após carregamento
 
   return (
     <div className="w-full space-y-4">
@@ -98,10 +149,12 @@ export default function MapaPiquetes({ propriedadeId }) {
 
       <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: "500px" }}>
         <MapContainer
-          center={[-24.738, -47.86]}
+          center={mapCenter}
           zoom={15}
           style={{ height: "100%", width: "100%" }}
         >
+          <MapCenterUpdater center={mapCenter} />
+          <ResetViewControl center={mapCenter} zoom={15} />
           <TileLayer
             attribution="&copy; OpenStreetMap"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
