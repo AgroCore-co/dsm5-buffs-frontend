@@ -1149,7 +1149,7 @@ export default function Rebanho() {
           token={token || (isAuthenticated ? getAccessToken() : null)}
         />
 
-        <HerdHealthAnalysis records={records} />
+        {/* <HerdHealthAnalysis records={records} /> */}
 
         {/* Modal do Búfalo */}
         <BuffaloModal
