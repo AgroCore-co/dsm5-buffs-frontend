@@ -173,6 +173,22 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, [authInitialized]);
 
+
+  // --- CREATE PROFILE ---
+  const createProfile = async ({ nome, telefone }) => {
+    try {
+      const token = await getAccessToken();
+      const response = await apiFetch("/usuarios", {
+        method: "POST",
+        body: { nome, telefone },
+        token,
+      });
+      return { success: true, data: response };
+    } catch (err) {
+      return { success: false, error: err.message || "Erro ao criar perfil" };
+    }
+  };
+
   return {
     user,
     userProfile,
@@ -186,5 +202,6 @@ export const useAuth = () => {
     getAccessToken,
     checkUserProfile,
     signUp,
+    createProfile,
   };
 };

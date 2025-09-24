@@ -5,8 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import propriedadeService from "@/services/propriedadeService";
 import enderecoService from "@/services/enderecoService";
 
-// 1. Lista de estados brasileiros adicionada aqui
-// É uma boa prática definir constantes que não mudam fora do componente.
+// Lista de estados brasileiros
 const estadosBrasileiros = [
   { sigla: "AC", nome: "Acre" },
   { sigla: "AL", nome: "Alagoas" },
@@ -45,7 +44,6 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
 
   // Estados do formulário - separados por etapa
   const [enderecoData, setEnderecoData] = useState({
-    pais: "Brasil",
     estado: "",
     cidade: "",
     bairro: "",
@@ -70,7 +68,6 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
     setCurrentStep(1);
     setCreatedAddress(null);
     setEnderecoData({
-      pais: "Brasil",
       estado: "",
       cidade: "",
       bairro: "",
@@ -95,8 +92,7 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
   };
 
   const handleEnderecoChange = (field, value) => {
-    const stringValue =
-      value !== null && value !== undefined ? String(value) : "";
+    const stringValue = value !== null && value !== undefined ? String(value).trim() : "";
     setEnderecoData((prev) => ({
       ...prev,
       [field]: stringValue,
@@ -115,27 +111,48 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
   const handleEnderecoSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("[v0] Current endereco data:", enderecoData);
 
-    // Validação básica - Endereço
-    const enderecoCamposObrigatorios = [
-      "pais",
-      "estado",
-      "cidade",
-      "bairro",
-      "rua",
-      "cep",
-    ];
-    for (const campo of enderecoCamposObrigatorios) {
-      const valor = enderecoData[campo];
-      console.log(`[v0] Validating field ${campo}:`, valor);
+    // Validação básica dos campos obrigatórios (sem pais)
+    const camposObrigatorios = {
+      estado: enderecoData.estado?.trim(),
+      cidade: enderecoData.cidade?.trim(),
+      bairro: enderecoData.bairro?.trim(),
+      rua: enderecoData.rua?.trim(),
+      cep: enderecoData.cep?.trim()
+    };
 
-      if (!valor || !String(valor).trim()) {
-        setError(
-          `Campo '${campo}' do endereço é obrigatório e não pode estar vazio.`
-        );
+    // Verificar se algum campo obrigatório está vazio
+    for (const [campo, valor] of Object.entries(camposObrigatorios)) {
+      if (!valor || valor.length === 0) {
+        setError(`Campo '${campo}' é obrigatório e não pode estar vazio.`);
         return;
       }
+    }
+
+    // Converter sigla do estado para nome completo se necessário
+    let estadoNome = enderecoData.estado?.trim();
+    const estadoEncontrado = estadosBrasileiros.find(est => est.sigla === estadoNome);
+    if (estadoEncontrado) {
+      estadoNome = estadoEncontrado.nome;
+    }
+
+    // Montar payload garantindo que todos os campos sejam strings não vazias
+    const enderecoParaEnvio = {
+      pais: "Brasil",
+      estado: String(estadoNome || '').trim(),
+      cidade: String(enderecoData.cidade || '').trim(),
+      bairro: String(enderecoData.bairro || '').trim(),
+      rua: String(enderecoData.rua || '').trim(),
+      cep: String(enderecoData.cep || '').trim(),
+      numero: enderecoData.numero?.trim() || null,
+      ponto_referencia: enderecoData.ponto_referencia?.trim() || null,
+    };
+
+    // Validação final - verificar se os campos obrigatórios não estão vazios
+    if (!enderecoParaEnvio.estado || !enderecoParaEnvio.cidade || 
+        !enderecoParaEnvio.bairro || !enderecoParaEnvio.rua || !enderecoParaEnvio.cep) {
+      setError("Todos os campos obrigatórios devem ser preenchidos.");
+      return;
     }
 
     try {
@@ -147,39 +164,10 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
         throw new Error("Usuário não autenticado. Faça login novamente.");
       }
 
-      const payloadEndereco = {
-        pais: String(enderecoData.pais || "").trim(),
-        estado: String(enderecoData.estado || "").trim(),
-        cidade: String(enderecoData.cidade || "").trim(),
-        bairro: String(enderecoData.bairro || "").trim(),
-        rua: String(enderecoData.rua || "").trim(),
-        cep: String(enderecoData.cep || "").trim(),
-        numero: enderecoData.numero ? String(enderecoData.numero).trim() : "",
-        ponto_referencia: enderecoData.ponto_referencia
-          ? String(enderecoData.ponto_referencia).trim()
-          : "",
-      };
-
-      const requiredFields = [
-        "pais",
-        "estado",
-        "cidade",
-        "bairro",
-        "rua",
-        "cep",
-      ];
-      for (const field of requiredFields) {
-        if (!payloadEndereco[field]) {
-          setError(
-            `Erro na validação: Campo '${field}' está vazio após processamento.`
-          );
-          return;
-        }
-      }
-
-      console.log("[v0] Sending endereco payload:", payloadEndereco);
+      console.log("[DEBUG] Sending endereco payload:", enderecoParaEnvio);
+      
       const enderecoResponse = await enderecoService.criarEndereco(
-        payloadEndereco,
+        enderecoParaEnvio,
         token
       );
 
@@ -187,17 +175,15 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
         throw new Error("Erro ao obter ID do endereço criado.");
       }
 
-      console.log("[v0] Endereco created successfully:", enderecoResponse);
+      console.log("[DEBUG] Endereco created successfully:", enderecoResponse);
+      
       // Salvar endereço criado e avançar para próxima etapa
       setCreatedAddress(enderecoResponse);
       setCurrentStep(2);
     } catch (err) {
-      console.error("[v0] Erro ao criar endereço:", err);
+      console.error("[ERROR] Erro ao criar endereço:", err);
 
-      if (
-        err.message?.includes("401") ||
-        err.message?.includes("Unauthorized")
-      ) {
+      if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
         setError("Sessão expirada. Faça login novamente.");
       } else if (err.message?.includes("400")) {
         setError("Dados inválidos. Verifique os campos e tente novamente.");
@@ -237,7 +223,7 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
         throw new Error("Usuário não autenticado. Faça login novamente.");
       }
 
-      // Criar propriedade com o id_endereco obtido na etapa anterior
+      // Criar propriedade com o id_endereco retornado do backend
       const payloadPropriedade = {
         nome: String(propriedadeData.nome).trim(),
         cnpj: propriedadeData.cnpj ? String(propriedadeData.cnpj).trim() : null,
@@ -246,10 +232,7 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
         id_endereco: Number(createdAddress.id_endereco),
       };
 
-      console.log(
-        "Criando propriedade com endereço ID:",
-        createdAddress.id_endereco
-      );
+      console.log("Criando propriedade com endereço ID:", createdAddress.id_endereco);
       await propriedadeService.criarPropriedade(payloadPropriedade, token);
 
       // Sucesso - fechar modal e atualizar lista
@@ -258,10 +241,7 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
     } catch (err) {
       console.error("Erro ao criar propriedade:", err);
 
-      if (
-        err.message?.includes("401") ||
-        err.message?.includes("Unauthorized")
-      ) {
+      if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
         setError("Sessão expirada. Faça login novamente.");
       } else if (err.message?.includes("400")) {
         setError("Dados inválidos. Verifique os campos e tente novamente.");
@@ -276,6 +256,17 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
   const handleBackToStep1 = () => {
     setCurrentStep(1);
     setError(null);
+  };
+
+  // Função auxiliar para verificar se o formulário está válido
+  const isFormValid = () => {
+    return (
+      enderecoData.estado?.trim() &&
+      enderecoData.cidade?.trim() &&
+      enderecoData.bairro?.trim() &&
+      enderecoData.rua?.trim() &&
+      enderecoData.cep?.trim()
+    );
   };
 
   // Se o modal não estiver aberto, não renderiza nada
@@ -344,30 +335,7 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* País */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      País *
-                    </label>
-                    <input
-                      type="text"
-                      value={enderecoData.pais}
-                      onChange={(e) =>
-                        handleEnderecoChange("pais", e.target.value)
-                      }
-                      disabled={isLoading}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:bg-gray-100 disabled:opacity-50"
-                      placeholder="Brasil"
-                    />
-                    {!enderecoData.pais?.trim() && (
-                      <p className="text-red-500 text-xs mt-1">
-                        Campo obrigatório
-                      </p>
-                    )}
-                  </div>
-
-                  {/* 2. O <input> de Estado foi substituído por este <select> */}
+                  {/* Estado */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Estado *
@@ -546,15 +514,7 @@ export default function PropriedadeCreateModal({ isOpen, onClose, onSuccess }) {
               </button>
               <button
                 type="submit"
-                disabled={
-                  isLoading ||
-                  !enderecoData.pais?.trim() ||
-                  !enderecoData.estado?.trim() ||
-                  !enderecoData.cidade?.trim() ||
-                  !enderecoData.bairro?.trim() ||
-                  !enderecoData.rua?.trim() ||
-                  !enderecoData.cep?.trim()
-                }
+                disabled={isLoading || !isFormValid()}
                 className="px-4 py-2 bg-[#FFCF78] text-gray-800 rounded-lg hover:bg-[#F2B84D] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isLoading && (
