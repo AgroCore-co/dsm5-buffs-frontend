@@ -74,37 +74,25 @@ export default function Register() {
     setSuccessMessage("")
 
     try {
-      console.log("Iniciando cadastro para:", email)
-
-      const result = await signUp(email, password, {
-        full_name: name,
-        display_name: name,
+      // Novo fluxo: usa signUp do useAuth, que chama /auth/signup
+      const result = await signUp({
+        email,
+        password,
+        nome: name,
+        telefone: "",
       })
 
-      console.log("Resultado do signUp:", result)
-
       if (result && result.success === true) {
-        console.log("Cadastro bem-sucedido, needsConfirmation:", result.needsConfirmation)
-
-        if (result.needsConfirmation) {
-          setSuccessMessage(
-            "Cadastro realizado com sucesso! Verifique seu email para confirmar a conta e depois faça login.",
-          )
-          setTimeout(() => {
-            router.push("/auth/login")
-          }, 3000)
-        } else {
-          setSuccessMessage("Cadastro realizado com sucesso!")
-          setTimeout(() => {
-            router.push("/dashboard")
-          }, 2000)
-        }
+        setSuccessMessage(
+          "Cadastro realizado com sucesso! Verifique seu email para confirmar a conta e depois faça login.",
+        )
+        setTimeout(() => {
+          router.push("/auth/login")
+        }, 3000)
       } else {
-        console.error("Falha no cadastro:", result)
         setRegisterError(result?.error || "Erro ao criar conta")
       }
     } catch (err) {
-      console.error("Erro de exceção no cadastro:", err)
       setRegisterError("Erro inesperado ao criar conta")
     } finally {
       setIsLoadingForm(false)
@@ -128,7 +116,7 @@ export default function Register() {
   return (
     <div className={`${styles.container} ${styles.registerPage}`}>
       <div className={styles.imageSection}>
-        <Image src="/images/bg2.png" alt="Imagem de cadastro" className={styles.image} />
+        <Image src="/images/bg2.png" alt="Imagem de cadastro" className={styles.image} width={500} height={600} />
       </div>
       <div className={styles.formSection}>
         <h1 className={styles.title}>Criar Conta</h1>
@@ -156,7 +144,7 @@ export default function Register() {
               Nome Completo
             </label>
             <span className={styles.icon} aria-hidden="true">
-              <Image src="/images/icon_user.svg" alt="" />
+              <Image src="/images/icon_user.svg" alt="" width={24} height={24} />
             </span>
           </div>
 
@@ -177,7 +165,7 @@ export default function Register() {
               Email
             </label>
             <span className={styles.icon} aria-hidden="true">
-              <Image src="/images/icon_email.svg" alt="" />
+              <Image src="/images/icon_email.svg" alt="" width={24} height={24} />
             </span>
           </div>
 
@@ -208,6 +196,8 @@ export default function Register() {
               <Image
                 src={showPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
                 alt=""
+                width={24}
+                height={24}
               />
             </button>
           </div>
@@ -239,6 +229,8 @@ export default function Register() {
               <Image
                 src={showConfirmPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
                 alt=""
+                width={24}
+                height={24}
               />
             </button>
           </div>
@@ -273,7 +265,7 @@ export default function Register() {
             "Conectando..."
           ) : (
             <>
-              <Image src="/images/google-icon.svg" alt="Google" className={styles.googleIcon} />
+              <Image src="/images/google-icon.svg" alt="Google" className={styles.googleIcon} width={24} height={24} />
               Cadastrar com Google
             </>
           )}
