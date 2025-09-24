@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import bufaloService from "@/services/bufaloService";
+import { useAuth } from "@/hooks/useAuth";
+import { useProperty } from "@/hooks/useProperty";
 import Head from "next/head";
 
 export default function Reproducao() {
@@ -8,6 +11,61 @@ export default function Reproducao() {
   const [selectedMale, setSelectedMale] = useState("");
   const [selectedFemale, setSelectedFemale] = useState("");
   const [simulationResult, setSimulationResult] = useState(null);
+  const [males, setMales] = useState([]);
+  const [females, setFemales] = useState([]);
+  const [loadingBufalos, setLoadingBufalos] = useState(true);
+  // Paginação e filtro para touros e matrizes
+  const MALES_PER_PAGE = 5;
+  const FEMALES_PER_PAGE = 5;
+  const [malePage, setMalePage] = useState(1);
+  const [femalePage, setFemalePage] = useState(1);
+  const [maleSearch, setMaleSearch] = useState("");
+  const [femaleSearch, setFemaleSearch] = useState("");
+
+  const filteredMales = males.filter(m =>
+    (m.nome || m.name || "").toLowerCase().includes(maleSearch.toLowerCase()) ||
+    (m.raca_nome || m.breed || "").toLowerCase().includes(maleSearch.toLowerCase())
+  );
+  const filteredFemales = females.filter(f =>
+    (f.nome || f.name || "").toLowerCase().includes(femaleSearch.toLowerCase()) ||
+    (f.raca_nome || f.breed || "").toLowerCase().includes(femaleSearch.toLowerCase())
+  );
+
+  const totalMalePages = Math.max(1, Math.ceil(filteredMales.length / MALES_PER_PAGE));
+  const totalFemalePages = Math.max(1, Math.ceil(filteredFemales.length / FEMALES_PER_PAGE));
+  const paginatedMales = filteredMales.slice((malePage - 1) * MALES_PER_PAGE, malePage * MALES_PER_PAGE);
+  const paginatedFemales = filteredFemales.slice((femalePage - 1) * FEMALES_PER_PAGE, femalePage * FEMALES_PER_PAGE);
+
+  const { getAccessToken } = useAuth();
+  const { propriedadeSelecionada } = useProperty();
+
+  useEffect(() => {
+    const fetchBufalos = async () => {
+      setLoadingBufalos(true);
+      try {
+        if (!propriedadeSelecionada?.id_propriedade) {
+          setMales([]);
+          setFemales([]);
+          setLoadingBufalos(false);
+          return;
+        }
+        const token = await getAccessToken();
+        const bufalos = await bufaloService.listarBufalos(token);
+        const bufalosDaPropriedade = bufalos.filter(
+          (b) => b.id_propriedade === propriedadeSelecionada.id_propriedade
+        );
+        setMales(bufalosDaPropriedade.filter((b) => b.sexo === "M"));
+        setFemales(bufalosDaPropriedade.filter((b) => b.sexo === "F"));
+      } catch (err) {
+        setMales([]);
+        setFemales([]);
+      } finally {
+        setLoadingBufalos(false);
+      }
+    };
+    fetchBufalos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propriedadeSelecionada]);
 
   // Tabela geral (lista base de reproduções)
   const reproducoesMock = [
@@ -105,21 +163,7 @@ export default function Reproducao() {
     },
   ];
 
-  const availableMales = [
-    { id: "zeus-1045", name: "Zeus #1045", breed: "Murrah" },
-    { id: "apolo-1033", name: "Apolo #1033", breed: "Jafarabadi" },
-    { id: "thor-1028", name: "Thor #1028", breed: "Híbrido" },
-    { id: "valente-1024", name: "Valente #1024", breed: "Híbrido" },
-    { id: "atlas-1051", name: "Atlas #1051", breed: "Murrah" },
-  ];
-
-  const availableFemales = [
-    { id: "estrela-1031", name: "Estrela #1031", breed: "Murrah" },
-    { id: "luna-1052", name: "Luna #1052", breed: "Jafarabadi" },
-    { id: "safira-1048", name: "Safira #1048", breed: "Híbrido" },
-    { id: "bella-1041", name: "Bella #1041", breed: "Murrah" },
-    { id: "diva-1037", name: "Diva #1037", breed: "Jafarabadi" },
-  ];
+  // Os búfalos disponíveis agora vêm do backend (males, females)
 
   const handleSimulation = () => {
     if (!selectedMale || !selectedFemale) return;
@@ -600,66 +644,176 @@ export default function Reproducao() {
             {/* Macho */}
             <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                ♂ Touro / Reprodutor
+                Touro / Reprodutor
               </h3>
               <div className="space-y-3">
-                {availableMales.map((male) => (
-                  <label
-                    key={male.id}
-                    className={`flex items-center gap-3 p-4 rounded-lg border transition cursor-pointer
-              ${
-                selectedMale === male.id
-                  ? "border-orange-500 bg-orange-50 shadow-sm"
-                  : "border-gray-200 hover:bg-gray-100"
-              }`}
-                  >
-                    <input
-                      type="radio"
-                      name="male"
-                      value={male.id}
-                      checked={selectedMale === male.id}
-                      onChange={(e) => setSelectedMale(e.target.value)}
-                      className="accent-orange-600"
-                    />
-                    <div>
-                      <p className="font-medium text-gray-900">{male.name}</p>
-                      <p className="text-sm text-gray-500">{male.breed}</p>
-                    </div>
-                  </label>
-                ))}
+                <input
+                  type="text"
+                  placeholder="Pesquisar reprodutor..."
+                  value={maleSearch}
+                  onChange={e => {
+                    setMaleSearch(e.target.value);
+                    setMalePage(1);
+                  }}
+                  className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                />
+                {loadingBufalos ? (
+                  <div className="text-gray-500 text-sm">
+                    Carregando búfalos...
+                  </div>
+                ) : males.length === 0 ? (
+                  <div className="text-gray-500 text-sm">
+                    Nenhum touro cadastrado.
+                  </div>
+                ) : (
+                  <>
+                    {paginatedMales.map((male) => {
+                      const id = String(male.id_bufalo || male.id);
+                      const isSelected = selectedMale === id;
+                      return (
+                        <label
+                          key={id}
+                          className={`flex items-center gap-3 p-4 rounded-lg border transition cursor-pointer
+                            ${isSelected
+                              ? "border-orange-500 bg-orange-50 shadow-sm"
+                              : "border-gray-200 hover:bg-gray-100"}`}
+                        >
+                          <input
+                            type="radio"
+                            name="male"
+                            value={id}
+                            checked={isSelected}
+                            onChange={e => {
+                              if (selectedMale === e.target.value) {
+                                setSelectedMale("");
+                              } else {
+                                setSelectedMale(e.target.value);
+                              }
+                            }}
+                            className="accent-orange-600"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900">{male.nome || male.name}</p>
+                            <p className="text-sm text-gray-500">{male.raca_nome || male.breed}</p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                    {totalMalePages > 1 && (
+                      <div className="flex gap-2 justify-center mt-3">
+                        <button
+                          onClick={() => setMalePage((p) => Math.max(1, p - 1))}
+                          disabled={malePage === 1}
+                          className="px-2 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+                        >
+                          Anterior
+                        </button>
+                        <span className="text-sm text-gray-700">
+                          Página {malePage} de {totalMalePages}
+                        </span>
+                        <button
+                          onClick={() =>
+                            setMalePage((p) => Math.min(totalMalePages, p + 1))
+                          }
+                          disabled={malePage === totalMalePages}
+                          className="px-2 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+                        >
+                          Próxima
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
             {/* Fêmea */}
             <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                ♀ Matriz / Receptora
+                Matriz / Receptora
               </h3>
               <div className="space-y-3">
-                {availableFemales.map((female) => (
-                  <label
-                    key={female.id}
-                    className={`flex items-center gap-3 p-4 rounded-lg border transition cursor-pointer
-              ${
-                selectedFemale === female.id
-                  ? "border-pink-500 bg-pink-50 shadow-sm"
-                  : "border-gray-200 hover:bg-gray-100"
-              }`}
-                  >
-                    <input
-                      type="radio"
-                      name="female"
-                      value={female.id}
-                      checked={selectedFemale === female.id}
-                      onChange={(e) => setSelectedFemale(e.target.value)}
-                      className="accent-pink-600"
-                    />
-                    <div>
-                      <p className="font-medium text-gray-900">{female.name}</p>
-                      <p className="text-sm text-gray-500">{female.breed}</p>
-                    </div>
-                  </label>
-                ))}
+                <input
+                  type="text"
+                  placeholder="Pesquisar matriz..."
+                  value={femaleSearch}
+                  onChange={e => {
+                    setFemaleSearch(e.target.value);
+                    setFemalePage(1);
+                  }}
+                  className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
+                />
+                {loadingBufalos ? (
+                  <div className="text-gray-500 text-sm">
+                    Carregando búfalas...
+                  </div>
+                ) : females.length === 0 ? (
+                  <div className="text-gray-500 text-sm">
+                    Nenhuma matriz cadastrada.
+                  </div>
+                ) : (
+                  <>
+                    {paginatedFemales.map((female) => {
+                      const id = String(female.id_bufalo || female.id);
+                      const isSelected = selectedFemale === id;
+                      return (
+                        <label
+                          key={id}
+                          className={`flex items-center gap-3 p-4 rounded-lg border transition cursor-pointer
+                            ${isSelected
+                              ? "border-pink-500 bg-pink-50 shadow-sm"
+                              : "border-gray-200 hover:bg-gray-100"}`}
+                        >
+                          <input
+                            type="radio"
+                            name="female"
+                            value={id}
+                            checked={isSelected}
+                            onChange={e => {
+                              if (selectedFemale === e.target.value) {
+                                setSelectedFemale("");
+                              } else {
+                                setSelectedFemale(e.target.value);
+                              }
+                            }}
+                            className="accent-pink-600"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900">{female.nome || female.name}</p>
+                            <p className="text-sm text-gray-500">{female.raca_nome || female.breed}</p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                    {totalFemalePages > 1 && (
+                      <div className="flex gap-2 justify-center mt-3">
+                        <button
+                          onClick={() =>
+                            setFemalePage((p) => Math.max(1, p - 1))
+                          }
+                          disabled={femalePage === 1}
+                          className="px-2 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+                        >
+                          Anterior
+                        </button>
+                        <span className="text-sm text-gray-700">
+                          Página {femalePage} de {totalFemalePages}
+                        </span>
+                        <button
+                          onClick={() =>
+                            setFemalePage((p) =>
+                              Math.min(totalFemalePages, p + 1)
+                            )
+                          }
+                          disabled={femalePage === totalFemalePages}
+                          className="px-2 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+                        >
+                          Próxima
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </section>

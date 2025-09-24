@@ -8,17 +8,21 @@ import { SupabaseAuth } from "@/utils/supabaseApi";
  * @param {string} options.method - GET, POST, PUT, DELETE
  * @param {Object} options.data - Dados a serem enviados no body
  * @param {string} options.token - Token JWT do usuário autenticado
+ * @param {boolean} options.skipAuth - Ignorar autenticação (para rotas públicas)
  * @returns {Promise<Object>} - Resposta da API em JSON
  */
 export const apiFetch = async (
   endpoint,
-  { method = "GET", body = null, token = null } = {} 
+  { method = "GET", body = null, token = null, skipAuth = false } = {}
 ) => {
   try {
-    if (!token) {
-      token = await SupabaseAuth.getAccessToken();
-      console.log("🔑 Token obtido:", token ? "✅ presente" : "❌ ausente");
-      if (!token) throw new Error("Usuário não autenticado.");
+    // Só exige token se não for skipAuth
+    if (!skipAuth) {
+      if (!token) {
+        token = await SupabaseAuth.getAccessToken();
+        console.log("🔑 Token obtido:", token ? "✅ presente" : "❌ ausente");
+        if (!token) throw new Error("Usuário não autenticado.");
+      }
     }
 
     if (!process.env.NEXT_PUBLIC_API_URL) {
@@ -37,7 +41,7 @@ export const apiFetch = async (
       method,
       headers: {
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
     }).catch((err) => {

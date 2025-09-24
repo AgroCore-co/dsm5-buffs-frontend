@@ -60,8 +60,8 @@ const PropertyProvider = ({ children }) => {
   );
   const carregarPropriedades = useCallback(async () => {
     if (inFlightRef.current) return;
-    // Don't load properties if user is not authenticated or needs to complete profile
-    if (!isAuthenticated || needsProfile || authLoading) {
+    // Não carrega propriedades se não houver perfil de usuário válido
+    if (!isAuthenticated || needsProfile || authLoading || !userProfile || !userProfile.id) {
       setPropriedades([]);
       setSelectedId(null);
       setPropriedadeSelecionada(null);
@@ -213,6 +213,32 @@ const PropertyProvider = ({ children }) => {
       void carregarPropriedades();
     }
   }, [isAuthenticated, needsProfile, authLoading, userProfile, carregarPropriedades]);
+
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      !needsProfile &&
+      !authLoading &&
+      userProfile &&
+      Array.isArray(propriedades) &&
+      propriedades.length === 0
+    ) {
+      // Só redireciona se não houver erro de backend
+      if (!erroPropriedade) {
+        if (typeof window !== "undefined") {
+          // Só redireciona se não estiver já na página de propriedades
+          if (window.location.pathname !== "/propriedades") {
+            window.location.href = "/propriedades";
+          }
+        }
+      } else {
+        // Exibe mensagem de erro customizada (pode trocar por toast se desejar)
+        if (typeof window !== "undefined") {
+          alert("Erro ao carregar propriedades: " + erroPropriedade);
+        }
+      }
+    }
+  }, [isAuthenticated, needsProfile, authLoading, userProfile, propriedades, erroPropriedade]);
 
   return (
     <PropertyContext.Provider

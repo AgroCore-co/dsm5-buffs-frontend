@@ -24,9 +24,10 @@ export const useAuth = () => {
       setUserProfile(profile);
       return profile;
     } catch (err) {
-      if (err.status === 404) {
-        // Perfil não existe, mas não forçamos criação
+      if (err.status === 404 || (err.message && err.message.includes("Perfil de usuário não encontrado"))) {
         setUserProfile(null);
+        // Redireciona para completar perfil se não existir
+        router.push("/complete-profile");
         return null;
       }
       throw err;
@@ -103,6 +104,21 @@ export const useAuth = () => {
     }
   };
 
+  // --- SIGNUP ---
+  const signUp = async ({ email, password, nome, telefone }) => {
+    try {
+      const response = await apiFetch("/auth/signup", {
+        method: "POST",
+        body: { email, password, nome, telefone }, // Corrigido: envia objeto, não string
+        headers: { "Content-Type": "application/json" },
+        skipAuth: true, // Não exige autenticação
+      });
+      return { success: true, data: response };
+    } catch (err) {
+      return { success: false, error: err.message || "Erro ao criar conta" };
+    }
+  };
+
   // --- EFFECT DE AUTENTICAÇÃO ---
   useEffect(() => {
     const checkAuth = async () => {
@@ -169,5 +185,6 @@ export const useAuth = () => {
     logout,
     getAccessToken,
     checkUserProfile,
+    signUp,
   };
 };
