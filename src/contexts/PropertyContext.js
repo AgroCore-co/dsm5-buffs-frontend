@@ -214,32 +214,6 @@ const PropertyProvider = ({ children }) => {
     }
   }, [isAuthenticated, needsProfile, authLoading, userProfile, carregarPropriedades]);
 
-  useEffect(() => {
-    if (
-      isAuthenticated &&
-      !needsProfile &&
-      !authLoading &&
-      userProfile &&
-      Array.isArray(propriedades) &&
-      propriedades.length === 0
-    ) {
-      // Só redireciona se não houver erro de backend
-      if (!erroPropriedade) {
-        if (typeof window !== "undefined") {
-          // Só redireciona se não estiver já na página de propriedades
-          if (window.location.pathname !== "/propriedades") {
-            window.location.href = "/propriedades";
-          }
-        }
-      } else {
-        // Exibe mensagem de erro customizada (pode trocar por toast se desejar)
-        if (typeof window !== "undefined") {
-          alert("Erro ao carregar propriedades: " + erroPropriedade);
-        }
-      }
-    }
-  }, [isAuthenticated, needsProfile, authLoading, userProfile, propriedades, erroPropriedade]);
-
   return (
     <PropertyContext.Provider
       value={{

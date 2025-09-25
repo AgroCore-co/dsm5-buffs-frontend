@@ -108,9 +108,8 @@ const getSexIcon = (sexo) => {
 // ==================== COMPONENTE PRINCIPAL ====================
 export default function Rebanho() {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, logout, token, getAccessToken } =
-    useAuth();
-  const { propriedadeSelecionada } = useProperty();
+  const { user, isLoading, isAuthenticated, logout, token, getAccessToken } = useAuth();
+  const { propriedadeSelecionada, propriedades } = useProperty ? useProperty() : { propriedades: [], propriedadeSelecionada: null };
 
   const [bufalos, setBufalos] = useState([]);
   const [bufalosFilteredByProperty, setBufalosFilteredByProperty] = useState(
@@ -294,12 +293,16 @@ export default function Rebanho() {
     if (isAuthenticated && !isLoading) {
       const carregarDados = async () => {
         await fetchRacas(); // Busca raças primeiro
-        await fetchBufalos(); // Depois busca búfalos para poder correlacionar
+        // Só busca búfalos se houver pelo menos uma propriedade cadastrada
+        if (propriedadeSelecionada || (propriedades && propriedades.length > 0)) {
+          await fetchBufalos();
+        } else {
+          setBufalos([]);
+        }
       };
-
       carregarDados();
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, propriedadeSelecionada, propriedades]);
 
   // Atualizar búfalos quando as raças mudarem para garantir a correlação
   useEffect(() => {
@@ -486,8 +489,21 @@ export default function Rebanho() {
     }
   }, [isLoading, isAuthenticated, router]);
 
+
   if (isLoading || !isAuthenticated) {
     return null;
+  }
+
+  // Se não houver nenhuma propriedade cadastrada, mostrar mensagem amigável
+  if (!propriedadeSelecionada && (!propriedades || propriedades.length === 0)) {
+    return (
+      <div className="p-6 flex flex-col gap-8">
+        <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Gestão do Rebanho</h1>
+          <p className="text-gray-600 text-lg">Nenhuma propriedade cadastrada ainda.<br/>Cadastre uma propriedade para começar a gerenciar seu rebanho.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

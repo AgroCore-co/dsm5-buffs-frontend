@@ -12,12 +12,12 @@ const listarPropriedades = async (token) => {
       method: "GET",
       token,
     });
-    if (!Array.isArray(data)) {
+    if (!Array.isArray(data.propriedades)) {
       console.warn("Resposta inesperada em /propriedades:", data);
       return [];
     }
-    console.log("✅ Propriedades carregadas:", data);
-    return data;
+    console.log("✅ Propriedades carregadas:", data.propriedades);
+    return data.propriedades;
   } catch (error) {
     console.error("❌ Erro ao listar propriedades:", error);
     throw error;
@@ -73,8 +73,8 @@ const criarPropriedade = async (payload, token) => {
 
     const data = await apiFetch(`/propriedades`, {
       method: "POST",
+      body,
       token,
-      data: body,
     });
 
     console.log("✅ Propriedade criada com sucesso:", data);
