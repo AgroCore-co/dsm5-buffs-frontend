@@ -5,6 +5,8 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
 import propriedadeService from "@/services/propriedadeService";
+import enderecoService from "@/services/enderecoService";
+import usuarioService from "@/services/usuarioService";
 
 import Loading from "@/components/Loading";
 import PropriedadeCreateModal from "@/components/propriedades/PropriedadeCreateModal";
@@ -33,7 +35,23 @@ export default function Propriedades() {
   const ITEMS_PER_PAGE = 12; // Número de propriedades por página
 
   // ==========================
-  // Função para carregar propriedades da API
+  // Função para buscar e formatar endereço
+  // ==========================
+  const formatEndereco = (endereco) => {
+    if (!endereco) return "Endereço não encontrado";
+    return `${endereco.rua}, ${endereco.bairro}, ${endereco.cidade} - ${endereco.estado}`;
+  };
+
+  // ==========================
+  // Função para buscar e formatar dono
+  // ==========================
+  const formatDono = (dono) => {
+    if (!dono) return "Dono não encontrado";
+    return dono.nome;
+  };
+
+  // ==========================
+  // Função para carregar propriedades + endereços + dono
   // ==========================
   const loadPropriedades = useCallback(async () => {
     try {
@@ -52,28 +70,49 @@ export default function Propriedades() {
       // Requisição à API para listar propriedades
       const data = await propriedadeService.listarPropriedades(token);
 
-      // Transformar os dados da API para o formato esperado pela interface
-      const propriedadesFormatadas = data.map((prop) => ({
-        id: prop.id_propriedade,
-        nome: prop.nome,
-        tipo_manejo: prop.tipo_manejo,
-        tipo:
-          prop.tipo_manejo === "P"
-            ? "Pecuária"
-            : prop.tipo_manejo === "E"
-            ? "Extensivo"
-            : prop.tipo_manejo === "I"
-            ? "Intensivo"
-            : "Não definido",
-        cnpj: prop.cnpj,
-        p_abcb: prop.p_abcb,
-        id_endereco: prop.id_endereco,
-        id_dono: prop.id_dono,
-        created_at: prop.created_at,
-        updated_at: prop.updated_at,
-      }));
+      // Busca todos os endereços e donos em paralelo
+      const propriedadesComEnderecoDono = await Promise.all(
+        data.map(async (prop) => {
+          let endereco = null;
+          let dono = null;
+          try {
+            endereco = await enderecoService.buscarEnderecoPorId(
+              prop.id_endereco,
+              token
+            );
+          } catch (e) {
+            endereco = null;
+          }
+          try {
+            dono = await usuarioService.buscarUsuarioPorId(prop.id_dono, token);
+          } catch (e) {
+            dono = null;
+          }
+          return {
+            id: prop.id_propriedade,
+            nome: prop.nome,
+            tipo_manejo: prop.tipo_manejo,
+            tipo:
+              prop.tipo_manejo === "P"
+                ? "Pecuária"
+                : prop.tipo_manejo === "E"
+                ? "Extensivo"
+                : prop.tipo_manejo === "I"
+                ? "Intensivo"
+                : "Não definido",
+            cnpj: prop.cnpj,
+            p_abcb: prop.p_abcb,
+            id_endereco: prop.id_endereco,
+            endereco,
+            id_dono: prop.id_dono,
+            dono,
+            created_at: prop.created_at,
+            updated_at: prop.updated_at,
+          };
+        })
+      );
 
-      setPropriedades(propriedadesFormatadas);
+      setPropriedades(propriedadesComEnderecoDono);
       hasLoadedRef.current = true; // Marca como carregado para não refazer
     } catch (err) {
       console.error("Erro ao carregar propriedades:", err);
@@ -442,9 +481,19 @@ export default function Propriedades() {
                   </div>
 
                   {/* Informações adicionais */}
-                  <div className="flex justify-between items-center text-xs text-gray-600">
-                    <span>Endereço: #{propriedade.id_endereco}</span>
-                    <span>Dono: #{propriedade.id_dono}</span>
+                  <div className="flex flex-col gap-1 text-xs text-gray-600 mt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-700">Endereço:</span>
+                      <span className="truncate max-w-[180px]" title={formatEndereco(propriedade.endereco)}>
+                        {formatEndereco(propriedade.endereco)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-700">Dono:</span>
+                      <span className="truncate max-w-[140px]" title={formatDono(propriedade.dono)}>
+                        {formatDono(propriedade.dono)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
