@@ -159,7 +159,7 @@ const PropertyProvider = ({ children }) => {
     } finally {
       setLoadingPropriedade(false);
     }
-  }, [selectedId, isAuthenticated, needsProfile, authLoading]);
+  }, [selectedId, isAuthenticated, needsProfile, authLoading, userProfile]);
   // Remove duplicidade da definição de selectProperty
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
 import { apiFetch } from "@/lib/apiClient";
@@ -18,7 +18,7 @@ export const useAuth = () => {
   const didHandleEventRef = useRef(false);
 
   // --- CHECAR PERFIL ---
-  const checkUserProfile = async (token) => {
+  const checkUserProfile = useCallback(async (token) => {
     try {
       const profile = await apiFetch("/usuarios/me", { token });
       // Se perfil existe, salva e não redireciona
@@ -37,7 +37,7 @@ export const useAuth = () => {
       // Outros erros não redirecionam, apenas lançam
       throw err;
     }
-  };
+  }, [router]);
 
   // --- GET TOKEN ---
   const getAccessToken = async () => {
@@ -176,7 +176,7 @@ export const useAuth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [authInitialized]);
+  }, [authInitialized, checkUserProfile]);
 
 
   // --- CREATE PROFILE ---

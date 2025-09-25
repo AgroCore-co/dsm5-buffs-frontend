@@ -119,7 +119,7 @@ export default function MapaPiquetes({ propriedadeId }) {
     if (propriedadeId) {
       carregarLotes();
     }
-  }, [propriedadeId]); // Executa quando propriedadeId muda
+  }, [propriedadeId, carregarLotes]); // Executa quando propriedadeId ou carregarLotes mudam
 
   useEffect(() => {
     if (lotes.length > 0) {

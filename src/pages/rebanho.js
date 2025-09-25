@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,7 +109,7 @@ const getSexIcon = (sexo) => {
 export default function Rebanho() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout, token, getAccessToken } = useAuth();
-  const { propriedadeSelecionada, propriedades } = useProperty ? useProperty() : { propriedades: [], propriedadeSelecionada: null };
+  const { propriedadeSelecionada, propriedades } = useProperty();
 
   const [bufalos, setBufalos] = useState([]);
   const [bufalosFilteredByProperty, setBufalosFilteredByProperty] = useState(
@@ -120,7 +120,7 @@ export default function Rebanho() {
   const [carregandoRacas, setCarregandoRacas] = useState(false);
 
   // Função para buscar raças
-  const fetchRacas = async () => {
+  const fetchRacas = useCallback(async () => {
     try {
       setCarregandoRacas(true);
 
@@ -146,70 +146,10 @@ export default function Rebanho() {
     } finally {
       setCarregandoRacas(false);
     }
-  };
-
-  // Função para correlacionar búfalos com suas raças
-  const correlacionarBufalosComRacas = (bufalos, racas) => {
-    if (!Array.isArray(bufalos) || !Array.isArray(racas)) {
-      return bufalos;
-    }
-
-    try {
-      console.log("🔍 Iniciando correlação de búfalos com raças...");
-
-      // Criar um mapa de raças para acesso rápido por ID
-      const mapRacas = racas.reduce((map, raca) => {
-        map[raca.id_raca] = raca;
-        return map;
-      }, {});
-
-      // Adicionar informação detalhada da raça a cada búfalo
-      const bufalosComRacas = bufalos.map((bufalo) => {
-        const racaDetalhes = mapRacas[bufalo.id_raca] || null;
-        return {
-          ...bufalo,
-          raca: racaDetalhes
-            ? {
-                id: racaDetalhes.id_raca,
-                nome: racaDetalhes.nome,
-              }
-            : null,
-        };
-      });
-
-      // Contabilizar e mostrar no console a quantidade de búfalos por raça
-      const contagemPorRaca = {};
-      bufalosComRacas.forEach((bufalo) => {
-        if (bufalo.raca?.nome) {
-          const raca = bufalo.raca.nome;
-          contagemPorRaca[raca] = (contagemPorRaca[raca] || 0) + 1;
-        } else if (bufalo.id_raca) {
-          // Usar o nome da raça do mapa
-          const racaNome =
-            mapRacas[bufalo.id_raca]?.nome || `Raça ${bufalo.id_raca}`;
-          contagemPorRaca[racaNome] = (contagemPorRaca[racaNome] || 0) + 1;
-        } else {
-          contagemPorRaca["Sem Raça"] = (contagemPorRaca["Sem Raça"] || 0) + 1;
-        }
-      });
-
-      console.log("📊 Distribuição de búfalos por raça:");
-      Object.entries(contagemPorRaca).forEach(([raca, quantidade]) => {
-        console.log(`   ${raca}: ${quantidade} búfalos`);
-      });
-
-      console.log(
-        `✅ Correlação concluída para ${bufalosComRacas.length} búfalos`
-      );
-      return bufalosComRacas;
-    } catch (error) {
-      console.error("❌ Erro ao correlacionar búfalos com raças:", error);
-      return bufalos; // Retorna os búfalos originais em caso de erro
-    }
-  };
+  }, [getAccessToken]);
 
   // Função para buscar búfalos usando Promise e try/catch adequados
-  const fetchBufalos = async () => {
+  const fetchBufalos = useCallback(async () => {
     try {
       setCarregandoBufalos(true);
 
@@ -243,7 +183,61 @@ export default function Rebanho() {
     } finally {
       setCarregandoBufalos(false);
     }
-  };
+  }, [getAccessToken, racas, correlacionarBufalosComRacas]);
+
+  // Função para correlacionar búfalos com suas raças
+  const correlacionarBufalosComRacas = useCallback((bufalos, racas) => {
+    if (!Array.isArray(bufalos) || !Array.isArray(racas)) {
+      return bufalos;
+    }
+    try {
+      console.log("🔍 Iniciando correlação de búfalos com raças...");
+      // Criar um mapa de raças para acesso rápido por ID
+      const mapRacas = racas.reduce((map, raca) => {
+        map[raca.id_raca] = raca;
+        return map;
+      }, {});
+      // Adicionar informação detalhada da raça a cada búfalo
+      const bufalosComRacas = bufalos.map((bufalo) => {
+        const racaDetalhes = mapRacas[bufalo.id_raca] || null;
+        return {
+          ...bufalo,
+          raca: racaDetalhes
+            ? {
+                id: racaDetalhes.id_raca,
+                nome: racaDetalhes.nome,
+              }
+            : null,
+        };
+      });
+      // Contabilizar e mostrar no console a quantidade de búfalos por raça
+      const contagemPorRaca = {};
+      bufalosComRacas.forEach((bufalo) => {
+        if (bufalo.raca?.nome) {
+          const raca = bufalo.raca.nome;
+          contagemPorRaca[raca] = (contagemPorRaca[raca] || 0) + 1;
+        } else if (bufalo.id_raca) {
+          // Usar o nome da raça do mapa
+          const racaNome =
+            mapRacas[bufalo.id_raca]?.nome || `Raça ${bufalo.id_raca}`;
+          contagemPorRaca[racaNome] = (contagemPorRaca[racaNome] || 0) + 1;
+        } else {
+          contagemPorRaca["Sem Raça"] = (contagemPorRaca["Sem Raça"] || 0) + 1;
+        }
+      });
+      console.log("📊 Distribuição de búfalos por raça:");
+      Object.entries(contagemPorRaca).forEach(([raca, quantidade]) => {
+        console.log(`   ${raca}: ${quantidade} búfalos`);
+      });
+      console.log(
+        `✅ Correlação concluída para ${bufalosComRacas.length} búfalos`
+      );
+      return bufalosComRacas;
+    } catch (error) {
+      console.error("❌ Erro ao correlacionar búfalos com raças:", error);
+      return bufalos; // Retorna os búfalos originais em caso de erro
+    }
+  }, []);
 
   // Função para obter valores únicos para os filtros (agora dentro do componente)
   const getUniqueValues = (field) => {
@@ -302,7 +296,7 @@ export default function Rebanho() {
       };
       carregarDados();
     }
-  }, [isAuthenticated, isLoading, propriedadeSelecionada, propriedades]);
+  }, [isAuthenticated, isLoading, propriedadeSelecionada, propriedades, fetchRacas, fetchBufalos]);
 
   // Atualizar búfalos quando as raças mudarem para garantir a correlação
   useEffect(() => {
@@ -356,7 +350,7 @@ export default function Rebanho() {
         );
       });
     }
-  }, [racas]);
+  }, [racas, bufalos, correlacionarBufalosComRacas]);
 
   // Filtrar búfalos com base na propriedade selecionada
   useEffect(() => {
