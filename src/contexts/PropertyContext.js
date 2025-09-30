@@ -24,7 +24,7 @@ const PropertyProvider = ({ children }) => {
   const [loadingPropriedade, setLoadingPropriedade] = useState(false);
   const [erroPropriedade, setErroPropriedade] = useState("");
   const inFlightRef = useRef(false);
-  const { isAuthenticated, needsProfile, authLoading, userProfile } = useAuth();
+  const { isAuthenticated, needsProfile, authLoading, userProfile, getAccessToken } = useAuth();
 
   const selectProperty = useCallback(
     (id) => {
@@ -72,10 +72,9 @@ const PropertyProvider = ({ children }) => {
     setLoadingPropriedade(true);
     setErroPropriedade("");
     try {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) throw new Error(error.message || "Falha ao obter sessão");
-      const token = data.session?.access_token;
-      const userId = data.session?.user?.id || "anon";
+      // Obtém o token usando o mesmo método do useAuth
+      const token = await (typeof getAccessToken === "function" ? getAccessToken() : null);
+      const userId = userProfile?.id || "anon";
       // Guard de DEV: ignora carregamentos duplicados do mesmo user numa janela curta
       if (process.env.NODE_ENV === "development") {
         const now = Date.now();
@@ -214,6 +213,12 @@ const PropertyProvider = ({ children }) => {
     }
   }, [isAuthenticated, needsProfile, authLoading, userProfile, carregarPropriedades]);
 
+  useEffect(() => {
+    console.log("[PropertyProvider] propriedades:", propriedades);
+    console.log("[PropertyProvider] selectedId:", selectedId);
+    console.log("[PropertyProvider] propriedadeSelecionada:", propriedadeSelecionada);
+  }, [propriedades, selectedId, propriedadeSelecionada]);
+
   return (
     <PropertyContext.Provider
       value={{
@@ -231,6 +236,11 @@ const PropertyProvider = ({ children }) => {
         refresh: carregarPropriedades,
       }}
     >
+      {(!propriedadeSelecionada && propriedades.length > 0) && (
+        <div style={{background:'#ffe0e0',color:'#900',padding:'8px',textAlign:'center',zIndex:9999}}>
+          Nenhuma propriedade selecionada!
+        </div>
+      )}
       {children}
     </PropertyContext.Provider>
   );

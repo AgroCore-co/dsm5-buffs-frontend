@@ -8,10 +8,12 @@ import { apiFetch } from "@/lib/apiClient";
  */
 const listarPropriedades = async (token) => {
   try {
+    console.log("[propriedadeService] Token recebido:", token);
     const data = await apiFetch(`/propriedades`, {
       method: "GET",
       token,
     });
+    console.log("[propriedadeService] Resposta da API /propriedades:", data);
     if (!Array.isArray(data.propriedades)) {
       console.warn("Resposta inesperada em /propriedades:", data);
       return [];

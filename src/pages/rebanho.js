@@ -148,43 +148,6 @@ export default function Rebanho() {
     }
   }, [getAccessToken]);
 
-  // Função para buscar búfalos usando Promise e try/catch adequados
-  const fetchBufalos = useCallback(async () => {
-    try {
-      setCarregandoBufalos(true);
-
-      // Forçar obtenção de um token fresco do Supabase
-      const token = await getAccessToken();
-
-      if (!token) {
-        console.warn("⚠️ Token não disponível para buscar búfalos");
-        return;
-      }
-
-      // Fazer a chamada de API
-      const data = await buffaloService.listarBufalos(token);
-
-      // Correlacionar com raças se disponíveis
-      let bufalosProcessados = data;
-      if (Array.isArray(data) && racas.length > 0) {
-        bufalosProcessados = correlacionarBufalosComRacas(data, racas);
-      }
-
-      // Atualizar estado com dados processados
-      if (Array.isArray(bufalosProcessados)) {
-        setBufalos(bufalosProcessados);
-      } else {
-        // Não atualizamos o estado se os dados não forem um array
-        console.warn("⚠️ Dados recebidos não são um array válido");
-      }
-    } catch (error) {
-      // Silenciar erros no componente, logs já estão no service
-      console.error("Erro ao buscar búfalos:", error.message);
-    } finally {
-      setCarregandoBufalos(false);
-    }
-  }, [getAccessToken, racas, correlacionarBufalosComRacas]);
-
   // Função para correlacionar búfalos com suas raças
   const correlacionarBufalosComRacas = useCallback((bufalos, racas) => {
     if (!Array.isArray(bufalos) || !Array.isArray(racas)) {
@@ -238,6 +201,43 @@ export default function Rebanho() {
       return bufalos; // Retorna os búfalos originais em caso de erro
     }
   }, []);
+
+  // Função para buscar búfalos usando Promise e try/catch adequados
+  const fetchBufalos = useCallback(async () => {
+    try {
+      setCarregandoBufalos(true);
+
+      // Forçar obtenção de um token fresco do Supabase
+      const token = await getAccessToken();
+
+      if (!token) {
+        console.warn("⚠️ Token não disponível para buscar búfalos");
+        return;
+      }
+
+      // Fazer a chamada de API
+      const data = await buffaloService.listarBufalos(token);
+
+      // Correlacionar com raças se disponíveis
+      let bufalosProcessados = data;
+      if (Array.isArray(data) && racas.length > 0) {
+        bufalosProcessados = correlacionarBufalosComRacas(data, racas);
+      }
+
+      // Atualizar estado com dados processados
+      if (Array.isArray(bufalosProcessados)) {
+        setBufalos(bufalosProcessados);
+      } else {
+        // Não atualizamos o estado se os dados não forem um array
+        console.warn("⚠️ Dados recebidos não são um array válido");
+      }
+    } catch (error) {
+      // Silenciar erros no componente, logs já estão no service
+      console.error("Erro ao buscar búfalos:", error.message);
+    } finally {
+      setCarregandoBufalos(false);
+    }
+  }, [getAccessToken, racas, correlacionarBufalosComRacas]);
 
   // Função para obter valores únicos para os filtros (agora dentro do componente)
   const getUniqueValues = (field) => {
