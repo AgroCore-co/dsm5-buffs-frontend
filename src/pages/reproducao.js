@@ -43,9 +43,24 @@ export default function Reproducao() {
     const fetchBufalos = async () => {
       setLoadingBufalos(true);
       try {
+        // Se não houver contexto de propriedade, usar mocks
         if (!propriedadeSelecionada?.id_propriedade) {
-          setMales([]);
-          setFemales([]);
+          // Mocks para touros
+          setMales([
+            { id: 1, nome: "Zeus", brinco: "1045" },
+            { id: 2, nome: "Apolo", brinco: "1033" },
+            { id: 3, nome: "Thor", brinco: "1028" },
+            { id: 4, nome: "Atlas", brinco: "1051" },
+            { id: 5, nome: "Hades", brinco: "1029" },
+          ]);
+          // Mocks para matrizes
+          setFemales([
+            { id: 11, nome: "Luna", brinco: "1052" },
+            { id: 12, nome: "Safira", brinco: "1048" },
+            { id: 13, nome: "Bella", brinco: "1041" },
+            { id: 14, nome: "Diva", brinco: "1037" },
+            { id: 15, nome: "Jade", brinco: "1044" },
+          ]);
           setLoadingBufalos(false);
           return;
         }
@@ -137,11 +152,6 @@ export default function Reproducao() {
 
   const recommendationsMock = [
     {
-      male: { tag: "Zeus #1045", symbol: "♂" },
-      female: { tag: "Luna #1052", symbol: "♀" },
-      score: 92,
-    },
-    {
       male: { tag: "Apolo #1033", symbol: "♂" },
       female: { tag: "Safira #1048", symbol: "♀" },
       score: 88,
@@ -152,11 +162,6 @@ export default function Reproducao() {
       score: 85,
     },
     {
-      male: { tag: "Atlas #1051", symbol: "♂" },
-      female: { tag: "Diva #1037", symbol: "♀" },
-      score: 82,
-    },
-    {
       male: { tag: "Hades #1029", symbol: "♂" },
       female: { tag: "Jade #1044", symbol: "♀" },
       score: 79,
@@ -165,20 +170,27 @@ export default function Reproducao() {
 
   // Os búfalos disponíveis agora vêm do backend (males, females)
 
+  // Função de simulação de acasalamento 100% mockada
   const handleSimulation = () => {
     if (!selectedMale || !selectedFemale) return;
 
-    // Mock simulation results
+    // Buscar os nomes dos búfalos selecionados
+    const macho = males.find(m => String(m.id_bufalo || m.id) === selectedMale);
+    const femea = females.find(f => String(f.id_bufalo || f.id) === selectedFemale);
+
+    // Simulação determinística baseada no par selecionado
+    // Garante que o mesmo par sempre retorna o mesmo resultado
+    const key = `${selectedMale}-${selectedFemale}`;
     const mockResults = [
       {
-        confidence: 91,
-        estimatedProduction: 2847,
-        inbreeding: 23,
-        resistance: "Alta",
-        geneticScore: 8.2,
-        alert: "Consanguinidade acima do recomendado (>20%)",
+        confidence: 45,
+        estimatedProduction: 1650,
+        inbreeding: 35,
+        resistance: "Baixa",
+        geneticScore: 4.1,
+        alert: "Consanguinidade muito alta (>30%) e baixa produção estimada",
         recommendation:
-          "Considere cruzar com Luna #1052 (Jafarabadi) para reduzir consanguinidade para 8% mantendo produção estimada de 2.920L.",
+          `Não recomendado: cruzamento entre ${macho?.nome || "o touro"} e ${femea?.nome || "a matriz"} apresenta alta consanguinidade e baixo potencial produtivo.`,
       },
       {
         confidence: 88,
@@ -188,23 +200,23 @@ export default function Reproducao() {
         geneticScore: 8.7,
         alert: null,
         recommendation:
-          "Excelente combinação genética com baixa consanguinidade.",
+          `Excelente combinação genética entre ${macho?.nome || "o touro"} e ${femea?.nome || "a matriz"} com baixa consanguinidade.`,
       },
       {
-        confidence: 85,
-        estimatedProduction: 2650,
-        inbreeding: 15,
-        resistance: "Alta",
-        geneticScore: 7.9,
-        alert: null,
-        recommendation: "Boa combinação com produção equilibrada.",
+        confidence: 62,
+        estimatedProduction: 2050,
+        inbreeding: 28,
+        resistance: "Baixa",
+        geneticScore: 5.3,
+        alert: "Consanguinidade acima do recomendado (>25%)",
+        recommendation: `Combinação mediana entre ${macho?.nome || "o touro"} e ${femea?.nome || "a matriz"} com consanguinidade elevada - considere outras opções.`,
       },
     ];
-
-    // Random result for demo
-    const randomResult =
-      mockResults[Math.floor(Math.random() * mockResults.length)];
-    setSimulationResult(randomResult);
+    // Hash simples para indexar sempre o mesmo resultado para o mesmo par
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) hash += key.charCodeAt(i);
+    const idx = hash % mockResults.length;
+    setSimulationResult(mockResults[idx]);
   };
 
   const getStatusColor = (status) => {
@@ -647,83 +659,21 @@ export default function Reproducao() {
                 Touro / Reprodutor
               </h3>
               <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Pesquisar reprodutor..."
-                  value={maleSearch}
-                  onChange={e => {
-                    setMaleSearch(e.target.value);
-                    setMalePage(1);
-                  }}
-                  className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                />
-                {loadingBufalos ? (
-                  <div className="text-gray-500 text-sm">
-                    Carregando búfalos...
-                  </div>
-                ) : males.length === 0 ? (
-                  <div className="text-gray-500 text-sm">
-                    Nenhum touro cadastrado.
-                  </div>
-                ) : (
-                  <>
-                    {paginatedMales.map((male) => {
-                      const id = String(male.id_bufalo || male.id);
-                      const isSelected = selectedMale === id;
-                      return (
-                        <label
-                          key={id}
-                          className={`flex items-center gap-3 p-4 rounded-lg border transition cursor-pointer
-                            ${isSelected
-                              ? "border-orange-500 bg-orange-50 shadow-sm"
-                              : "border-gray-200 hover:bg-gray-100"}`}
-                        >
-                          <input
-                            type="radio"
-                            name="male"
-                            value={id}
-                            checked={isSelected}
-                            onChange={e => {
-                              if (selectedMale === e.target.value) {
-                                setSelectedMale("");
-                              } else {
-                                setSelectedMale(e.target.value);
-                              }
-                            }}
-                            className="accent-orange-600"
-                          />
-                          <div>
-                            <p className="font-medium text-gray-900">{male.nome || male.name}</p>
-                            <p className="text-sm text-gray-500">{male.raca_nome || male.breed}</p>
-                          </div>
-                        </label>
-                      );
-                    })}
-                    {totalMalePages > 1 && (
-                      <div className="flex gap-2 justify-center mt-3">
-                        <button
-                          onClick={() => setMalePage((p) => Math.max(1, p - 1))}
-                          disabled={malePage === 1}
-                          className="px-2 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
-                        >
-                          Anterior
-                        </button>
-                        <span className="text-sm text-gray-700">
-                          Página {malePage} de {totalMalePages}
-                        </span>
-                        <button
-                          onClick={() =>
-                            setMalePage((p) => Math.min(totalMalePages, p + 1))
-                          }
-                          disabled={malePage === totalMalePages}
-                          className="px-2 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
-                        >
-                          Próxima
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
+                <select
+                  value={selectedMale}
+                  onChange={e => setSelectedMale(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                >
+                  <option value="">Selecione um touro...</option>
+                  {males.map((male) => {
+                    const id = String(male.id_bufalo || male.id);
+                    return (
+                      <option key={id} value={id}>
+                        {male.nome || male.name} {male.brinco ? `- ${male.brinco}` : ""}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             </div>
 
@@ -733,87 +683,21 @@ export default function Reproducao() {
                 Matriz / Receptora
               </h3>
               <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Pesquisar matriz..."
-                  value={femaleSearch}
-                  onChange={e => {
-                    setFemaleSearch(e.target.value);
-                    setFemalePage(1);
-                  }}
-                  className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
-                />
-                {loadingBufalos ? (
-                  <div className="text-gray-500 text-sm">
-                    Carregando búfalas...
-                  </div>
-                ) : females.length === 0 ? (
-                  <div className="text-gray-500 text-sm">
-                    Nenhuma matriz cadastrada.
-                  </div>
-                ) : (
-                  <>
-                    {paginatedFemales.map((female) => {
-                      const id = String(female.id_bufalo || female.id);
-                      const isSelected = selectedFemale === id;
-                      return (
-                        <label
-                          key={id}
-                          className={`flex items-center gap-3 p-4 rounded-lg border transition cursor-pointer
-                            ${isSelected
-                              ? "border-pink-500 bg-pink-50 shadow-sm"
-                              : "border-gray-200 hover:bg-gray-100"}`}
-                        >
-                          <input
-                            type="radio"
-                            name="female"
-                            value={id}
-                            checked={isSelected}
-                            onChange={e => {
-                              if (selectedFemale === e.target.value) {
-                                setSelectedFemale("");
-                              } else {
-                                setSelectedFemale(e.target.value);
-                              }
-                            }}
-                            className="accent-pink-600"
-                          />
-                          <div>
-                            <p className="font-medium text-gray-900">{female.nome || female.name}</p>
-                            <p className="text-sm text-gray-500">{female.raca_nome || female.breed}</p>
-                          </div>
-                        </label>
-                      );
-                    })}
-                    {totalFemalePages > 1 && (
-                      <div className="flex gap-2 justify-center mt-3">
-                        <button
-                          onClick={() =>
-                            setFemalePage((p) => Math.max(1, p - 1))
-                          }
-                          disabled={femalePage === 1}
-                          className="px-2 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
-                        >
-                          Anterior
-                        </button>
-                        <span className="text-sm text-gray-700">
-                          Página {femalePage} de {totalFemalePages}
-                        </span>
-                        <button
-                          onClick={() =>
-                            setFemalePage((p) =>
-                              Math.min(totalFemalePages, p + 1)
-                            )
-                          }
-                          disabled={femalePage === totalFemalePages}
-                          className="px-2 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
-                        >
-                          Próxima
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
+                <select
+                  value={selectedFemale}
+                  onChange={e => setSelectedFemale(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
+                >
+                  <option value="">Selecione uma matriz...</option>
+                  {females.map((female) => {
+                    const id = String(female.id_bufalo || female.id);
+                    return (
+                      <option key={id} value={id}>
+                        {female.nome || female.name} {female.brinco ? `- ${female.brinco}` : ""}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             </div>
           </section>
@@ -847,7 +731,7 @@ export default function Reproducao() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Produção Estimada</span>
+                      <span className="text-gray-600">Produção Estimada Anual</span>
                       <span className="font-bold text-gray-900">
                         {simulationResult.estimatedProduction.toLocaleString()}{" "}
                         L
@@ -868,12 +752,6 @@ export default function Reproducao() {
                   </div>
 
                   <div className="flex flex-col gap-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Resistência</span>
-                      <span className="font-bold text-gray-900">
-                        {simulationResult.resistance}
-                      </span>
-                    </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Score Genético</span>
                       <span className="font-bold text-gray-900">

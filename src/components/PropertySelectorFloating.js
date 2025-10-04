@@ -3,12 +3,13 @@ import { PropertyContext } from "@/contexts/PropertyContext";
 import { Building2, ChevronDown, X, Check } from "lucide-react";
 
 export default function PropertySelectorFloating() {
+  // Adaptação: retorna valores default para evitar erro de destructuring
   const {
-    propriedades,
-    propriedadeSelecionada,
-    selectProperty,
-    loadingPropriedade,
-  } = useContext(PropertyContext);
+    propriedades = [],
+    propriedadeSelecionada = null,
+    selectProperty = () => {},
+    loadingPropriedade = false,
+  } = useContext(PropertyContext) || {};
 
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");

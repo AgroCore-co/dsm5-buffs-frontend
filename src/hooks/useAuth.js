@@ -21,17 +21,13 @@ export const useAuth = () => {
   const checkUserProfile = useCallback(async (token) => {
     try {
       const profile = await apiFetch("/usuarios/me", { token });
-      // Se perfil existe, salva e não redireciona
       setUserProfile(profile);
       return profile;
     } catch (err) {
-      // Só redireciona se for 404 (perfil não existe)
+      // Se perfil não existe, apenas seta como null, não redireciona
       if (err.status === 404 || (err.message && err.message.includes("Perfil de usuário não encontrado"))) {
         setUserProfile(null);
-        // Redireciona para completar perfil se não existir
-        if (router.pathname !== "/complete-profile") {
-          router.push("/complete-profile");
-        }
+        // Removido: redirecionamento obrigatório para /complete-profile
         return null;
       }
       // Outros erros não redirecionam, apenas lançam

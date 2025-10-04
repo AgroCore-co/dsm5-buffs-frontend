@@ -78,11 +78,11 @@ export default function Dashboard() {
 
   const salesData = {
     lastCollection: {
-      amount: 11500,
-      date: new Date(2024, 11, 15),
+      amount: 300,
+      date: new Date(2024, 9, 1), // October 1, 2024
     },
     pricePerLiter: 3.5,
-    estimatedRevenue: 40250,
+    estimatedRevenue: 1050, // 300L * R$ 3.5
   };
 
   const formatDate = (date) => {
@@ -129,7 +129,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                150
+                59
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
                 Rebanho completo
@@ -147,10 +147,10 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                45
+                12
               </p>
               <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
-                30% do rebanho
+                20% do rebanho
               </p>
             </div>
 
@@ -165,10 +165,10 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                105
+                47
               </p>
               <p className="text-sm font-semibold text-[var(--color-primary-dark)] mt-1">
-                70% do rebanho
+                80% do rebanho
               </p>
             </div>
 
@@ -319,13 +319,13 @@ export default function Dashboard() {
             </div>
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <h2 className="text-sm font-medium text-gray-500">
-                Faturamento estimado
+                Faturamento da coleta
               </h2>
               <p className="text-2xl font-bold text-gray-800">
                 {formatCurrency(salesData.estimatedRevenue)}
               </p>
               <p className="text-sm font-medium text-gray-500">
-                Baseado na produção mensal
+                Baseado na última coleta
               </p>
             </div>
           </div>

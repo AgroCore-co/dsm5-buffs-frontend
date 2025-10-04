@@ -10,7 +10,7 @@ const CompleteProfile = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
 
-  const { createProfile, user } = useAuth()
+  const { createProfile, user } = useAuth() 
   const router = useRouter()
 
   const handleChange = (e) => {

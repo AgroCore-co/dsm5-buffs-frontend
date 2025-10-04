@@ -136,48 +136,53 @@ export default function PropriedadePage() {
     },
   ];
 
+  // Ciclos de acordo com a distribuição dos lotes
   const ciclosMock = [
     {
       id: 1,
-      nome: "Ciclo de Lactação 2024/1",
-      periodo: "01/01/2024 - 30/06/2024",
-      grupo: "Búfalas Lactantes A",
+      nome: "Ciclo de Lactação 2025/2",
+      periodo: "01/07/2025 - 31/12/2025",
+      grupo: "Búfalas Lactantes",
       status: "Em andamento",
-      lote: "Lote A - Lactação",
+      lote: "Lactação",
+      quantidade: 28,
     },
     {
       id: 2,
-      nome: "Ciclo de Gestação 2024/1",
-      periodo: "01/02/2024 - 01/11/2024",
-      grupo: "Búfalas Gestantes",
+      nome: "Ciclo de Reprodução 2025/2",
+      periodo: "01/07/2025 - 31/12/2025",
+      grupo: "Búfalas em Reprodução",
       status: "Em andamento",
-      lote: "Lote B - Gestação",
+      lote: "Reprodução",
+      quantidade: 12,
     },
     {
       id: 3,
-      nome: "Ciclo de Recria 2024/1",
-      periodo: "01/03/2024 - 31/08/2024",
-      grupo: "Bezerros em Recria",
+      nome: "Ciclo de Engorda 2025/2",
+      periodo: "01/07/2025 - 31/12/2025",
+      grupo: "Búfalos em Engorda",
       status: "Em andamento",
-      lote: "Lote C - Recria",
+      lote: "Engorda",
+      quantidade: 12,
     },
     {
       id: 4,
-      nome: "Ciclo de Terminação 2024/1",
-      periodo: "01/04/2024 - 30/09/2024",
-      grupo: "Búfalos em Terminação",
+      nome: "Ciclo de Bezerros 2025/2",
+      periodo: "01/07/2025 - 31/12/2025",
+      grupo: "Bezerros",
       status: "Em andamento",
-      lote: "Lote D - Terminação",
+      lote: "Bezerros",
+      quantidade: 7,
     },
   ];
 
+  // Distribuição por tipo de lote: soma 59, 47 fêmeas e 12 machos
+  // Lactação e Reprodução: só fêmeas; Engorda: só machos; Bezerros: misto
   const distribuicaoPorTipoData = [
-    { tipo: "Lactação", quantidade: 45, percentual: 30 },
-    { tipo: "Gestação", quantidade: 35, percentual: 23 },
-    { tipo: "Recria", quantidade: 25, percentual: 17 },
-    { tipo: "Terminação", quantidade: 20, percentual: 13 },
-    { tipo: "Reprodução", quantidade: 15, percentual: 10 },
-    { tipo: "Quarentena", quantidade: 10, percentual: 7 },
+    { tipo: "Lactação", quantidade: 28, fêmeas: 28, machos: 0 },
+    { tipo: "Reprodução", quantidade: 12, fêmeas: 12, machos: 0 },
+    { tipo: "Engorda", quantidade: 12, fêmeas: 0, machos: 12 },
+    { tipo: "Bezerros", quantidade: 7, fêmeas: 7, machos: 0 },
   ];
 
   const alimentacaoMock = [
@@ -254,7 +259,7 @@ export default function PropriedadePage() {
             </span>
           </div>
           <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-            150
+            59
           </p>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
             Animais na propriedade
@@ -288,7 +293,7 @@ export default function PropriedadePage() {
             </span>
           </div>
           <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-            12
+            20
           </p>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
             Lotes disponíveis
@@ -750,7 +755,7 @@ export default function PropriedadePage() {
       </div>
 
       {/* Planejamento de Alimentação */}
-      <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
+      {/* <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
         <div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             Planejamento Nutricional
@@ -821,7 +826,7 @@ export default function PropriedadePage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </>
   );
 

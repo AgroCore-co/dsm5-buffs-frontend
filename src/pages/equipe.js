@@ -42,26 +42,44 @@ export default function Equipe() {
 
   // useEffect para carregar dados iniciais
   useEffect(() => {
-    const carregarFuncionarios = async () => {
-      if (!propriedadeSelecionada?.id_propriedade) return;
-      try {
-        setCarregando(true);
-        const token = await getAccessToken();
-        const lista = await usuarioService.listarFuncionariosPorPropriedade(
-          propriedadeSelecionada.id_propriedade,
-          token
-        );
-        setFuncionarios(lista);
-      } catch (err) {
-        console.error("Erro ao carregar funcionários:", err);
-      } finally {
-        setCarregando(false);
+    // Dados mockados de funcionários
+    const mockFuncionarios = [
+      {
+        id_usuario: 1,
+        nome: "João Silva",
+        email: "joao@fazenda.com",
+        cargo: "Gerente",
+        telefone: "(11) 99999-1111",
+        created_at: "2023-01-10T12:00:00Z"
+      },
+      {
+        id_usuario: 2,
+        nome: "Maria Souza",
+        email: "maria@fazenda.com",
+        cargo: "Veterinária",
+        telefone: "(11) 98888-2222",
+        created_at: "2023-02-15T12:00:00Z"
+      },
+      {
+        id_usuario: 3,
+        nome: "Carlos Oliveira",
+        email: "carlos@fazenda.com",
+        cargo: "Zootecnista",
+        telefone: "(11) 97777-3333",
+        created_at: "2023-03-20T12:00:00Z"
+      },
+      {
+        id_usuario: 4,
+        nome: "Ana Paula",
+        email: "ana@fazenda.com",
+        cargo: "Auxiliar",
+        telefone: "(11) 96666-4444",
+        created_at: "2023-04-25T12:00:00Z"
       }
-    };
-
-    carregarFuncionarios();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propriedadeSelecionada]);
+    ];
+    setFuncionarios(mockFuncionarios);
+    setCarregando(false);
+  }, []);
 
   return (
     <>

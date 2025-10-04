@@ -153,6 +153,27 @@ const buscarUsuarioPorId = async (idUsuario, token) => {
 };
 
 
+/**
+ * Busca e retorna o perfil do usuário logado.
+ * @param {string} token - JWT do usuário autenticado
+ * @returns {Promise<Object|null>} - Perfil do usuário ou null se não existir
+ */
+const buscarPerfilUsuarioLogado = async (token) => {
+  try {
+    const response = await apiFetch("/usuarios/me", {
+      method: "GET",
+      token,
+    });
+    return response;
+  } catch (error) {
+    if (error.status === 404 || (error.message && error.message.includes("Perfil de usuário não encontrado"))) {
+      // Retorna null se não existir perfil
+      return null;
+    }
+    throw error;
+  }
+};
+
 const usuarioService = {
   listarUsuarios,
   createProfile,
@@ -161,6 +182,7 @@ const usuarioService = {
   editarUsuario,
   desvincularFuncionarioDePropriedade,
   criarFuncionario,
+  buscarPerfilUsuarioLogado, // Adicionado
 };
 
 export default usuarioService;

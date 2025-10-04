@@ -21,8 +21,8 @@ const Navbar = () => {
     { label: "Rebanho", path: "/rebanho" },
     { label: "Lactação", path: "/lactacao" },
     { label: "Controle Reprodução", path: "/reproducao" },
-    { label: "Equipe", path: "/equipe" },
-    { label: "Industria", path: "/industria" },
+    // { label: "Equipe", path: "/equipe" },
+    // { label: "Industria", path: "/industria" },
   ];
 
   const toggleMobileMenu = () => {

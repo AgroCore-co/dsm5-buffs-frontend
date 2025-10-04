@@ -300,24 +300,58 @@ export default function Propriedades() {
                 {propriedades.length}
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                Propriedades no sistema
+                Quantidade no sistema
               </p>
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
-                  Área Total
+                  Propriedades Ativas
                 </h2>
                 <span className="text-xs font-medium text-[var(--color-primary-dark)]">
-                  Hectares
+                  Status
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                -
+                {propriedades.filter(p => p.status === 'Ativa' || !p.status).length}
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                Em breve
+                Quantidade funcionando
+              </p>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Tipo Pecuária
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Manejo
+                </span>
+              </div>
+              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                {propriedades.filter(p => p.tipo_manejo === 'P' || p.tipo === 'Pecuária').length}
+              </p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                Quantidade focadas em bubalinos
+              </p>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Registradas ABCB
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Certificação
+                </span>
+              </div>
+              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                {propriedades.filter(p => p.p_abcb === true || p.p_abcb === 1).length}
+              </p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                Quantidade com certificação
               </p>
             </div>
           </div>

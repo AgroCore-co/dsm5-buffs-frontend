@@ -9,12 +9,11 @@ import { usePathname } from "next/navigation";
 export default function Layout({ children }) {
   const pathname = usePathname();
 
-  // Remover restrição para mostrar o seletor em todas as páginas
-  // const hideSelectorPaths = ["/propriedade/[id]", "/propriedades"];
-  // const showSelector = pathname ? !hideSelectorPaths.some((path) =>
-  //   pathname.includes(path.replace("[id]", ""))
-  // ) : true;
-  const showSelector = true;
+  // Páginas onde não quer mostrar o seletor flutuante
+  const hideSelectorPaths = ["/propriedade/[id]", "/propriedades"];
+  const showSelector = pathname ? !hideSelectorPaths.some((path) =>
+    pathname.includes(path.replace("[id]", ""))
+  ) : true; // Valor padrão é true se pathname for null
 
   return (
     <ProtectedRoute>

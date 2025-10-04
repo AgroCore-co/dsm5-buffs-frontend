@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
-import { useProperty } from "@/hooks/useProperty";
+import { apiFetch } from "@/lib/apiClient";
 
 import {
   BarChart,
@@ -109,140 +109,83 @@ const getSexIcon = (sexo) => {
 export default function Rebanho() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout, token, getAccessToken } = useAuth();
-  const { propriedadeSelecionada, propriedades } = useProperty();
 
+  // Estados para dados crus
+  const [bufalosRaw, setBufalosRaw] = useState([]);
+  const [racasRaw, setRacasRaw] = useState([]);
+
+  // Estados para dados tratados
   const [bufalos, setBufalos] = useState([]);
-  const [bufalosFilteredByProperty, setBufalosFilteredByProperty] = useState(
-    []
-  );
   const [racas, setRacas] = useState([]);
   const [carregandoBufalos, setCarregandoBufalos] = useState(false);
   const [carregandoRacas, setCarregandoRacas] = useState(false);
 
-  // Função para buscar raças
+  // Buscar raças cruas
   const fetchRacas = useCallback(async () => {
     try {
       setCarregandoRacas(true);
-
-      // Forçar obtenção de um token fresco do Supabase
       const token = await getAccessToken();
-
-      if (!token) {
-        console.warn("⚠️ Token não disponível para buscar raças");
-        return;
-      }
-
-      // Fazer a chamada de API
+      if (!token) return;
       const data = await racaService.listarRacas(token);
-
-      // Atualizar estado com dados recebidos
-      if (Array.isArray(data)) {
-        setRacas(data);
-      } else {
-        console.warn("⚠️ Dados de raças recebidos não são um array válido");
-      }
+      setRacasRaw(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Erro ao buscar raças:", error.message);
+      setRacasRaw([]);
     } finally {
       setCarregandoRacas(false);
     }
   }, [getAccessToken]);
 
-  // Função para correlacionar búfalos com suas raças
-  const correlacionarBufalosComRacas = useCallback((bufalos, racas) => {
-    if (!Array.isArray(bufalos) || !Array.isArray(racas)) {
-      return bufalos;
-    }
+  // Buscar búfalos crus
+  const fetchBufalos = useCallback(async () => {
     try {
-      console.log("🔍 Iniciando correlação de búfalos com raças...");
-      // Criar um mapa de raças para acesso rápido por ID
-      const mapRacas = racas.reduce((map, raca) => {
+      setCarregandoBufalos(true);
+      const token = await getAccessToken();
+      if (!token) return;
+      const data = await apiFetch("/bufalos", { method: "GET", token });
+      setBufalosRaw(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setBufalosRaw([]);
+    } finally {
+      setCarregandoBufalos(false);
+    }
+  }, [getAccessToken]);
+
+  // Buscar dados crus apenas uma vez (removendo dependência de propriedade)
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      fetchRacas();
+      fetchBufalos();
+    }
+  }, [isAuthenticated, isLoading]); // Removido fetchRacas e fetchBufalos das dependências
+
+  // Tratar dados quando ambos estiverem carregados
+  useEffect(() => {
+    if (bufalosRaw.length > 0 && racasRaw.length > 0) {
+      // Correlacionar búfalos com raças
+      const mapRacas = racasRaw.reduce((map, raca) => {
         map[raca.id_raca] = raca;
         return map;
       }, {});
-      // Adicionar informação detalhada da raça a cada búfalo
-      const bufalosComRacas = bufalos.map((bufalo) => {
+      const bufalosComRacas = bufalosRaw.map((bufalo) => {
         const racaDetalhes = mapRacas[bufalo.id_raca] || null;
         return {
           ...bufalo,
           raca: racaDetalhes
-            ? {
-                id: racaDetalhes.id_raca,
-                nome: racaDetalhes.nome,
-              }
+            ? { id: racaDetalhes.id_raca, nome: racaDetalhes.nome }
             : null,
         };
       });
-      // Contabilizar e mostrar no console a quantidade de búfalos por raça
-      const contagemPorRaca = {};
-      bufalosComRacas.forEach((bufalo) => {
-        if (bufalo.raca?.nome) {
-          const raca = bufalo.raca.nome;
-          contagemPorRaca[raca] = (contagemPorRaca[raca] || 0) + 1;
-        } else if (bufalo.id_raca) {
-          // Usar o nome da raça do mapa
-          const racaNome =
-            mapRacas[bufalo.id_raca]?.nome || `Raça ${bufalo.id_raca}`;
-          contagemPorRaca[racaNome] = (contagemPorRaca[racaNome] || 0) + 1;
-        } else {
-          contagemPorRaca["Sem Raça"] = (contagemPorRaca["Sem Raça"] || 0) + 1;
-        }
-      });
-      console.log("📊 Distribuição de búfalos por raça:");
-      Object.entries(contagemPorRaca).forEach(([raca, quantidade]) => {
-        console.log(`   ${raca}: ${quantidade} búfalos`);
-      });
-      console.log(
-        `✅ Correlação concluída para ${bufalosComRacas.length} búfalos`
-      );
-      return bufalosComRacas;
-    } catch (error) {
-      console.error("❌ Erro ao correlacionar búfalos com raças:", error);
-      return bufalos; // Retorna os búfalos originais em caso de erro
+      setBufalos(bufalosComRacas);
+      setRacas(racasRaw);
+    } else {
+      setBufalos([]);
+      setRacas(racasRaw);
     }
-  }, []);
-
-  // Função para buscar búfalos usando Promise e try/catch adequados
-  const fetchBufalos = useCallback(async () => {
-    try {
-      setCarregandoBufalos(true);
-
-      // Forçar obtenção de um token fresco do Supabase
-      const token = await getAccessToken();
-
-      if (!token) {
-        console.warn("⚠️ Token não disponível para buscar búfalos");
-        return;
-      }
-
-      // Fazer a chamada de API
-      const data = await buffaloService.listarBufalos(token);
-
-      // Correlacionar com raças se disponíveis
-      let bufalosProcessados = data;
-      if (Array.isArray(data) && racas.length > 0) {
-        bufalosProcessados = correlacionarBufalosComRacas(data, racas);
-      }
-
-      // Atualizar estado com dados processados
-      if (Array.isArray(bufalosProcessados)) {
-        setBufalos(bufalosProcessados);
-      } else {
-        // Não atualizamos o estado se os dados não forem um array
-        console.warn("⚠️ Dados recebidos não são um array válido");
-      }
-    } catch (error) {
-      // Silenciar erros no componente, logs já estão no service
-      console.error("Erro ao buscar búfalos:", error.message);
-    } finally {
-      setCarregandoBufalos(false);
-    }
-  }, [getAccessToken, racas, correlacionarBufalosComRacas]);
+  }, [bufalosRaw, racasRaw]);
 
   // Função para obter valores únicos para os filtros (agora dentro do componente)
   const getUniqueValues = (field) => {
-    // Se não há dados da API, retornar array vazio para os filtros
-    if (bufalosFilteredByProperty.length === 0) {
+    if (bufalos.length === 0) {
       return [];
     }
 
@@ -277,108 +220,10 @@ export default function Rebanho() {
 
     // Obter valores únicos
     const values = [
-      ...new Set(bufalosFilteredByProperty.map(valueGetter).filter(Boolean)),
+      ...new Set(bufalos.map(valueGetter).filter(Boolean)),
     ];
     return values.sort();
   };
-
-  useEffect(() => {
-    // Se autenticado, buscar raças e depois búfalos
-    if (isAuthenticated && !isLoading) {
-      const carregarDados = async () => {
-        await fetchRacas(); // Busca raças primeiro
-        // Só busca búfalos se houver pelo menos uma propriedade cadastrada
-        if (propriedadeSelecionada || (propriedades && propriedades.length > 0)) {
-          await fetchBufalos();
-        } else {
-          setBufalos([]);
-        }
-      };
-      carregarDados();
-    }
-  }, [isAuthenticated, isLoading, propriedadeSelecionada, propriedades, fetchRacas, fetchBufalos]);
-
-  // Atualizar búfalos quando as raças mudarem para garantir a correlação
-  useEffect(() => {
-    if (racas.length > 0 && bufalos.length > 0) {
-      // Reprocessar a correlação quando as raças estiverem disponíveis
-      const bufalosProcessados = correlacionarBufalosComRacas(bufalos, racas);
-      setBufalos(bufalosProcessados);
-
-      // Exibir um resumo estilizado no console
-      console.log(
-        "%c  DISTRIBUIÇÃO DE BÚFALOS POR RAÇA  ",
-        "background: #CE7D0A; color: white; font-weight: bold; padding: 5px; border-radius: 3px;"
-      );
-
-      // Criar um mapa de raças para acesso rápido por ID
-      const mapRacasNomes = racas.reduce((map, raca) => {
-        map[raca.id_raca] = raca.nome;
-        return map;
-      }, {});
-
-      // Criar contagem por raça novamente para o resumo estilizado
-      const contagem = {};
-      bufalosProcessados.forEach((b) => {
-        const racaNome =
-          b.raca?.nome ||
-          (b.id_raca
-            ? mapRacasNomes[b.id_raca] || `${mapRacasNomes[b.id_raca]}`
-            : "Sem Raça");
-        contagem[racaNome] = (contagem[racaNome] || 0) + 1;
-      });
-
-      // Ordenar raças por quantidade (maior para menor)
-      const racasOrdenadas = Object.entries(contagem).sort(
-        ([, a], [, b]) => b - a
-      );
-
-      // Exibir gráfico de barras simples no console
-      racasOrdenadas.forEach(([raca, quantidade]) => {
-        const porcentagem = Math.round(
-          (quantidade / bufalosProcessados.length) * 100
-        );
-        const barras = "█".repeat(Math.max(1, Math.round(porcentagem / 5)));
-        console.log(
-          `%c${raca.padEnd(15)}%c ${quantidade
-            .toString()
-            .padStart(3)} búfalos %c${barras} %c(${porcentagem}%)`,
-          "color: #FFCF78; font-weight: bold;",
-          "color: black;",
-          "color: #CE7D0A;",
-          "color: gray;"
-        );
-      });
-    }
-  }, [racas, bufalos, correlacionarBufalosComRacas]);
-
-  // Filtrar búfalos com base na propriedade selecionada
-  useEffect(() => {
-    if (!bufalos || !Array.isArray(bufalos)) {
-      setBufalosFilteredByProperty([]);
-      return;
-    }
-
-    if (!propriedadeSelecionada) {
-      console.log(
-        "⚠️ Nenhuma propriedade selecionada, mostrando todos os búfalos."
-      );
-      setBufalosFilteredByProperty(bufalos);
-      return;
-    }
-
-    const idPropriedade = propriedadeSelecionada.id_propriedade;
-    console.log(`🔍 Filtrando búfalos para propriedade ID: ${idPropriedade}`);
-
-    const filtered = bufalos.filter(
-      (bufalo) => bufalo.id_propriedade === idPropriedade
-    );
-
-    console.log(
-      `📊 Total de búfalos: ${bufalos.length}, Filtrados: ${filtered.length}`
-    );
-    setBufalosFilteredByProperty(filtered);
-  }, [bufalos, propriedadeSelecionada]);
 
   // Estados
   const [currentPage, setCurrentPage] = useState(1);
@@ -394,15 +239,11 @@ export default function Rebanho() {
   const [showCreateModal, setShowCreateModal] = useState(false); // modal de criar (CreateBuffaloModal)
 
   // Filtrar búfalos ativos para os indicadores
-  const bufalosAtivos = bufalosFilteredByProperty.filter(
-    (b) => b.status === true
-  );
+  const bufalosAtivos = bufalos.filter((b) => b.status === true);
 
   // Lógica de filtros e paginação
   const getFilteredBuffalos = () => {
-    // Usar búfalos filtrados por propriedade
-    const dataSource =
-      bufalosFilteredByProperty.length > 0 ? bufalosFilteredByProperty : [];
+    const dataSource = bufalos.length > 0 ? bufalos : [];
 
     // Filtrar búfalos de acordo com os filtros selecionados
     const filtered = dataSource.filter((buffalo) => {
@@ -424,14 +265,15 @@ export default function Rebanho() {
       );
     });
 
-    // Ordenar para mostrar primeiro os búfalos ativos, depois por nome
+    // Ordenar para mostrar primeiro os búfalos ativos, depois por ID
     return filtered.sort((a, b) => {
       if (a.status !== b.status) {
         return b.status - a.status; // true (1) vem antes de false (0)
       }
-      const nomeA = (a.nome || "").toLowerCase();
-      const nomeB = (b.nome || "").toLowerCase();
-      return nomeA.localeCompare(nomeB);
+      // Ordenar por ID (id_bufalo)
+      const idA = a.id_bufalo || 0;
+      const idB = b.id_bufalo || 0;
+      return idA - idB;
     });
   };
 
@@ -483,23 +325,6 @@ export default function Rebanho() {
     }
   }, [isLoading, isAuthenticated, router]);
 
-
-  if (isLoading || !isAuthenticated) {
-    return null;
-  }
-
-  // Se não houver nenhuma propriedade cadastrada, mostrar mensagem amigável
-  if (!propriedadeSelecionada && (!propriedades || propriedades.length === 0)) {
-    return (
-      <div className="p-6 flex flex-col gap-8">
-        <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Gestão do Rebanho</h1>
-          <p className="text-gray-600 text-lg">Nenhuma propriedade cadastrada ainda.<br/>Cadastre uma propriedade para começar a gerenciar seu rebanho.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <Head>
@@ -527,18 +352,16 @@ export default function Rebanho() {
                 <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
                   Total do Rebanho
                 </h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                <span className="text-xs font-medium text-[var(--color-primary-dark]">
                   Ativos
                 </span>
               </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark]">
                 {bufalosAtivos.length || "-"}
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
                 {carregandoBufalos
                   ? "Carregando..."
-                  : propriedadeSelecionada
-                  ? `Búfalos ativos na propriedade ${propriedadeSelecionada.nome}`
                   : "Búfalos ativos no sistema"}
               </p>
             </div>
@@ -724,7 +547,7 @@ export default function Rebanho() {
                 <p className="text-gray-400 text-sm mt-10">
                   Carregando dados...
                 </p>
-              ) : bufalosFilteredByProperty.length === 0 ? (
+              ) : bufalos.length === 0 ? (
                 <p className="text-gray-400 text-sm mt-10">
                   Nenhum dado disponível
                 </p>
@@ -735,14 +558,14 @@ export default function Rebanho() {
                       data={[
                         {
                           name: "Fêmeas",
-                          value: bufalosFilteredByProperty.filter(
+                          value: bufalos.filter(
                             (b) => b.sexo === "F"
                           ).length,
                           color: "#FFCF78",
                         },
                         {
                           name: "Machos",
-                          value: bufalosFilteredByProperty.filter(
+                          value: bufalos.filter(
                             (b) => b.sexo === "M"
                           ).length,
                           color: "#CE7D0A",
@@ -779,7 +602,7 @@ export default function Rebanho() {
                 <p className="text-gray-400 text-sm mt-10">
                   Carregando dados...
                 </p>
-              ) : bufalosFilteredByProperty.length === 0 ? (
+              ) : bufalos.length === 0 ? (
                 <p className="text-gray-400 text-sm mt-10">
                   Nenhum dado disponível
                 </p>
@@ -795,7 +618,7 @@ export default function Rebanho() {
 
                       // Calcular dados de raça a partir dos dados reais
                       const contagem = {};
-                      bufalosFilteredByProperty.forEach((b) => {
+                      bufalos.forEach((b) => {
                         // Usar o nome da raça do objeto raca já correlacionado, ou buscar no mapa
                         // se ainda não estiver correlacionado, ou usar 'Sem Raça' como último recurso
                         const racaNome =
@@ -900,7 +723,7 @@ export default function Rebanho() {
                 ? filteredBuffalos.length === bufalos.length
                   ? `Lista completa do rebanho com ${bufalos.length} búfalo${
                       bufalos.length !== 1 ? "s" : ""
-                    } ativos.`
+                    } registrados.`
                   : `Mostrando ${filteredBuffalos.length} de ${
                       bufalos.length
                     } búfalo${bufalos.length !== 1 ? "s" : ""} ativos.`
@@ -1174,7 +997,6 @@ export default function Rebanho() {
         <CreateBuffaloModal
           open={showCreateModal}
           onClose={() => setShowCreateModal(false)}
-          propriedadeId={propriedadeSelecionada?.id_propriedade}
           racas={racas}
           token={token}
         />
