@@ -1,8 +1,5 @@
-import React, { useEffect, useState } from "react";
-import Head from "next/head";
-import { useRouter } from "next/router";
-import { useAuth } from "@/hooks/useAuth";
 
+import Head from "next/head";
 import {
   LineChart,
   Line,
@@ -14,18 +11,14 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
   Cell,
 } from "recharts";
-// Removido: ícones de biblioteca. Vamos usar SVGs locais em /public/images
+
+import { useState } from "react";
 
 export default function Dashboard() {
-  const router = useRouter();
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
-
-  // Dados mockados para os gráficos
-  const [viewMode, setViewMode] = React.useState("monthly"); // 'monthly' ou 'yearly'
+  // Estado para alternar entre mensal e anual
+  const [viewMode, setViewMode] = useState("monthly");
 
   const lactationDataMonthly = [
     { name: "Jan", producao: 8500 },
@@ -41,7 +34,6 @@ export default function Dashboard() {
     { name: "Nov", producao: 11500 },
     { name: "Dez", producao: 11800 },
   ];
-
   const lactationDataYearly = [
     { name: "2020", producao: 68000 },
     { name: "2021", producao: 78200 },
@@ -49,9 +41,7 @@ export default function Dashboard() {
     { name: "2023", producao: 99700 },
     { name: "2024", producao: 112000 },
   ];
-
-  const lactationData =
-    viewMode === "monthly" ? lactationDataMonthly : lactationDataYearly;
+  const lactationData = viewMode === "monthly" ? lactationDataMonthly : lactationDataYearly;
 
   const topBuffalosData = [
     { name: "Búfala 001", leite: 12.5 },
@@ -60,43 +50,16 @@ export default function Dashboard() {
     { name: "Búfala 067", leite: 10.9 },
     { name: "Búfala 089", leite: 10.5 },
   ];
-
-  const productionVsCollection = [
-    { month: "Jan", producao: 8500, coleta: 8200 },
-    { month: "Fev", producao: 9200, coleta: 8900 },
-    { month: "Mar", producao: 8800, coleta: 8500 },
-    { month: "Abr", producao: 9500, coleta: 9200 },
-    { month: "Mai", producao: 9800, coleta: 9500 },
-    { month: "Jun", producao: 10200, coleta: 9900 },
-    { month: "Jul", producao: 9900, coleta: 9600 },
-    { month: "Ago", producao: 10500, coleta: 10200 },
-    { month: "Set", producao: 10800, coleta: 10500 },
-    { month: "Out", producao: 11200, coleta: 10900 },
-    { month: "Nov", producao: 11500, coleta: 11200 },
-    { month: "Dez", producao: 11800, coleta: 11500 },
-  ];
-
   const salesData = {
     lastCollection: {
       amount: 300,
-      date: new Date(2024, 9, 1), // October 1, 2024
+      date: new Date(2024, 9, 1),
     },
     pricePerLiter: 3.5,
-    estimatedRevenue: 1050, // 300L * R$ 3.5
+    estimatedRevenue: 1050,
   };
-
-  const formatDate = (date) => {
-    return date.toLocaleDateString("pt-BR");
-  };
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
-
-  // Removido: proteção de rota agora é feita pelo Layout
+  const formatDate = (date) => date.toLocaleDateString("pt-BR");
+  const formatCurrency = (value) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
   return (
     <>

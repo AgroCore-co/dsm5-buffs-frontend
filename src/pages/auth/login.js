@@ -1,98 +1,51 @@
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/router";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
+import { signin } from "@/services/authService";
 import styles from "@/styles/Login.module.css";
 import Button from "@/components/Button";
-import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
-  const router = useRouter();
-  const { login, loginWithGoogle, isAuthenticated, isLoading, needsProfile } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoadingForm, setIsLoadingForm] = useState(false);
-  const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
-  const [loginError, setLoginError] = useState("");
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      // Redireciona baseado no estado do perfil
-      if (needsProfile) {
-        router.push("/complete-profile");
-      } else {
-        router.push("/dashboard");
-      }
-    }
-  }, [isAuthenticated, isLoading, needsProfile, router]);
-
-  useEffect(() => {
-    document.body.setAttribute("data-page", "login");
-    return () => {
-      document.body.removeAttribute("data-page");
-    };
-  }, []);
-
-  if (isLoading || isAuthenticated) return null;
-
-  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setLoginError(""); // Limpa erro ao digitar
+  const validate = () => {
+    const newErrors = {};
+    if (!email) newErrors.email = "Email é obrigatório.";
+    if (!password) newErrors.password = "Senha é obrigatória.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.email || !formData.password) {
-      setLoginError("Por favor, preencha todos os campos.");
-      return;
-    }
-
-    setIsLoadingForm(true);
-    setLoginError("");
-
-    const result = await login(formData.email, formData.password);
-    
-    if (result.success) {
-      // O redirecionamento é tratado automaticamente pelo useEffect acima
-      // baseado no resultado do login (needsProfile, redirectTo)
-      if (result.redirectTo) {
-        router.push(result.redirectTo);
-      }
-    } else {
-      // Tratamento de erros específicos
-      if (result.error?.includes("Invalid login credentials")) {
-        setLoginError("❌ Email ou senha inválidos.");
-      } else if (result.error?.includes("User not confirmed")) {
-        setLoginError("⚠️ Usuário não confirmado. Verifique seu email.");
-      } else if (result.error?.includes("Email not confirmed")) {
-        setLoginError("⚠️ Por favor, confirme seu email antes de fazer login.");
-      } else if (result.error?.includes("Too many requests")) {
-        setLoginError("⚠️ Muitas tentativas. Aguarde alguns minutos.");
+    if (!validate()) return;
+    setLoading(true);
+    setErrors({});
+    try {
+      const data = await signin({ email, password });
+      // Supondo que o backend retorna access_token e refresh_token
+      if (data.access_token) {
+        localStorage.setItem("token", data.access_token);
+        if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
+        // Redirecionar para página protegida, ex: dashboard
+        window.location.href = "/";
       } else {
-        setLoginError(result.error || "❌ Ocorreu um erro inesperado. Tente novamente.");
+        setErrors({ general: "Resposta inesperada do servidor." });
       }
+    } catch (err) {
+      if (err.response && err.response.status === 401) {
+        setErrors({ general: "Credenciais inválidas ou email não confirmado." });
+      } else {
+        setErrors({ general: "Erro ao tentar fazer login. Tente novamente." });
+      }
+    } finally {
+      setLoading(false);
     }
-    setIsLoadingForm(false);
-  };
-
-  const handleGoogleLogin = async () => {
-    setIsLoadingGoogle(true);
-    setLoginError("");
-
-    const result = await loginWithGoogle();
-    
-    if (!result.success) {
-      setLoginError(result.error || "❌ Erro ao fazer login com Google.");
-      setIsLoadingGoogle(false);
-    }
-    // Se sucesso, o redirecionamento será tratado pela página de callback
   };
 
   return (
@@ -107,126 +60,133 @@ export default function Login() {
         />
       </div>
       <div className={styles.formSection}>
-        <h1 className={styles.title}>Bem-Vindo!</h1>
-        <p className={styles.description}>
-          Faça login com os dados inseridos durante seu cadastro.
-        </p>
+        <div className={styles.formBox}>
+          <h1 className={styles.title}>Bem-Vindo!</h1>
+          <p className={styles.description}>
+            Faça login com os dados inseridos durante seu cadastro.
+          </p>
 
-        {/* Exibe erro no HTML */}
-        {loginError && <p className={styles.error}>{loginError}</p>}
-
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.inputGroup}>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-              className={styles.input}
-              placeholder=" "
-              autoComplete="email"
-              disabled={isLoadingForm || isLoadingGoogle}
-            />
-            <label htmlFor="email" className={styles.label}>
-              Email
-            </label>
-            <span className={styles.icon} aria-hidden="true">
-              <Image src="/images/icon_email.svg" alt="" width={20} height={20} />
-            </span>
-          </div>
-
-          <div className={styles.inputGroup}>
-            <input
-              type={showPassword ? "text" : "password"}
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
-              className={styles.input}
-              placeholder=" "
-              autoComplete="current-password"
-              disabled={isLoadingForm || isLoadingGoogle}
-            />
-            <label htmlFor="password" className={styles.label}>
-              Senha
-            </label>
-            <button
-              type="button"
-              className={styles.icon}
-              onClick={togglePasswordVisibility}
-              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-              aria-pressed={showPassword}
-              disabled={isLoadingForm || isLoadingGoogle}
-            >
-              <Image
-                src={
-                  showPassword
-                    ? "/images/not-view-password.svg"
-                    : "/images/not-view-password-bloqued.svg"
-                }
-                alt=""
-                width={20}
-                height={20}
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+            {errors.general && (
+              <div className={styles.error} style={{ marginBottom: 12 }}>{errors.general}</div>
+            )}
+            <div className={styles.inputGroup}>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                className={styles.input}
+                placeholder=" "
+                autoComplete="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                aria-invalid={!!errors.email}
+                aria-describedby="email-error"
+                disabled={loading}
               />
-            </button>
+              <label htmlFor="email" className={styles.label}>
+                Email
+              </label>
+              <span className={styles.icon} aria-hidden="true">
+                <Image src="/images/icon_email.svg" alt="" width={20} height={20} />
+              </span>
+              {errors.email && (
+                <span id="email-error" className={styles.error}>{errors.email}</span>
+              )}
+            </div>
+
+            <div className={styles.inputGroup}>
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                className={styles.input}
+                placeholder=" "
+                autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                aria-invalid={!!errors.password}
+                aria-describedby="password-error"
+                disabled={loading}
+              />
+              <label htmlFor="password" className={styles.label}>
+                Senha
+              </label>
+              <button
+                type="button"
+                className={styles.icon}
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                aria-pressed={showPassword}
+                tabIndex={0}
+                onClick={() => setShowPassword(v => !v)}
+                disabled={loading}
+                style={{background: "none", border: "none", padding: 0, cursor: "pointer"}}
+              >
+                <Image
+                  src={showPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
+                  alt=""
+                  width={20}
+                  height={20}
+                />
+              </button>
+              {errors.password && (
+                <span id="password-error" className={styles.error}>{errors.password}</span>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="full"
+              aria-busy={loading}
+              disabled={loading}
+            >
+              {loading ? "Entrando..." : "Log in"}
+            </Button>
+          </form>
+
+          <div className={styles.divider}>
+            <span>ou</span>
           </div>
 
           <Button
-            type="submit"
-            variant="primary"
-            size="full"
-            loading={isLoadingForm}
-            disabled={isLoadingForm || isLoadingGoogle}
+            type="button"
+            variant="secondary"
+            className={styles.googleCircleButton}
+            disabled={loading}
+            aria-label="Entrar com Google"
+            style={{
+              borderRadius: "50%",
+              width: 44,
+              height: 44,
+              minWidth: 44,
+              minHeight: 44,
+              padding: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
           >
-            {isLoadingForm ? "Entrando..." : "Log in"}
+            <Image 
+              src="/images/google-icon.svg" 
+              alt="Google" 
+              className={styles.googleIcon}
+              width={24}
+              height={24}
+            />
           </Button>
-        </form>
 
-        {/* Divisor */}
-        <div className={styles.divider}>
-          <span>ou</span>
-        </div>
-
-        {/* Botão do Google */}
-        <Button
-          type="button"
-          variant="secondary"
-          size="full"
-          loading={isLoadingGoogle}
-          disabled={isLoadingForm || isLoadingGoogle}
-          onClick={handleGoogleLogin}
-          className={styles.googleButton}
-        >
-          {isLoadingGoogle ? (
-            "Conectando..."
-          ) : (
-            <>
-              <Image 
-                src="/images/google-icon.svg" 
-                alt="Google" 
-                className={styles.googleIcon}
-                width={18}
-                height={18}
-              />
-              
-            </>
-          )}
-        </Button>
-
-        <Link href="/auth/forgot-password" className={styles.forgotPassword}>
-          Esqueci minha senha
-        </Link>
-
-        {/* Link para cadastro */}
-        <p className={styles.signupLink}>
-          Não tem uma conta? 
-          <Link href="/auth/register" className={styles.link}>
-            Cadastre-se
+          <Link href="/auth/forgot-password" className={styles.forgotPassword}>
+            Esqueci minha senha
           </Link>
-        </p>
+
+          <p className={styles.signupLink}>
+            Não tem uma conta? 
+            <Link href="/auth/register" className={styles.link}>
+              Cadastre-se
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
