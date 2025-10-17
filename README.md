@@ -1,40 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# 🐃 BUFFS API - Checklist de Integração
 
-## Getting Started
+## 1. Autenticação e Usuários
+- [ ] Cadastro de usuário (Supabase Auth) → `supabase.auth.signUp()`
+- [ ] Confirmação de email (se habilitado)
+- [X] Login → `supabase.auth.signInWithPassword()` ou `signInWithOAuth()`
+- [X] Obtenção do JWT (access_token) para todas as requisições
+- [X] Renovação de token → `POST /auth/refresh`
+- [X] Logout → `POST /auth/signout`
+- [ ] Criação de perfil de usuário → `POST /usuarios` (após login)
+- [ ] Criação de funcionários → `POST /usuarios/funcionarios` (Proprietário/Gerente)
+- [ ] Definir cargos e permissões:
+  - PROPRIETARIO ✅
+  - GERENTE ✅
+  - FUNCIONARIO ✅
+  - VETERINARIO ✅
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 2. Gestão de Propriedade
+### Propriedades (PROPRIETARIO)
+- [X] Criar propriedade → `POST /propriedades`
+- [] Atualizar propriedade → `PUT /propriedades/:id`
+- [X] Listar propriedades → `GET /propriedades`
+- [ ] Remover propriedade → `DELETE /propriedades/:id`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Lotes / Piquetes (PROPRIETARIO)
+- [ ] Criar lote → `POST /lotes`
+- [ ] Atualizar lote → `PUT /lotes/:id`
+- [X] Listar lotes → `GET /lotes`
+- [ ] Remover lote → `DELETE /lotes/:id`
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+### Endereços (PROPRIETARIO)
+- [X] Criar endereço → `POST /enderecos`
+- [ ] Atualizar endereço → `PUT /enderecos/:id`
+- [ ] Listar endereços → `GET /enderecos`
+- [ ] Remover endereço → `DELETE /enderecos/:id`
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+---
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+## 3. Rebanho
+### Búfalos (Todos os cargos)
+- [ ] Criar búfalo → `POST /bufalos`
+- [ ] Atualizar búfalo → `PUT /bufalos/:id`
+- [ ] Listar búfalos → `GET /bufalos`
+- [ ] Movimentação de lotes → `POST /movimentacao-lotes`, `PUT /movimentacao-lotes/:id`
+- [ ] Grupos → `POST /grupos`, `PUT /grupos/:id`
+- [ ] Raças → `POST /racas`, `PUT /racas/:id`
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### IA / Genealogia
+- [ ] Criar árvore genealógica → `POST /genealogia`
+- [ ] Simulação de acasalamento → `POST /simular-acasalamento`
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 4. Alimentação
+- [ ] Definições de alimentação → `POST /alimentacao-defs`, `PUT /alimentacao-defs/:id`
+- [ ] Registro de alimentação → `POST /registros-alimentacao`, `PUT /registros-alimentacao/:id`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 5. Saúde / Zootecnia
+- [ ] Dados zootécnicos → `POST /dados-zootecnicos`, `PUT /dados-zootecnicos/:id`
+- [ ] Medicamentos → `POST /medicacoes`, `PUT /medicacoes/:id`
+- [ ] Dados sanitários → `POST /dados-sanitarios`, `PUT /dados-sanitarios/:id`
+- [ ] Frequência de doenças → `GET /frequencia-doencas`
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 6. Reprodução
+- [ ] Cobertura → `POST /coberturas`, `PUT /coberturas/:id`
+- [ ] Material genético → `POST /material-genetico`, `PUT /material-genetico/:id`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+---
+
+## 7. Produção
+- [ ] Lactação / Controle de leite → `POST /dados-lactacao`, `PUT /dados-lactacao/:id`
+- [ ] Estoque de leite → `POST /estoques-leite`, `PUT /estoques-leite/:id`
+- [ ] Coletas de leite → `POST /coletas`, `PUT /coletas/:id`
+- [ ] Ciclos de lactação → `POST /ciclos-lactacao`, `PUT /ciclos-lactacao/:id`
+- [ ] Indústrias → `POST /industrias`, `PUT /industrias/:id`
+
+---
+
+## 8. Alertas e Monitoramento
+- [ ] Criar alertas → `POST /alertas`
+
+---
+
+## 9. Dashboard e Estatísticas
+- [X] Estatísticas gerais → `GET /dashboard-stats`
+
+---
+

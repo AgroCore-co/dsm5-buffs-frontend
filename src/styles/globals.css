@@ -32,6 +32,10 @@
   --color-warning: #fca90f;
   --color-info: #b0b0b0;
 
+  /* Cor utilizada para linhas pares (zebra) nas tabelas — sutil, baseada nas cores do sistema */
+  /* Blend warm claro derivado de --color-primary-light para melhorar contraste com branco */
+  --table-row-even: #fff7ee;
+
   --background: var(--color-background);
   --foreground: var(--color-text-dark);
   --card: var(--color-background);

@@ -11,3 +11,10 @@ export async function createOwnerProfile({ nome, telefone }) {
   const response = await post("/usuarios", { nome, telefone });
   return response.data;
 }
+
+// Busca usuário por ID
+export async function getUserById(id) {
+  if (!id) throw new Error("ID do usuário é obrigatório");
+  const response = await get(`/usuarios/${id}`);
+  return response.data;
+}
