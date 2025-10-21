@@ -1,96 +1,68 @@
-// src/services/loteService.js
-import { apiFetch } from "@/lib/apiClient";
-
-// --- HELPER: GeoJSON Polygon -> WKT POLYGON ---
-function geoToWKT(geo) {
-  if (typeof geo === "string") {
-    const trimmed = geo.trim();
-    if (trimmed.toUpperCase().startsWith("POLYGON(")) return trimmed;
-  }
-
-  if (geo && geo.type === "Polygon" && Array.isArray(geo.coordinates)) {
-    let ring = geo.coordinates[0] || [];
-    if (ring.length >= 3) {
-      const first = ring[0];
-      const last = ring[ring.length - 1];
-      if (first[0] !== last[0] || first[1] !== last[1]) {
-        ring = [...ring, first];
-      }
-    }
-    const pairs = ring.map(([lng, lat]) => `${Number(lng)} ${Number(lat)}`);
-    return `POLYGON((${pairs.join(", ")}))`;
-  }
-
-  throw new Error("Campo 'geo_mapa' inválido: forneça WKT POLYGON ou GeoJSON Polygon.");
-}
-
-
+import { get, post, patch, del } from "@/lib/apiClient";
 
 /**
- * Lista todos os lotes de uma propriedade específica.
+ * Busca todos os lotes de uma propriedade específica
+ * @param {string} idPropriedade - UUID da propriedade
+ * @returns {Promise<Array>} Lista de lotes
  */
-const listarLotesPorPropriedade = async (idPropriedade, token) => {
+const listarLotesPorPropriedade = async (idPropriedade) => {
+  if (!idPropriedade) throw new Error("ID da propriedade é obrigatório");
+  const response = await get(`/lotes/propriedade/${idPropriedade}`);
+  return response.data;
+};
+
+/**
+ * Atualiza um lote existente
+ * @param {string} id - ID do lote (UUID)
+ * @param {Object} loteDados - Dados para atualização
+ * @returns {Promise<Object>} Lote atualizado (retorno do servidor)
+ */
+const atualizarLote = async (id, loteDados) => {
+  if (!id) throw new Error("ID do lote é obrigatório");
+  if (!loteDados || Object.keys(loteDados).length === 0) {
+    throw new Error("Dados para atualização do lote são obrigatórios");
+  }
+  const response = await patch(`/lotes/${id}`, loteDados);
+  return response.data;
+};
+
+/**
+ * Cria um novo lote
+ * @param {Object} loteDados - Payload do novo lote (veja API: nome_lote, id_propriedade, geo_mapa, etc.)
+ * @returns {Promise<Object>} Lote criado (retorno do servidor)
+ */
+const criarLote = async (loteDados) => {
+  if (!loteDados || Object.keys(loteDados).length === 0) {
+    throw new Error('Dados do lote são obrigatórios');
+  }
+  const response = await post('/lotes', loteDados);
+  return response.data;
+};
+
+/**
+ * Remove um lote pelo ID
+ * @param {string} id - ID do lote a ser removido
+ * @returns {Promise<Object>} Resultado estruturado: { success: true } ou { success: false, error }
+ */
+const removerLote = async (id) => {
+  if (!id) return { success: false, error: { message: 'ID do lote é obrigatório' } };
   try {
-    if (!idPropriedade) throw new Error("É necessário informar um id_propriedade válido.");
-
-    const data = await apiFetch(`/lotes/propriedade/${idPropriedade}`, {
-      method: "GET",
-      token,
-    });
-
-    if (!Array.isArray(data)) {
-      console.warn("Resposta inesperada em /lotes/propriedade:", data);
-      return [];
+    const response = await del(`/lotes/${id}`);
+    // Expecting 204 No Content on success — normalize as success
+    return { success: true, data: response.data };
+  } catch (err) {
+    if (err && err.response) {
+      const payload = err.response.data || {};
+      const serverMsg = payload.message || payload.error || err.message || 'Erro no servidor';
+      return { success: false, error: { message: serverMsg, statusCode: err.response.status, data: payload } };
     }
-
-    console.log(`✅ Lotes da propriedade ${idPropriedade} carregados:`, data);
-    return data;
-  } catch (error) {
-    console.error("❌ Erro ao listar lotes da propriedade:", error);
-    throw error;
+    return { success: false, error: { message: err?.message || 'Erro desconhecido' } };
   }
 };
 
-
-const criarLote = async (payload, token) => {
-  try {
-    // Validações
-    const nome = String(payload?.nome_lote ?? "").trim()
-    if (!nome) throw new Error("Campo 'nome_lote' é obrigatório e não pode ser vazio.")
-
-    const idProp = Number(payload?.id_propriedade)
-    if (!Number.isInteger(idProp)) throw new Error("Campo 'id_propriedade' deve ser um inteiro.")
-
-    if (!payload?.geo_mapa || typeof payload.geo_mapa !== "object") {
-      throw new Error("Campo 'geo_mapa' é obrigatório e deve ser um objeto GeoJSON.")
-    }
-
-    // Monta o corpo da requisição conforme a API espera
-    const body = {
-      nome_lote: nome,
-      id_propriedade: idProp,
-      descricao: payload?.descricao ?? null,
-      geo_mapa: payload.geo_mapa,
-    }
-
-    // Chamada ao apiFetch (usa 'data', não 'body')
-    const data = await apiFetch(`/lotes`, {
-      method: "POST",
-      token,
-      data: body,
-    })
-
-    console.log("✅ Lote criado com sucesso:", data)
-    return data
-  } catch (error) {
-    console.error("❌ Erro ao criar lote:", error.message)
-    throw error
-  }
-}
-
-const loteService = {
+export default {
   listarLotesPorPropriedade,
+  atualizarLote,
   criarLote,
+  removerLote,
 };
-
-export default loteService;

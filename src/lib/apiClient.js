@@ -1,73 +1,62 @@
-import { SupabaseAuth } from "@/utils/supabaseApi";
+import axios from "axios";
+import 'dotenv/config'; // Certifique-se de carregar as variáveis de ambiente
 
-/**
- * Função genérica para fazer requisições à API com token JWT.
- *
- * @param {string} endpoint - Rota da API (ex: "/usuarios")
- * @param {Object} options
- * @param {string} options.method - GET, POST, PUT, DELETE
- * @param {Object} options.data - Dados a serem enviados no body
- * @param {string} options.token - Token JWT do usuário autenticado
- * @param {boolean} options.skipAuth - Ignorar autenticação (para rotas públicas)
- * @returns {Promise<Object>} - Resposta da API em JSON
- */
-export const apiFetch = async (
-  endpoint,
-  { method = "GET", body = null, token = null, skipAuth = false } = {}
-) => {
-  try {
-    // Só exige token se não for skipAuth
-    if (!skipAuth) {
-      if (!token) {
-        token = await SupabaseAuth.getAccessToken();
-        console.log("🔑 Token obtido:", token ? "✅ presente" : "❌ ausente");
-        if (!token) throw new Error("Usuário não autenticado.");
+console.log("API_URL:", process.env.NEXT_PUBLIC_API_URL); // Adicione esta linha para depuração
+
+// Cria o cliente Axios
+const apiClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: 10000, // timeout padrão de 10s
+});
+
+// Interceptor de requisição: adiciona token JWT se existir
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+
+    console.log(`[API] ${config.method.toUpperCase()} ${config.url}`);
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor de resposta: tratamento global de erros
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      console.error(
+        `[API] Erro ${error.response.status} em ${error.config.url}:`,
+        error.response.data
+      );
+
+      if (error.response.status === 401) {
+        const token = localStorage.getItem("token");
+        if (token) {
+          localStorage.removeItem("token");
+          window.location.href = "/auth/login";
+        }
+        // Se não há token, não redireciona (ex: tentativa de login com senha errada)
       }
+    } else {
+      console.error("[API] Erro de rede:", error.message);
     }
-
-    if (!process.env.NEXT_PUBLIC_API_URL) {
-      throw new Error("URL da API não configurada");
-    }
-
-    const url = `${process.env.NEXT_PUBLIC_API_URL.replace(
-      /\/$/,
-      ""
-    )}/${endpoint.replace(/^\//, "")}`;
-
-    console.log("🌍 Chamando:", url, "| Método:", method);
-    if (body) console.log("📦 Body enviado:", JSON.stringify(body, null, 2));
-
-    const response = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    }).catch((err) => {
-      console.error("🚨 Falha de rede ou CORS:", err.message);
-      throw new Error("Não foi possível conectar à API.");
-    });
-
-    let json = {};
-    try {
-      json = await response.json();
-    } catch {
-      console.warn("⚠️ Resposta não veio em JSON válido");
-    }
-
-    if (!response.ok) {
-      const err = new Error(json.message || `Erro ${response.status}`);
-      err.status = response.status;
-      throw err;
-    }
-
-    return json;
-  } catch (error) {
-    console.error("❌ Erro em apiFetch:", error.message);
-    throw error;
+    return Promise.reject(error);
   }
-};
+);
 
-const apiClient = { apiFetch };
+// Métodos utilitários com assinatura consistente
+const get = (url, config = {}) => apiClient.get(url, config);
+const post = (url, data = {}, config = {}) => apiClient.post(url, data, config);
+const put = (url, data = {}, config = {}) => apiClient.put(url, data, config);
+const del = (url, config = {}) => apiClient.delete(url, config);
+const patch = (url, data = {}, config = {}) =>
+  apiClient.patch(url, data, config);
+
+// Exporta métodos e cliente
+export { get, post, put, del, patch };
 export default apiClient;

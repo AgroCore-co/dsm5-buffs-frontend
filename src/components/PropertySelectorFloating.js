@@ -1,17 +1,146 @@
-import React, { useContext, useMemo, useState, useEffect, useCallback } from "react";
-import { PropertyContext } from "@/contexts/PropertyContext";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/router";
+import { usePropriedade } from "@/contexts/propriedadeContext";
+import propriedadeService from "@/services/propriedadeService";
 import { Building2, ChevronDown, X, Check } from "lucide-react";
 
 export default function PropertySelectorFloating() {
-  const {
-    propriedades,
-    propriedadeSelecionada,
-    selectProperty,
-    loadingPropriedade,
-  } = useContext(PropertyContext);
+  const router = useRouter();
+
+  // evita flicker: aguarda router pronto antes de decidir renderizar
+  if (!router.isReady) return null;
+
+  // usa asPath (rota real) e normaliza (remove query e trailing slash)
+  const rawPath = router?.asPath || router?.pathname || "/";
+  const path = rawPath.split("?")[0].replace(/\/+$/, "") || "/";
+
+  // Não renderiza em telas de propriedade
+  {
+    // substitui a verificação simples por uma mais robusta:
+    // cobre /proprietario/propriedade, /proprietario/propriedades e também
+    // possíveis variações antigas /propriedade e /propriedades
+    const propriedadeRoutePatterns = [
+      /^\/proprietario\/propriedade(\/|$)/i,
+      /^\/proprietario\/propriedades(\/|$)/i,
+      /^\/propriedade(\/|$)/i,
+      /^\/propriedades(\/|$)/i
+    ];
+
+    const checkPath = (p = "") => {
+      try {
+        return propriedadeRoutePatterns.some((re) => re.test(p || ""));
+      } catch {
+        return false;
+      }
+    };
+
+    // verifica tanto o path real (asPath) quanto pathname/route (templates de rota)
+    const routeTemplate = router?.pathname || router?.route || "";
+    const isPropriedadeRoute = checkPath(path) || checkPath(routeTemplate);
+
+    if (isPropriedadeRoute) return null;
+  }
+
+  // obter contexto de propriedade de forma tolerante a diferentes nomes de exportação
+  const propriedadeCtx = usePropriedade();
+  const selectedPropriedadeId =
+    propriedadeCtx?.selectedPropriedadeId ??
+    propriedadeCtx?.propriedadeId ??
+    propriedadeCtx?.selectedPropertyId ??
+    null;
+
+  // descobrir o setter disponível (vários nomes possíveis)
+  const _rawSetter =
+    propriedadeCtx?.setSelectedPropriedadeId ??
+    propriedadeCtx?.setPropriedadeId ??
+    propriedadeCtx?.setSelectedPropertyId ??
+    propriedadeCtx?.setPropertyId ??
+    null;
+
+  // setter seguro: chama o setter do contexto se existir, senão grava em localStorage e emite evento
+  const setSelectedPropriedadeId = (id) => {
+    try {
+      if (typeof _rawSetter === "function") {
+        _rawSetter(id);
+        return;
+      }
+      if (typeof window !== "undefined") {
+        localStorage.setItem("selectedPropriedadeId", id);
+        // emitir evento simples para que outros listeners possam reagir (fallback)
+        window.dispatchEvent(
+          new CustomEvent("selectedPropriedadeIdChanged", { detail: id })
+        );
+      }
+    } catch (e) {
+      // noop
+    }
+  };
+
+  const [propriedades, setPropriedades] = useState([]);
+  const [loadingPropriedade, setLoadingPropriedade] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+    async function load() {
+      setLoadingPropriedade(true);
+      try {
+        const list = await propriedadeService.listarPropriedades();
+        if (!ignore) setPropriedades(Array.isArray(list) ? list : []);
+      } catch (e) {
+        if (!ignore) setPropriedades([]);
+      } finally {
+        if (!ignore) setLoadingPropriedade(false);
+      }
+    }
+    load();
+    return () => { ignore = true; };
+  }, []);
+
+  // Auto-seleção com respeito ao localStorage:
+  // - se existir um id salvo, restaura ele;
+  // - se o id salvo não existir na lista, seleciona a primeira e sobrescreve;
+  // - se não houver id salvo (primeiro acesso), seleciona a primeira.
+  useEffect(() => {
+    if (loadingPropriedade) return;
+    if (!Array.isArray(propriedades) || propriedades.length === 0) return;
+
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("selectedPropriedadeId") : null;
+
+      const selectedExists = selectedPropriedadeId && propriedades.some((p) => p.id_propriedade === selectedPropriedadeId);
+      const savedExists = saved && propriedades.some((p) => p.id_propriedade === saved);
+
+      if (saved && !selectedPropriedadeId) {
+        // restaura do saved
+        setSelectedPropriedadeId(saved);
+        return;
+      }
+
+      if (saved && !savedExists) {
+        // saved stale -> escolhe a primeira e sobrescreve
+        setSelectedPropriedadeId(propriedades[0].id_propriedade);
+        return;
+      }
+
+      // sem saved (primeiro acesso) ou selected não existe na lista
+      if (!saved && (!selectedPropriedadeId || !selectedExists)) {
+        setSelectedPropriedadeId(propriedades[0].id_propriedade);
+      }
+    } catch (e) {
+      // fallback simples: se algo deu errado, seleciona a primeira se necessário
+      if (!selectedPropriedadeId) {
+        setSelectedPropriedadeId(propriedades[0].id_propriedade);
+      }
+    }
+  }, [loadingPropriedade, propriedades, selectedPropriedadeId, setSelectedPropriedadeId]);
+
+  const propriedadeSelecionada = useMemo(
+    () => propriedades.find((p) => p.id_propriedade === selectedPropriedadeId) || null,
+    [propriedades, selectedPropriedadeId]
+  );
 
   const activeName =
     propriedadeSelecionada?.nome_fantasia ||
@@ -22,11 +151,8 @@ export default function PropertySelectorFloating() {
     const term = (searchTerm || "").toLowerCase().trim();
     if (!term) return propriedades || [];
     return (propriedades || []).filter((p) => {
-      const nome =
-        p.nome_fantasia?.toLowerCase?.() ||
-        p.nome?.toLowerCase?.() ||
-        "";
-      const cnpj = p.cnpj?.toLowerCase?.() || "";
+      const nome = (p.nome_fantasia || p.nome || "").toLowerCase();
+      const cnpj = (p.cnpj || "").toLowerCase();
       return nome.includes(term) || cnpj.includes(term);
     });
   }, [searchTerm, propriedades]);
@@ -42,14 +168,15 @@ export default function PropertySelectorFloating() {
     if (e.target === e.currentTarget) setOpen(false);
   }, []);
 
-  // ⬅️ A verificação fica aqui, depois de todos os hooks
-  if (!Array.isArray(propriedades) || propriedades.length <= 1) {
-    return null;
-  }
+  // Se não houver propriedades, não renderiza nada.
+  if (!Array.isArray(propriedades) || propriedades.length === 0) return null;
+
+  // Mostrar botão/modal apenas quando houver mais de uma propriedade.
+  const showFloating = propriedades.length > 1;
+  if (!showFloating) return null; // componente fica montado (effects já rodaram), mas UI não aparece quando só 1
 
   return (
     <>
-      {/* Botão flutuante */}
       <button
         title="Selecionar Propriedade"
         onClick={() => setOpen(true)}
@@ -61,7 +188,6 @@ export default function PropertySelectorFloating() {
         <ChevronDown size={16} />
       </button>
 
-      {/* Modal */}
       {open && (
         <div
           className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50"
@@ -71,11 +197,8 @@ export default function PropertySelectorFloating() {
             className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Selecionar Propriedade
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">Selecionar Propriedade</h3>
               <button
                 className="text-gray-400 hover:text-gray-600 transition-colors"
                 onClick={() => setOpen(false)}
@@ -84,7 +207,6 @@ export default function PropertySelectorFloating() {
               </button>
             </div>
 
-            {/* Propriedade ativa */}
             {propriedadeSelecionada && (
               <div className="p-4 bg-blue-50 border-b">
                 <p className="text-sm text-gray-600 mb-1">Propriedade ativa:</p>
@@ -92,7 +214,6 @@ export default function PropertySelectorFloating() {
               </div>
             )}
 
-            {/* Busca */}
             <div className="p-4 border-b">
               <input
                 type="text"
@@ -104,35 +225,23 @@ export default function PropertySelectorFloating() {
               />
             </div>
 
-            {/* Lista */}
             <div className="flex-1 overflow-y-auto p-4">
               {filtered.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  {searchTerm
-                    ? "Nenhuma propriedade encontrada"
-                    : "Nenhuma propriedade disponível"}
+                  {searchTerm ? "Nenhuma propriedade encontrada" : "Nenhuma propriedade disponível"}
                 </div>
               ) : (
                 <div className="space-y-2">
                   {filtered.map((propriedade) => {
-                    const isActive =
-                      propriedadeSelecionada?.id_propriedade ===
-                      propriedade.id_propriedade;
-
-                    const title =
-                      propriedade.nome_fantasia ||
-                      propriedade.nome ||
-                      "Nome não disponível";
-                    const subtitle =
-                      propriedade?.localidade_propriedade
-                        ? `${propriedade.localidade_propriedade.nome_municipio}, ${propriedade.localidade_propriedade.uf}`
-                        : propriedade.cnpj || "";
+                    const isActive = propriedadeSelecionada?.id_propriedade === propriedade.id_propriedade;
+                    const title = propriedade.nome_fantasia || propriedade.nome || "Nome não disponível";
+                    const subtitle = propriedade.cnpj || "";
 
                     return (
                       <button
                         key={propriedade.id_propriedade}
                         onClick={() => {
-                          selectProperty(propriedade.id_propriedade);
+                          setSelectedPropriedadeId(propriedade.id_propriedade);
                           setOpen(false);
                         }}
                         className={`w-full text-left p-3 rounded-lg border transition-all duration-200 hover:bg-gray-50 ${
@@ -144,9 +253,7 @@ export default function PropertySelectorFloating() {
                             <Building2 size={16} className="text-gray-500" />
                             <div>
                               <p className="font-medium text-gray-900">{title}</p>
-                              {subtitle && (
-                                <p className="text-sm text-gray-500">{subtitle}</p>
-                              )}
+                              {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
                             </div>
                           </div>
                           {isActive && <Check size={16} className="text-blue-600" />}

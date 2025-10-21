@@ -1,14 +1,8 @@
-import { useEffect } from "react";
-import { useRouter } from "next/router";
 
-export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Redirecionar sempre para a tela de login
-    router.push("/auth/login");
-  }, [router]);
-
-  // Retorna null enquanto redireciona
-  return null;
+export default function IndexLoading() {
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <span style={{ fontSize: 22, color: "#CE7D0A" }}>Carregando...</span>
+    </div>
+  );
 }

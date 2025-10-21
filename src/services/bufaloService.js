@@ -1,105 +1,55 @@
-import { apiFetch } from "@/lib/apiClient";
+import { get } from "@/lib/apiClient";
+import { patch } from "@/lib/apiClient";
 
 /**
- * Lista todos os búfalos do usuário autenticado.
+ * Lista búfalos de uma propriedade com paginação.
+ * GET /bufalos/propriedade/{id_propriedade}?page={page}&limit={limit}
  *
- * @param {string} token - JWT do usuário autenticado
- * @returns {Promise<Array>} - Lista de búfalos
+ * @param {string} idPropriedade - ID (UUID) da propriedade (obrigatório)
+ * @param {number} [page=1] - Número da página (inicia em 1)
+ * @param {number} [limit=10] - Itens por página (máximo 100)
+ * @returns {Promise<{ data: Array, meta: Object }>} Retorna o payload completo do endpoint
  */
-const listarBufalos = async (token) => {
-  try {
-    console.log("🔍 Iniciando busca de búfalos...");
-    console.log("🔑 Token fornecido:", token ? "Sim" : "Não");
-    console.log("🌐 URL base:", process.env.NEXT_PUBLIC_API_URL);
+const listarBufalosPorPropriedade = async (idPropriedade, page = 1, limit = 10) => {
+  if (!idPropriedade) throw new Error("ID da propriedade é obrigatório");
 
-    const response = await apiFetch("/bufalos", {
-      method: "GET",
-      token,
-    });
+  const safePage = Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+  let safeLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 10;
+  if (safeLimit > 100) safeLimit = 100;
 
-    console.log("✅ Lista de búfalos recebida:", response);
-    if (Array.isArray(response)) {
-      console.log(`📊 Total de ${response.length} búfalos recebidos`);
-    } else {
-      console.warn("⚠️ Resposta não é um array:", typeof response);
-    }
-
-    return response;
-  } catch (error) {
-    console.error("❌ Erro ao listar búfalos:", error);
-    console.error("📝 Detalhes do erro:", {
-      message: error.message,
-      stack: error.stack,
-      status: error.status,
-    });
-    throw error;
-  }
+  const response = await get(`/bufalos/propriedade/${idPropriedade}?page=${safePage}&limit=${safeLimit}`);
+  return response.data;
 };
 
 /**
  * Busca um búfalo específico pelo ID.
+ * GET /bufalos/{id}
  *
- * @param {number} id - ID do búfalo
- * @param {string} token - JWT do usuário autenticado
- * @returns {Promise<Object>} - Dados do búfalo
+ * @param {string} idBufalo - ID do búfalo (UUID)
+ * @returns {Promise<Object>} Dados do búfalo
  */
-const getBufaloById = async (id, token) => {
-  try {
-    console.log(`🔍 Iniciando busca do búfalo com ID ${id}...`);
-
-    const response = await apiFetch(`/bufalos/${id}`, {
-      method: "GET",
-      token,
-    });
-
-    console.log("✅ Dados do búfalo recebidos:", response);
-    return response;
-  } catch (error) {
-    console.error(`❌ Erro ao buscar búfalo com ID ${id}:`, error);
-    console.error("📝 Detalhes do erro:", {
-      message: error.message,
-      stack: error.stack,
-      status: error.status,
-    });
-    throw error;
-  }
+const buscarBufaloPorId = async (idBufalo) => {
+  if (!idBufalo) throw new Error("ID do búfalo é obrigatório");
+  const response = await get(`/bufalos/${idBufalo}`);
+  return response.data;
 };
 
 /**
- * Cria um novo búfalo.
+ * Edita os dados de um búfalo.
+ * PATCH /bufalos/{id}
  *
- * @param {Object} bufaloData - Dados do búfalo
- * @param {string} token - JWT do usuário autenticado
- * @returns {Promise<Object>} - Búfalo criado
+ * @param {string} idBufalo - ID do búfalo (UUID)
+ * @param {Object} dadosAtualizados - Dados para atualizar
+ * @returns {Promise<Object>} Dados do búfalo atualizado
  */
-const createBufalo = async (bufaloData, token) => {
-  try {
-    console.log("➕ Criando novo búfalo...");
-    console.log("📦 Dados enviados:", bufaloData);
-
-    const response = await apiFetch("/bufalos", {
-      method: "POST",
-      token,
-      data: bufaloData, 
-    });
-
-    console.log("✅ Búfalo criado com sucesso:", response);
-    return response;
-  } catch (error) {
-    console.error("❌ Erro ao criar búfalo:", error);
-    console.error("📝 Detalhes do erro:", {
-      message: error.message,
-      stack: error.stack,
-      status: error.status,
-    });
-    throw error;
-  }
+const editarBufalo = async (idBufalo, dadosAtualizados) => {
+  if (!idBufalo) throw new Error("ID do búfalo é obrigatório");
+  const response = await patch(`/bufalos/${idBufalo}`, dadosAtualizados);
+  return response.data;
 };
 
-const bufaloService = {
-  listarBufalos,
-  getBufaloById,
-  createBufalo,
+export default {
+  listarBufalosPorPropriedade,
+  buscarBufaloPorId,
+  editarBufalo,
 };
-
-export default bufaloService;

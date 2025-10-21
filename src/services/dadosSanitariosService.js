@@ -1,42 +1,23 @@
-import { apiFetch } from "@/lib/apiClient";
+import { get } from "@/lib/apiClient";
 
 /**
- * Lista todos os dados sanitários de um búfalo específico.
+ * Lista todos os registros sanitários de um búfalo com paginação.
+ * GET /dados-sanitarios/bufalo/{id_bufalo}?page={page}&limit={limit}
  *
- * @param {number} idBufalo - ID do búfalo
- * @param {string} token - JWT do usuário autenticado
- * @returns {Promise<Array>} - Lista de registros sanitários
+ * @param {string} idBufalo - ID do búfalo (obrigatório)
+ * @param {number} [page=1] - Número da página (opcional, padrão 1)
+ * @param {number} [limit=10] - Itens por página (opcional, padrão 10)
+ * @returns {Promise<{ data: Array, meta: Object }>} Lista paginada de registros sanitários
  */
-const listarDadosSanitariosPorBufalo = async (idBufalo, token) => {
-  try {
-    console.log(`🔍 Buscando dados sanitários do búfalo ID ${idBufalo}...`);
-    console.log(`🔑 Token disponível: ${token ? 'Sim' : 'Não'}`);
-    console.log(`🌐 URL da API: ${process.env.NEXT_PUBLIC_API_URL}`);
-
-    const response = await apiFetch(`/dados-sanitarios/bufalo/${idBufalo}`, {
-      method: "GET",
-      token,
-    });
-
-    console.log("✅ Dados sanitários recebidos:", response);
-    console.log(`📊 Total de registros: ${Array.isArray(response) ? response.length : 'N/A'}`);
-    return response;
-  } catch (error) {
-    console.error(
-      `❌ Erro ao buscar dados sanitários do búfalo ID ${idBufalo}:`,
-      error
-    );
-    console.error(`📝 Detalhes do erro:`, {
-      message: error.message,
-      status: error.status,
-      stack: error.stack
-    });
-    throw error;
-  }
+const listarDadosSanitariosPorBufalo = async (idBufalo, page = 1, limit = 10) => {
+  if (!idBufalo) throw new Error("ID do búfalo é obrigatório");
+  const safePage = Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+  let safeLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 10;
+  if (safeLimit > 100) safeLimit = 100;
+  const response = await get(`/dados-sanitarios/bufalo/${idBufalo}?page=${safePage}&limit=${safeLimit}`);
+  return response.data;
 };
 
-const dadosSanitariosService = {
+export default {
   listarDadosSanitariosPorBufalo,
 };
-
-export default dadosSanitariosService;

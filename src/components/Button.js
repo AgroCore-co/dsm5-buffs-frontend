@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { forwardRef } from "react"
+import { forwardRef } from "react";
 
 const Button = forwardRef(
   (
@@ -15,28 +15,37 @@ const Button = forwardRef(
       onClick,
       ...props
     },
-    ref,
+    ref
   ) => {
     const baseClasses =
-      "inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      "inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variantClasses = {
       primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
-      secondary: "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
-      outline: "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500",
-    }
+      secondary:
+        "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
+      outline:
+        "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500",
+    };
 
     const sizeClasses = {
       small: "px-3 py-2 text-sm",
       medium: "px-4 py-2 text-base",
       large: "px-6 py-3 text-lg",
       full: "w-full px-4 py-2 text-base",
-    }
+    };
 
-    const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`
+    const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
 
     return (
-      <button ref={ref} type={type} className={classes} disabled={disabled || loading} onClick={onClick} {...props}>
+      <button
+        ref={ref}
+        type={type}
+        className={classes}
+        disabled={disabled || loading}
+        onClick={onClick}
+        {...props}
+      >
         {loading && (
           <svg
             className="animate-spin -ml-1 mr-3 h-5 w-5"
@@ -44,7 +53,14 @@ const Button = forwardRef(
             fill="none"
             viewBox="0 0 24 24"
           >
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
             <path
               className="opacity-75"
               fill="currentColor"
@@ -54,10 +70,10 @@ const Button = forwardRef(
         )}
         {children}
       </button>
-    )
-  },
-)
+    );
+  }
+);
 
-Button.displayName = "Button"
+Button.displayName = "Button";
 
-export default Button
+export default Button;

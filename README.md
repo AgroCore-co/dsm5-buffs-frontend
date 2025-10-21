@@ -1,153 +1,94 @@
-![Logo](./public/images/banner%20buffs.png)
+# 🐃 BUFFS API - Checklist de Integração
 
-### 🦬 Buffs - Plataforma de Controle e Acompanhamento da Produção Leiteira e Manejo de Búfalas
-
-O Buffs é um projeto acadêmico desenvolvido com Next.js com o objetivo de construir uma plataforma web para controle e acompanhamento da produção leiteira e manejo de búfalas. A aplicação tem foco em organização, acessibilidade e escalabilidade, facilitando o trabalho de produtores, técnicos e gestores rurais.
-
-Este repositório contém a estrutura do frontend da aplicação, incluindo os principais diretórios, organização modular e instruções para rodar o projeto com variáveis de ambiente conectadas à API.
+## 1. Autenticação e Usuários
+- [ ] Cadastro de usuário (Supabase Auth) → `supabase.auth.signUp()`
+- [ ] Confirmação de email (se habilitado)
+- [X] Login → `supabase.auth.signInWithPassword()` ou `signInWithOAuth()`
+- [X] Obtenção do JWT (access_token) para todas as requisições
+- [X] Renovação de token → `POST /auth/refresh`
+- [X] Logout → `POST /auth/signout`
+- [ ] Criação de perfil de usuário → `POST /usuarios` (após login)
+- [ ] Criação de funcionários → `POST /usuarios/funcionarios` (Proprietário/Gerente)
+- [ ] Definir cargos e permissões:
+  - PROPRIETARIO ✅
+  - GERENTE ✅
+  - FUNCIONARIO ✅
+  - VETERINARIO ✅
 
 ---
 
-## Autores
-- [@V1niSouza](https://github.com/V1niSouza)
-- [@paulocsa](https://github.com/paulocsa)
-- [@JoaoKuzinor](https://github.com/JoaoKuzinor)
-- [@jaobarreto](https://github.com/jaobarreto)
-- [@Gabrielll04](https://github.com/Gabrielll04)
+## 2. Gestão de Propriedade
+### Propriedades (PROPRIETARIO)
+- [X] Criar propriedade → `POST /propriedades`
+- [] Atualizar propriedade → `PUT /propriedades/:id`
+- [X] Listar propriedades → `GET /propriedades`
+- [ ] Remover propriedade → `DELETE /propriedades/:id`
 
-<br>
+### Lotes / Piquetes (PROPRIETARIO)
+- [ ] Criar lote → `POST /lotes`
+- [ ] Atualizar lote → `PUT /lotes/:id`
+- [X] Listar lotes → `GET /lotes`
+- [ ] Remover lote → `DELETE /lotes/:id`
 
-# Como Trabalhar no Projeto
+### Endereços (PROPRIETARIO)
+- [X] Criar endereço → `POST /enderecos`
+- [ ] Atualizar endereço → `PUT /enderecos/:id`
+- [ ] Listar endereços → `GET /enderecos`
+- [ ] Remover endereço → `DELETE /enderecos/:id`
 
-### 1. Fazer o Fork do Repositório
-Trabalhe somente com fork do repositório original: `https://github.com/AgroCore-co/dsm5-buffs-frontend.git`.
+---
 
-#### a) Clique no botão Fork no canto superior direito
-#### b) Escolha sua conta do GitHub como destino para o fork
+## 3. Rebanho
+### Búfalos (Todos os cargos)
+- [ ] Criar búfalo → `POST /bufalos`
+- [ ] Atualizar búfalo → `PUT /bufalos/:id`
+- [ ] Listar búfalos → `GET /bufalos`
+- [ ] Movimentação de lotes → `POST /movimentacao-lotes`, `PUT /movimentacao-lotes/:id`
+- [ ] Grupos → `POST /grupos`, `PUT /grupos/:id`
+- [ ] Raças → `POST /racas`, `PUT /racas/:id`
 
-<hr>
+### IA / Genealogia
+- [ ] Criar árvore genealógica → `POST /genealogia`
+- [ ] Simulação de acasalamento → `POST /simular-acasalamento`
 
-### 2. Clonar o Repositório (do seu fork)
-```bash
-git clone https://github.com/SEU_USUARIO/dsm5-buffs-frontend.git
-cd dsm5-buffs-frontend
-```
+---
 
-Opcional: configure o upstream para sincronizar com o repositório original:
-```bash
-git remote add upstream https://github.com/AgroCore-co/dsm5-buffs-frontend.git
-git fetch upstream
-```
+## 4. Alimentação
+- [ ] Definições de alimentação → `POST /alimentacao-defs`, `PUT /alimentacao-defs/:id`
+- [ ] Registro de alimentação → `POST /registros-alimentacao`, `PUT /registros-alimentacao/:id`
 
-<hr>
+---
 
-### 3. Criar uma Nova Branch
-```bash
-git checkout -b nome-da-sua-branch
-```
+## 5. Saúde / Zootecnia
+- [ ] Dados zootécnicos → `POST /dados-zootecnicos`, `PUT /dados-zootecnicos/:id`
+- [ ] Medicamentos → `POST /medicacoes`, `PUT /medicacoes/:id`
+- [ ] Dados sanitários → `POST /dados-sanitarios`, `PUT /dados-sanitarios/:id`
+- [ ] Frequência de doenças → `GET /frequencia-doencas`
 
-<hr>
+---
 
-### 4. Fazer Modificações e Commits
-Siga o padrão de commits para garantir consistência.
+## 6. Reprodução
+- [ ] Cobertura → `POST /coberturas`, `PUT /coberturas/:id`
+- [ ] Material genético → `POST /material-genetico`, `PUT /material-genetico/:id`
 
-Commit Pattern:
-- Tipo: `feat`, `fix`, `docs`, `style`, `refactor`, `test`
-- Escopo (opcional): área afetada (ex.: `auth`, `dashboard`)
-- Descrição: clara e objetiva
+---
 
-Exemplos:
-- `feat(auth): add login functionality`
-- `fix(button): fix button color issue`
-- `docs(readme): update setup instructions`
+## 7. Produção
+- [ ] Lactação / Controle de leite → `POST /dados-lactacao`, `PUT /dados-lactacao/:id`
+- [ ] Estoque de leite → `POST /estoques-leite`, `PUT /estoques-leite/:id`
+- [ ] Coletas de leite → `POST /coletas`, `PUT /coletas/:id`
+- [ ] Ciclos de lactação → `POST /ciclos-lactacao`, `PUT /ciclos-lactacao/:id`
+- [ ] Indústrias → `POST /industrias`, `PUT /industrias/:id`
 
-Comandos:
-```bash
-git add .
-git commit -m "feat(auth): add login functionality"
-```
+---
 
-<hr>
+## 8. Alertas e Monitoramento
+- [ ] Criar alertas → `POST /alertas`
 
-### 5. Subir suas Mudanças
-```bash
-git push origin nome-da-sua-branch
-```
+---
 
-<hr>
-
-### 6. Abrir um Pull Request (PR)
-Abra um PR do seu fork para o repositório original, descrevendo claramente o que foi feito.
-
-<br>
-
-# Como rodar o projeto
-
-### 1) Requisitos
-- Node.js 18.17+ (recomendado 20+)
-- npm
-
-### 2) Instale as dependências
-```bash
-npm install
-```
-
-### 3) Configure variáveis de ambiente (conectar com a API)
-Crie um arquivo `.env.local` na raiz do projeto e adicione:
-```bash
-NEXT_PUBLIC_API_URL=https://api.exemplo.com
-```
-
-### 4) Inicie o servidor de desenvolvimento
-```bash
-npm run dev
-```
-Acesse `http://localhost:3000`.
-
-### 5) Build e produção
-```bash
-npm run build
-npm run start
-```
-
-<br>
-
-# Estrutura do Projeto
-
-Este projeto é modular para facilitar evolução e manutenção.
-
-### 📁 `src/`
-Código-fonte da aplicação.
-
-### 📁 `src/pages/`
-Páginas do Next.js (Pages Router). Cada arquivo é uma rota. Ex.: `_app.js`, `_document.js`, `index.js`.
-
-### 📁 `src/components/`
-Componentes React reutilizáveis de UI (botões, modais, cards, etc.).
-
-### 📁 `src/hooks/`
-Hooks customizados para encapsular lógicas reutilizáveis.
-
-### 📁 `src/context/`
-Providers e estados globais usando React Context.
-
-### 📁 `src/services/`
-Integração com APIs e camadas de serviço.
-
-### 📁 `src/utils/`
-Funções utilitárias puras e helpers.
-
-### 📁 `src/styles/`
-Estilos globais (ex.: `globals.css`) e utilitários de estilo.
-
-### 📁 `src/lib/`
-Módulos de suporte (ex.: clientes, parsers, configs compartilhadas).
-
-### 📁 `src/tests/`
-Estrutura de testes (configure o runner conforme necessidade).
-
-### 📁 `public/`
-Arquivos estáticos servidos diretamente (imagens, ícones, etc.).
+## 9. Dashboard e Estatísticas
+- [X] Estatísticas gerais → `GET /dashboard-stats`
 
 ---
 
