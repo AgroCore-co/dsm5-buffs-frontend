@@ -23,7 +23,7 @@ const buscarPropriedadePorId = async (id) => {
  * @returns {Promise<any>} Estatísticas do dashboard
  */
 async function getDashboardStatsByPropriedadeId(idPropriedade) {
-  const response = await apiClient.get(`/dashboard/${idPropriedade}`);
+  const response = await get(`/dashboard/${idPropriedade}`);
   return response.data;
 }
 

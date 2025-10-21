@@ -47,7 +47,7 @@ const Navbar = () => {
   let navItems = [];
   if (profile?.cargo === "PROPRIETARIO") {
     navItems = [
-      { label: "Dashboard", path: "/proprietario/dashboard" },
+      { label: "Dashboard", path: "/proprietario/" },
       { label: "Propriedades", path: "/proprietario/propriedades" },
       { label: "Rebanho", path: "/proprietario/rebanho" },
       { label: "Lactação", path: "/proprietario/lactacao" },

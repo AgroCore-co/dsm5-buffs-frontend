@@ -1,8 +1,11 @@
 import axios from "axios";
+import 'dotenv/config'; // Certifique-se de carregar as variáveis de ambiente
+
+console.log("API_URL:", process.env.NEXT_PUBLIC_API_URL); // Adicione esta linha para depuração
 
 // Cria o cliente Axios
 const apiClient = axios.create({
-  baseURL: process.env.API_URL || "http://localhost:3001/",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/",
   headers: {
     "Content-Type": "application/json",
   },

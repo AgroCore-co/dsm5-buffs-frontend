@@ -4,11 +4,14 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { getMyProfile } from "@/services/userService";
 import Layout from "@/layout/Layout";
+import { PropriedadeProvider } from "@/contexts/propriedadeContext";
+import PropertySelectorFloating from "@/components/PropertySelectorFloating";
 
 function AuthGuard({ children }) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [profileChecked, setProfileChecked] = useState(false);
+  const [profileData, setProfileData] = useState(null);
 
   useEffect(() => {
     if (!loading && !isAuthenticated && router.pathname !== "/auth/login" && router.pathname !== "/auth/register") {
@@ -16,10 +19,7 @@ function AuthGuard({ children }) {
     }
   }, [isAuthenticated, loading, router]);
 
-  // Validação global de perfil
-
   useEffect(() => {
-    // Sempre libera profileChecked em rotas públicas, mesmo se não autenticado
     if (["/auth/login", "/auth/register", "/complete-profile"].includes(router.pathname)) {
       setProfileChecked(true);
       return;
@@ -30,7 +30,7 @@ function AuthGuard({ children }) {
       try {
         const profile = await getMyProfile();
         if (ignore) return;
-        // Redirecionamento por cargo
+        setProfileData(profile);
         if (["/", "/dashboard", "/home", "/proprietario", "/admin"].includes(router.pathname)) {
           if (profile.cargo === "PROPRIETARIO" && router.pathname !== "/proprietario") {
             router.replace("/proprietario");
@@ -48,7 +48,7 @@ function AuthGuard({ children }) {
         if (e.response && e.response.status === 404) {
           router.replace("/complete-profile");
         } else {
-          setProfileChecked(true); // permite acesso se erro não for 404
+          setProfileChecked(true);
         }
       }
     }
@@ -56,26 +56,56 @@ function AuthGuard({ children }) {
     return () => { ignore = true; };
   }, [isAuthenticated, loading, router]);
 
-  if (loading || !profileChecked) return null; // ou um spinner
+  if (loading || !profileChecked) return null;
+
+  // espera router estar pronto para evitar cálculo com caminho incorreto
+  if (!router.isReady) return null;
+
+  // usa asPath (rota real) e normaliza (remove query e trailing slash)
+  const rawPath = router?.asPath || router?.pathname || "/";
+  const path = rawPath.split("?")[0].replace(/\/+$/, "") || "/";
+
+  const propriedadeRoutePrefixes = ["/propriedade", "/propriedades"];
+  const isPropriedadeRoute = propriedadeRoutePrefixes.some((p) => path === p || path.startsWith(p + "/"));
+  const isAdmin = profileData && profileData.cargo === "ADMIN";
+  const wrapWithPropriedade = !isPropriedadeRoute && !isAdmin;
+
+  if (wrapWithPropriedade) {
+    return (
+      <PropriedadeProvider>
+        {children}
+        {profileData && profileData.cargo === "PROPRIETARIO" && <PropertySelectorFloating />}
+      </PropriedadeProvider>
+    );
+  }
+
   return children;
 }
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
-  // Rotas que não devem usar o layout global
   const noLayoutRoutes = ["/auth/login", "/auth/register", "/complete-profile"];
   const useLayout = !noLayoutRoutes.includes(router.pathname);
+
+  const appChildren = (
+    <>
+      {useLayout ? (
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      ) : (
+        <Component {...pageProps} />
+      )}
+    </>
+  );
+
   return (
     <AuthProvider>
-      <AuthGuard>
-        {useLayout ? (
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
-        ) : (
-          <Component {...pageProps} />
-        )}
-      </AuthGuard>
+      <PropriedadeProvider>
+        <AuthGuard>
+          {appChildren}
+        </AuthGuard>
+      </PropriedadeProvider>
     </AuthProvider>
   );
 }
