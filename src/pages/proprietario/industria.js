@@ -4,6 +4,15 @@ import { useRouter } from "next/router";
 import { usePropriedade } from "@/contexts/propriedadeContext";
 import estoqueLeiteService from "@/services/estoqueLeiteService";
 import coletaService from "@/services/coletaService";
+import industriaService from "@/services/industriaService";
+import ColetaDetalhesModal from "@/components/proprietario/industria/ColetaDetalhesModal";
+import ColetaEditModal from "@/components/proprietario/industria/ColetaEditModal";
+import { FiEye, FiEdit2, FiTrash2 } from "react-icons/fi";
+import DeleteIndustriaModal from "@/components/proprietario/industria/DeleteIndustriaModal";
+import DeleteColetaModal from "@/components/proprietario/industria/DeleteColetaModal";
+import IndustriaDetalhesModal from "@/components/proprietario/industria/IndustriaDetalhesModal";
+import IndustriaEditModal from "@/components/proprietario/industria/IndustriaEditModal";
+import IndustriaCreateModal from "@/components/proprietario/industria/IndustriaCreateModal";
 
 export default function Industria() {
   const router = useRouter();
@@ -17,6 +26,30 @@ export default function Industria() {
   const [loadingColetas, setLoadingColetas] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [industrias, setIndustrias] = useState([]);
+  const [loadingIndustrias, setLoadingIndustrias] = useState(false);
+  const [modalColetaOpen, setModalColetaOpen] = useState(false);
+  const [modalColetaEditOpen, setModalColetaEditOpen] = useState(false);
+  const [coletaSelecionada, setColetaSelecionada] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [modalDeleteIndustriaOpen, setModalDeleteIndustriaOpen] = useState(false);
+  const [industriaSelecionada, setIndustriaSelecionada] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [modalDeleteColetaOpen, setModalDeleteColetaOpen] = useState(false);
+  const [deleteColetaLoading, setDeleteColetaLoading] = useState(false);
+  const [deleteColetaError, setDeleteColetaError] = useState("");
+  const [modalIndustriaDetalhesOpen, setModalIndustriaDetalhesOpen] = useState(false);
+  const [industriaDetalhes, setIndustriaDetalhes] = useState(null);
+  const [industriaDetalhesLoading, setIndustriaDetalhesLoading] = useState(false);
+  const [industriaDetalhesError, setIndustriaDetalhesError] = useState("");
+  const [modalIndustriaEditOpen, setModalIndustriaEditOpen] = useState(false);
+  const [industriaEditLoading, setIndustriaEditLoading] = useState(false);
+  const [industriaEditError, setIndustriaEditError] = useState("");
+  const [modalIndustriaCreateOpen, setModalIndustriaCreateOpen] = useState(false);
+  const [industriaCreateLoading, setIndustriaCreateLoading] = useState(false);
+  const [industriaCreateError, setIndustriaCreateError] = useState("");
 
   // Busca totais e coletas paginadas
   useEffect(() => {
@@ -154,6 +187,27 @@ export default function Industria() {
       ignore = true;
     };
   }, [propriedadeId, page, limit]);
+
+  // Busca indústrias da propriedade
+  useEffect(() => {
+    if (!propriedadeId) {
+      setIndustrias([]);
+      return;
+    }
+    let ignore = false;
+    (async () => {
+      setLoadingIndustrias(true);
+      try {
+        const res = await industriaService.listarIndustriasPorPropriedade(propriedadeId);
+        if (!ignore) setIndustrias(res || []);
+      } catch (err) {
+        if (!ignore) setIndustrias([]);
+      } finally {
+        if (!ignore) setLoadingIndustrias(false);
+      }
+    })();
+    return () => { ignore = true; };
+  }, [propriedadeId]);
 
   return (
     <>
@@ -367,7 +421,7 @@ export default function Industria() {
                           : "-"}
                       </td>
                       <td className="p-3 text-gray-800 text-base whitespace-nowrap">
-                        {c.id_industria?.slice(0, 8) || "-"}
+                        {c.nome_empresa || "-"}
                       </td>
                       <td className="p-3 text-gray-800 text-base whitespace-nowrap">
                         {c.quantidade != null
@@ -391,8 +445,55 @@ export default function Industria() {
                         )}
                       </td>
                       <td className="p-3 text-gray-800 text-base whitespace-nowrap">
-                        <button className="bg-[#FFCF78] border-none text-gray-800 py-2 px-3.5 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#F2B84D] transition-colors">
-                          Ver detalhes
+                        <button
+                          className="border-none bg-transparent p-0 m-0 cursor-pointer"
+                          title="Ver detalhes"
+                          onClick={() => {
+                            setColetaSelecionada(c);
+                            setModalColetaOpen(true);
+                          }}
+                          style={{ outline: 'none' }}
+                        >
+                          <span
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#FFF6E0] text-[#CE7D0A] hover:bg-[#FFCF78] hover:scale-105 transition-all shadow-sm"
+                            style={{ fontSize: '1.5rem' }}
+                          >
+                            <FiEye />
+                          </span>
+                        </button>
+                        <button
+                          className="border-none bg-transparent p-0 m-0 cursor-pointer ml-2"
+                          title="Editar coleta"
+                          onClick={() => {
+                            setColetaSelecionada(c);
+                            setModalColetaEditOpen(true);
+                            setEditError("");
+                          }}
+                          style={{ outline: 'none' }}
+                        >
+                          <span
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#E0F2FF] text-[#0A7DCE] hover:bg-[#B8E6FF] hover:scale-105 transition-all shadow-sm"
+                            style={{ fontSize: '1.5rem' }}
+                          >
+                            <FiEdit2 />
+                          </span>
+                        </button>
+                        <button
+                          className="border-none bg-transparent p-0 m-0 cursor-pointer ml-2"
+                          title="Excluir coleta"
+                          onClick={() => {
+                            setColetaSelecionada(c);
+                            setModalDeleteColetaOpen(true);
+                            setDeleteColetaError("");
+                          }}
+                          style={{ outline: 'none' }}
+                        >
+                          <span
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#FFE0E0] text-[#CE0A0A] hover:bg-[#FF9D9D] hover:scale-105 transition-all shadow-sm"
+                            style={{ fontSize: '1.5rem' }}
+                          >
+                            <FiTrash2 />
+                          </span>
                         </button>
                       </td>
                     </tr>
@@ -486,6 +587,17 @@ export default function Industria() {
               Industrias parceiras cadastradas no sistema.
             </p>
           </div>
+          <div className="flex justify-end mb-4">
+            <button
+              className="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700 transition-colors"
+              onClick={() => {
+                setModalIndustriaCreateOpen(true);
+                setIndustriaCreateError("");
+              }}
+            >
+              + Nova Indústria
+            </button>
+          </div>
           <div className="overflow-x-auto w-full">
             <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm text-center align-middle">
               <thead className="bg-[#f0f0f0]">
@@ -497,22 +609,226 @@ export default function Industria() {
                   <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">Criado em</th>
                   <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">Atualizado em</th>
                   <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">ID</th>
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                <tr className="odd:bg-white even:bg-[#fafafa]">
-                  <td className="p-3 text-gray-800 text-base font-medium whitespace-nowrap">Buffs Laticinio</td>
-                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">Gilberto</td>
-                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">(11) 99744-8877</td>
-                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">Principal cliente</td>
-                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">{new Date("2025-10-13T01:32:15.701988+00:00").toLocaleDateString()}</td>
-                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">{new Date("2025-10-13T01:32:15.701988+00:00").toLocaleDateString()}</td>
-                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">a8afbcf3-3a9e-4d14-8e88-d0596b185404</td>
-                </tr>
+                {loadingIndustrias ? (
+                  <tr>
+                    <td colSpan="8" className="text-center p-6 text-gray-500">Carregando indústrias...</td>
+                  </tr>
+                ) : industrias.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="text-center p-6 text-gray-500">Nenhuma indústria encontrada</td>
+                  </tr>
+                ) : (
+                  industrias.map((ind) => (
+                    <tr key={ind.id_industria} className="odd:bg-white even:bg-[#fafafa]">
+                      <td className="p-3 text-gray-800 text-base font-medium whitespace-nowrap">{ind.nome}</td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">{ind.representante}</td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">{ind.contato}</td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">{ind.observacao}</td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">{ind.created_at ? new Date(ind.created_at).toLocaleDateString() : '-'}</td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">{ind.updated_at ? new Date(ind.updated_at).toLocaleDateString() : '-'}</td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">{ind.id_industria}</td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">
+                        <button
+                          className="border-none bg-transparent p-0 m-0 cursor-pointer"
+                          title="Ver detalhes"
+                          onClick={async () => {
+                            setIndustriaDetalhesLoading(true);
+                            setIndustriaDetalhesError("");
+                            setModalIndustriaDetalhesOpen(true);
+                            try {
+                              // Fetch details from backend (optional, if not all fields are present)
+                              const details = await industriaService.buscarIndustriaPorId(ind.id_industria);
+                              setIndustriaDetalhes(details);
+                            } catch (err) {
+                              setIndustriaDetalhesError(err?.message || "Erro ao buscar detalhes da indústria");
+                              setIndustriaDetalhes(ind); // fallback to row data
+                            } finally {
+                              setIndustriaDetalhesLoading(false);
+                            }
+                          }}
+                          style={{ outline: 'none' }}
+                        >
+                          <span
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#FFF6E0] text-[#CE7D0A] hover:bg-[#FFCF78] hover:scale-105 transition-all shadow-sm"
+                            style={{ fontSize: '1.5rem' }}
+                          >
+                            <FiEye />
+                          </span>
+                        </button>
+                        <button
+                          className="border-none bg-transparent p-0 m-0 cursor-pointer ml-2"
+                          title="Editar indústria"
+                          onClick={() => {
+                            setIndustriaSelecionada(ind);
+                            setModalIndustriaEditOpen(true);
+                            setIndustriaEditError("");
+                          }}
+                          style={{ outline: 'none' }}
+                        >
+                          <span
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#E0F2FF] text-[#0A7DCE] hover:bg-[#B8E6FF] hover:scale-105 transition-all shadow-sm"
+                            style={{ fontSize: '1.5rem' }}
+                          >
+                            <FiEdit2 />
+                          </span>
+                        </button>
+                        <button
+                          className="border-none bg-transparent p-0 m-0 cursor-pointer ml-2"
+                          title="Excluir indústria"
+                          onClick={() => {
+                            setIndustriaSelecionada(ind);
+                            setModalDeleteIndustriaOpen(true);
+                            setDeleteError("");
+                          }}
+                          style={{ outline: 'none' }}
+                        >
+                          <span
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#FFE0E0] text-[#CE0A0A] hover:bg-[#FF9D9D] hover:scale-105 transition-all shadow-sm"
+                            style={{ fontSize: '1.5rem' }}
+                          >
+                            <FiTrash2 />
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
+
+        <ColetaDetalhesModal
+          isOpen={modalColetaOpen}
+          onClose={() => setModalColetaOpen(false)}
+          coleta={coletaSelecionada}
+          loading={false}
+          error={null}
+        />
+        <ColetaEditModal
+          isOpen={modalColetaEditOpen}
+          onClose={() => setModalColetaEditOpen(false)}
+          coleta={coletaSelecionada}
+          industrias={industrias}
+          loading={editLoading}
+          error={editError}
+          onSave={async (form) => {
+            setEditLoading(true);
+            setEditError("");
+            try {
+              await coletaService.atualizarColetaPorId(coletaSelecionada.id_coleta, form);
+              setModalColetaEditOpen(false);
+              // Atualiza lista após edição
+              const res = await coletaService.listarColetasPorPropriedade(propriedadeId, page, limit);
+              setColetas(res.data || []);
+              setMetaColetas(res.meta || null);
+            } catch (err) {
+              setEditError(err?.message || "Erro ao editar coleta");
+            } finally {
+              setEditLoading(false);
+            }
+          }}
+        />
+        <DeleteIndustriaModal
+          isOpen={modalDeleteIndustriaOpen}
+          onClose={() => setModalDeleteIndustriaOpen(false)}
+          industria={industriaSelecionada}
+          loading={deleteLoading}
+          error={deleteError}
+          onConfirm={async () => {
+            setDeleteLoading(true);
+            setDeleteError("");
+            try {
+              await industriaService.removerIndustriaPorId(industriaSelecionada.id_industria);
+              setModalDeleteIndustriaOpen(false);
+              // Atualiza lista após exclusão
+              const res = await industriaService.listarIndustriasPorPropriedade(propriedadeId);
+              setIndustrias(res || []);
+            } catch (err) {
+              setDeleteError(err?.message || "Erro ao excluir indústria");
+            } finally {
+              setDeleteLoading(false);
+            }
+          }}
+        />
+        <DeleteColetaModal
+          isOpen={modalDeleteColetaOpen}
+          onClose={() => setModalDeleteColetaOpen(false)}
+          coleta={coletaSelecionada}
+          loading={deleteColetaLoading}
+          error={deleteColetaError}
+          onConfirm={async () => {
+            setDeleteColetaLoading(true);
+            setDeleteColetaError("");
+            try {
+              await coletaService.removerColetaPorId(coletaSelecionada.id_coleta);
+              setModalDeleteColetaOpen(false);
+              // Atualiza lista após exclusão
+              const res = await coletaService.listarColetasPorPropriedade(propriedadeId, page, limit);
+              setColetas(res.data || []);
+              setMetaColetas(res.meta || null);
+            } catch (err) {
+              setDeleteColetaError(err?.message || "Erro ao excluir coleta");
+            } finally {
+              setDeleteColetaLoading(false);
+            }
+          }}
+        />
+        <IndustriaDetalhesModal
+          isOpen={modalIndustriaDetalhesOpen}
+          onClose={() => setModalIndustriaDetalhesOpen(false)}
+          industria={industriaDetalhes}
+          loading={industriaDetalhesLoading}
+          error={industriaDetalhesError}
+        />
+        <IndustriaEditModal
+          isOpen={modalIndustriaEditOpen}
+          onClose={() => setModalIndustriaEditOpen(false)}
+          industria={industriaSelecionada}
+          loading={industriaEditLoading}
+          error={industriaEditError}
+          onSave={async (form) => {
+            setIndustriaEditLoading(true);
+            setIndustriaEditError("");
+            try {
+              await industriaService.atualizarIndustriaPorId(industriaSelecionada.id_industria, form);
+              setModalIndustriaEditOpen(false);
+              // Atualiza lista após edição
+              const res = await industriaService.listarIndustriasPorPropriedade(propriedadeId);
+              setIndustrias(res || []);
+            } catch (err) {
+              setIndustriaEditError(err?.message || "Erro ao editar indústria");
+            } finally {
+              setIndustriaEditLoading(false);
+            }
+          }}
+        />
+        <IndustriaCreateModal
+          isOpen={modalIndustriaCreateOpen}
+          onClose={() => setModalIndustriaCreateOpen(false)}
+          propriedadeId={propriedadeId}
+          loading={industriaCreateLoading}
+          error={industriaCreateError}
+          onSave={async (form) => {
+            setIndustriaCreateLoading(true);
+            setIndustriaCreateError("");
+            try {
+              await industriaService.criarIndustria(form);
+              setModalIndustriaCreateOpen(false);
+              // Atualiza lista após criação
+              const res = await industriaService.listarIndustriasPorPropriedade(propriedadeId);
+              setIndustrias(res || []);
+            } catch (err) {
+              setIndustriaCreateError(err?.message || "Erro ao criar indústria");
+            } finally {
+              setIndustriaCreateLoading(false);
+            }
+          }}
+        />
       </div>
     </>
   );
