@@ -1,130 +1,159 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { usePropriedade } from "@/contexts/propriedadeContext";
+import estoqueLeiteService from "@/services/estoqueLeiteService";
+import coletaService from "@/services/coletaService";
 
 export default function Industria() {
   const router = useRouter();
+  const { propriedadeId } = usePropriedade();
+  const [totalProduzido, setTotalProduzido] = useState(null);
+  const [totalRetiradoMes, setTotalRetiradoMes] = useState(null);
+  const [volumeRejeitadoMes, setVolumeRejeitadoMes] = useState(null);
+  const [totalColetas, setTotalColetas] = useState(null);
+  const [coletas, setColetas] = useState([]);
+  const [metaColetas, setMetaColetas] = useState(null);
+  const [loadingColetas, setLoadingColetas] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
-  // Dados mockados para equipe
-  const distribuicaoCargos = [
-    { name: "Veterinário", value: 3, color: "#FFCF78" },
-    { name: "Gerente de Produção", value: 2, color: "#CE7D0A" },
-    { name: "Auxiliar de Produção", value: 4, color: "#F2B84D" },
-    { name: "Administrador", value: 1, color: "#FCA90F" },
-    { name: "Técnico", value: 2, color: "#E6A23C" },
-  ];
+  // Busca totais e coletas paginadas
+  useEffect(() => {
+    async function fetchAll() {
+      if (!propriedadeId) {
+        setColetas([]);
+        setMetaColetas(null);
+        setTotalProduzido(null);
+        setTotalColetas(null);
+        setTotalRetiradoMes(null);
+        return;
+      }
+      // Total produzido do mês atual
+      try {
+        const now = new Date();
+        const ano = now.getFullYear();
+        const mes = now.getMonth() + 1;
+        let pageProd = 1;
+        let totalProd = 0;
+        let hasNext = true;
+        const limitProd = 100;
+        while (hasNext) {
+          const res =
+            await estoqueLeiteService.listarEstoqueLeitePorPropriedade(
+              propriedadeId,
+              pageProd,
+              limitProd
+            );
+          if (Array.isArray(res.data)) {
+            totalProd += res.data
+              .filter((item) => {
+                if (!item.data_producao) return false;
+                const d = new Date(item.data_producao);
+                return d.getFullYear() === ano && d.getMonth() + 1 === mes;
+              })
+              .reduce((acc, item) => acc + (Number(item.quantidade) || 0), 0);
+          }
+          hasNext = res.meta?.hasNextPage;
+          pageProd++;
+        }
+        setTotalProduzido(totalProd);
+      } catch (err) {
+        setTotalProduzido("Erro");
+      }
+      // Total de coletas (meta)
+      try {
+        const res = await coletaService.listarColetasPorPropriedade(
+          propriedadeId,
+          1,
+          1
+        );
+        setTotalColetas(res.meta?.total ?? 0);
+      } catch (err) {
+        setTotalColetas("Erro");
+      }
 
-  const funcionariosMock = [
-    {
-      id: 1,
-      nome: "Dr. João Silva",
-      email: "joao.silva@buffs.com",
-      cargo: "Veterinário",
-      telefone: "(11) 99999-1111",
-      status: "Ativo",
-      dataAdmissao: "15/03/2023",
-    },
-    {
-      id: 2,
-      nome: "Maria Santos",
-      email: "maria.santos@buffs.com",
-      cargo: "Gerente de Produção",
-      telefone: "(11) 99999-2222",
-      status: "Ativo",
-      dataAdmissao: "10/01/2023",
-    },
-    {
-      id: 3,
-      nome: "Pedro Oliveira",
-      email: "pedro.oliveira@buffs.com",
-      cargo: "Auxiliar de Produção",
-      telefone: "(11) 99999-3333",
-      status: "Ativo",
-      dataAdmissao: "20/02/2023",
-    },
-    {
-      id: 4,
-      nome: "Ana Costa",
-      email: "ana.costa@buffs.com",
-      cargo: "Veterinário",
-      telefone: "(11) 99999-4444",
-      status: "Ativo",
-      dataAdmissao: "05/04/2023",
-    },
-    {
-      id: 5,
-      nome: "Carlos Ferreira",
-      email: "carlos.ferreira@buffs.com",
-      cargo: "Técnico",
-      telefone: "(11) 99999-5555",
-      status: "Ativo",
-      dataAdmissao: "12/05/2023",
-    },
-    {
-      id: 6,
-      nome: "Lucia Rodrigues",
-      email: "lucia.rodrigues@buffs.com",
-      cargo: "Auxiliar de Produção",
-      telefone: "(11) 99999-6666",
-      status: "Ativo",
-      dataAdmissao: "18/06/2023",
-    },
-    {
-      id: 7,
-      nome: "Roberto Almeida",
-      email: "roberto.almeida@buffs.com",
-      cargo: "Administrador",
-      telefone: "(11) 99999-7777",
-      status: "Ativo",
-      dataAdmissao: "01/01/2023",
-    },
-    {
-      id: 8,
-      nome: "Fernanda Lima",
-      email: "fernanda.lima@buffs.com",
-      cargo: "Veterinário",
-      telefone: "(11) 99999-8888",
-      status: "Ativo",
-      dataAdmissao: "25/07/2023",
-    },
-    {
-      id: 9,
-      nome: "Ricardo Souza",
-      email: "ricardo.souza@buffs.com",
-      cargo: "Auxiliar de Produção",
-      telefone: "(11) 99999-9999",
-      status: "Ativo",
-      dataAdmissao: "08/08/2023",
-    },
-    {
-      id: 10,
-      nome: "Patricia Gomes",
-      email: "patricia.gomes@buffs.com",
-      cargo: "Gerente de Produção",
-      telefone: "(11) 99999-0000",
-      status: "Ativo",
-      dataAdmissao: "15/09/2023",
-    },
-    {
-      id: 11,
-      nome: "Marcos Santos",
-      email: "marcos.santos@buffs.com",
-      cargo: "Técnico",
-      telefone: "(11) 99999-1112",
-      status: "Ativo",
-      dataAdmissao: "22/10/2023",
-    },
-    {
-      id: 12,
-      nome: "Juliana Costa",
-      email: "juliana.costa@buffs.com",
-      cargo: "Auxiliar de Produção",
-      telefone: "(11) 99999-1113",
-      status: "Ativo",
-      dataAdmissao: "30/11/2023",
-    },
-  ];
+      // Total retirado do mês atual
+      try {
+        const now = new Date();
+        const ano = now.getFullYear();
+        const mes = now.getMonth() + 1;
+        let pageRet = 1;
+        let totalRet = 0;
+        let totalRej = 0;
+        let hasNext = true;
+        const limitRet = 100;
+        while (hasNext) {
+          const res =
+            await estoqueLeiteService.listarEstoqueLeitePorPropriedade(
+              propriedadeId,
+              pageRet,
+              limitRet
+            );
+          if (Array.isArray(res.data)) {
+            // Retirado
+            totalRet += res.data
+              .filter((item) => {
+                if (!item.data_retirada) return false;
+                const d = new Date(item.data_retirada);
+                return d.getFullYear() === ano && d.getMonth() + 1 === mes;
+              })
+              .reduce((acc, item) => acc + (Number(item.quantidade) || 0), 0);
+            // Rejeitado
+            totalRej += res.data
+              .filter((item) => {
+                if (!item.data_rejeicao) return false;
+                const d = new Date(item.data_rejeicao);
+                return d.getFullYear() === ano && d.getMonth() + 1 === mes;
+              })
+              .reduce((acc, item) => acc + (Number(item.quantidade) || 0), 0);
+          }
+          hasNext = res.meta?.hasNextPage;
+          pageRet++;
+        }
+        setTotalRetiradoMes(totalRet);
+        setVolumeRejeitadoMes(totalRej);
+      } catch (err) {
+        setTotalRetiradoMes("Erro");
+        setVolumeRejeitadoMes("Erro");
+      }
+    }
+    fetchAll();
+  }, [propriedadeId]);
+
+  // Busca coletas paginadas
+  useEffect(() => {
+    if (!propriedadeId) {
+      setColetas([]);
+      setMetaColetas(null);
+      return;
+    }
+    let ignore = false;
+    (async () => {
+      setLoadingColetas(true);
+      try {
+        const res = await coletaService.listarColetasPorPropriedade(
+          propriedadeId,
+          page,
+          limit
+        );
+        if (!ignore) {
+          setColetas(res.data || []);
+          setMetaColetas(res.meta || null);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setColetas([]);
+          setMetaColetas(null);
+        }
+      } finally {
+        if (!ignore) setLoadingColetas(false);
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [propriedadeId, page, limit]);
 
   return (
     <>
@@ -157,10 +186,32 @@ export default function Industria() {
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                0 L
+                {totalProduzido === null
+                  ? "..."
+                  : `${totalProduzido.toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                    })} L`}
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                Produção acumulada{" "}
+                Produção acumulada
+              </p>
+            </div>
+
+            {/* Indicador de coletas */}
+            <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Total de Coletas
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Registros
+                </span>
+              </div>
+              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                {totalColetas === null ? "..." : totalColetas}
+              </p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                Coletas realizadas
               </p>
             </div>
 
@@ -170,31 +221,18 @@ export default function Industria() {
                   Total Retirado
                 </h2>
                 <span className="text-xs font-medium text-[var(--color-primary-dark)]">
-                  Tipos
+                  Mês atual
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                5 L
+                {totalRetiradoMes === null
+                  ? "..."
+                  : `${totalRetiradoMes.toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                    })} L`}
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                Volume comercializado
-              </p>
-            </div>
-
-            <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
-              <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
-                  Taxa de Aprovação
-                </h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
-                  Tipos
-                </span>
-              </div>
-              <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                100%
-              </p>
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                Qualidade do Produto
+                Volume comercializado no mês
               </p>
             </div>
 
@@ -204,14 +242,18 @@ export default function Industria() {
                   Volume Rejeitado
                 </h2>
                 <span className="text-xs font-medium text-[var(--color-primary-dark)]">
-                  Tipos
+                  Mês atual
                 </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                0 L
+                {volumeRejeitadoMes === null
+                  ? "..."
+                  : `${volumeRejeitadoMes.toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                    })} L`}
               </p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                Perdas registradas
+                Perdas registradas no mês
               </p>
             </div>
           </div>
@@ -255,84 +297,217 @@ export default function Industria() {
               Registro de Coletas
             </h2>
             <p className="text-gray-600">
-              Monitoramento da Produção de leite de Búfalas - 2 coletas
-              registradas
+              Monitoramento da Produção de leite de Búfalas -{" "}
+              {totalColetas === null
+                ? "..."
+                : `${totalColetas} coletas registradas`}
             </p>
           </div>
 
           <div className="overflow-x-auto w-full">
-            <table className="w-full border-collapse min-w-[800px] bg-white rounded-lg overflow-hidden shadow-sm">
+            <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm text-center align-middle">
               <thead className="bg-[#f0f0f0]">
                 <tr>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
+                  <th
+                    className="p-3 font-medium text-gray-800 text-base whitespace-nowrap"
+                    style={{
+                      minWidth: "110px",
+                      maxWidth: "140px",
+                      width: "1%",
+                    }}
+                  >
                     Data da Coleta
                   </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">
                     Empresa
                   </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">
                     Quantidade
                   </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">
                     Observação
                   </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">
                     Status
                   </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody>
-                <tr className="bg-[#fafafa]">
-                  <td className="p-3 text-center text-gray-800 text-base font-medium">
-                    23/09/2025
-                  </td>
-                  <td className="p-3 text-center text-gray-800 text-base">
-                    Levitare
-                  </td>
-                  <td className="p-3 text-center text-gray-800 text-base">
-                    1000 L
-                  </td>
-                  <td className="p-3 text-center text-gray-800 text-base">
-                    Leite com acidez um pouco elevada.
-                  </td>
-                  <td className="p-3 text-center text-gray-800 text-base">
-                    <span className="px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-25 bg-[#9DFFBE] text-gray-800">
-                      Aprovado
-                    </span>
-                  </td>
-                  <td className="p-3 text-center text-base">
-                    <button className="bg-[#FFCF78] border-none text-gray-800 py-2 px-3.5 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#F2B84D] transition-colors">
-                      Ver detalhes
-                    </button>
-                  </td>
-                </tr>
+              <tbody className="divide-y divide-gray-200">
+                {loadingColetas ? (
+                  <tr>
+                    <td colSpan="6" className="text-center p-6 text-gray-500">
+                      Carregando coletas...
+                    </td>
+                  </tr>
+                ) : coletas.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center p-6 text-gray-500">
+                      Nenhuma coleta encontrada
+                    </td>
+                  </tr>
+                ) : (
+                  coletas.map((c) => (
+                    <tr
+                      key={c.id_coleta}
+                      className="odd:bg-white even:bg-[#fafafa]"
+                    >
+                      <td
+                        className="p-3 text-gray-800 text-base font-medium whitespace-nowrap"
+                        style={{
+                          minWidth: "110px",
+                          maxWidth: "140px",
+                          width: "1%",
+                        }}
+                      >
+                        {c.dt_coleta
+                          ? new Date(c.dt_coleta).toLocaleDateString()
+                          : "-"}
+                      </td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">
+                        {c.id_industria?.slice(0, 8) || "-"}
+                      </td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">
+                        {c.quantidade != null
+                          ? `${c.quantidade.toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            })} L`
+                          : "-"}
+                      </td>
+                      <td className="p-3 text-gray-800 text-base">
+                        {c.observacao || "-"}
+                      </td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">
+                        {c.resultado_teste ? (
+                          <span className="px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-25 bg-[#9DFFBE] text-gray-800">
+                            Aprovado
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-25 bg-[#FF9D9D] text-gray-800">
+                            Reprovado
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 text-gray-800 text-base whitespace-nowrap">
+                        <button className="bg-[#FFCF78] border-none text-gray-800 py-2 px-3.5 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#F2B84D] transition-colors">
+                          Ver detalhes
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+              {/* Paginação dinâmica das coletas (janela de páginas, como rebanho.js, mas com elipses) */}
+              {metaColetas && metaColetas.totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-2 mt-4">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={metaColetas.page <= 1}
+                    className={`px-4 py-2 rounded-lg font-medium ${
+                      metaColetas.page <= 1
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+                    }`}
+                  >
+                    Anterior
+                  </button>
 
-                <tr className="bg-[#fafafa]">
-                  <td className="p-3 text-center text-gray-800 text-base font-medium">
-                    23/09/2025
-                  </td>
-                  <td className="p-3 text-center text-gray-800 text-base">
-                    Bianco Latte
-                  </td>
-                  <td className="p-3 text-center text-gray-800 text-base">
-                    2000 L
-                  </td>
-                  <td className="p-3 text-center text-gray-800 text-base">
-                    Leite com acidez elevada.
-                  </td>
-                  <td className="p-3 text-center text-gray-800 text-base">
-                    <span className="px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-25 bg-[#FF9D9D] text-gray-800">
-                      Reprovado
-                    </span>
-                  </td>
-                  <td className="p-3 text-center text-base">
-                    <button className="bg-[#FFCF78] border-none text-gray-800 py-2 px-3.5 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#F2B84D] transition-colors">
-                      Ver detalhes
-                    </button>
-                  </td>
+                  {/* Paginação dinâmica: mostra uma janela de páginas ao redor da atual, com elipses e sempre o primeiro/último */}
+                  {(() => {
+                    const total = metaColetas.totalPages;
+                    const current = metaColetas.page;
+                    const windowSize = 2; // páginas vizinhas de cada lado
+                    let pages = [];
+                    if (total <= 7) {
+                      // Poucas páginas: mostra todas
+                      pages = Array.from({ length: total }, (_, i) => i + 1);
+                    } else {
+                      // Muitas páginas: mostra 1 ... [window] ... total
+                      pages.push(1);
+                      let start = Math.max(2, current - windowSize);
+                      let end = Math.min(total - 1, current + windowSize);
+                      if (start > 2) pages.push("...");
+                      for (let i = start; i <= end; i++) pages.push(i);
+                      if (end < total - 1) pages.push("...");
+                      pages.push(total);
+                    }
+                    return pages.map((p, idx) =>
+                      p === "..." ? (
+                        <span
+                          key={"elip-" + idx}
+                          className="w-10 h-10 flex items-center justify-center text-gray-400"
+                        >
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={p}
+                          onClick={() => setPage(p)}
+                          className={`w-10 h-10 rounded-lg font-medium ${
+                            metaColetas.page === p
+                              ? "bg-[#CE7D0A] text-white"
+                              : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    );
+                  })()}
+
+                  <button
+                    onClick={() =>
+                      setPage((p) => Math.min(metaColetas.totalPages, p + 1))
+                    }
+                    disabled={metaColetas.page >= metaColetas.totalPages}
+                    className={`px-4 py-2 rounded-lg font-medium ${
+                      metaColetas.page >= metaColetas.totalPages
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+                    }`}
+                  >
+                    Próximo
+                  </button>
+                </div>
+              )}
+            </table>
+          </div>
+        </div>
+
+        {/* Seção de Indústrias */}
+        <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Industrias
+            </h2>
+            <p className="text-gray-600">
+              Industrias parceiras cadastradas no sistema.
+            </p>
+          </div>
+          <div className="overflow-x-auto w-full">
+            <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm text-center align-middle">
+              <thead className="bg-[#f0f0f0]">
+                <tr>
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">Nome</th>
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">Representante</th>
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">Contato</th>
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">Observação</th>
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">Criado em</th>
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">Atualizado em</th>
+                  <th className="p-3 font-medium text-gray-800 text-base whitespace-nowrap">ID</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                <tr className="odd:bg-white even:bg-[#fafafa]">
+                  <td className="p-3 text-gray-800 text-base font-medium whitespace-nowrap">Buffs Laticinio</td>
+                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">Gilberto</td>
+                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">(11) 99744-8877</td>
+                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">Principal cliente</td>
+                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">{new Date("2025-10-13T01:32:15.701988+00:00").toLocaleDateString()}</td>
+                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">{new Date("2025-10-13T01:32:15.701988+00:00").toLocaleDateString()}</td>
+                  <td className="p-3 text-gray-800 text-base whitespace-nowrap">a8afbcf3-3a9e-4d14-8e88-d0596b185404</td>
                 </tr>
               </tbody>
             </table>
