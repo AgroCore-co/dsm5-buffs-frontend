@@ -6,10 +6,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
 
-
 const Navbar = () => {
   const router = useRouter();
-
 
   // Usuário autenticado do contexto
   const { user, logout } = useAuth();
@@ -36,7 +34,9 @@ const Navbar = () => {
       }
     }
     fetchProfile();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, [user]);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -52,6 +52,7 @@ const Navbar = () => {
       { label: "Rebanho", path: "/proprietario/rebanho" },
       { label: "Lactação", path: "/proprietario/lactacao" },
       { label: "Controle Reprodução", path: "/proprietario/reproducao" },
+      { label: "Indústria", path: "/proprietario/industria" },
     ];
   } else if (profile?.cargo === "ADMIN") {
     navItems = [
@@ -59,9 +60,7 @@ const Navbar = () => {
       { label: "Administração", path: "/admin/config" },
     ];
   } else if (profile?.cargo) {
-    navItems = [
-      { label: "Home", path: "/home" },
-    ];
+    navItems = [{ label: "Home", path: "/home" }];
   }
 
   const toggleMobileMenu = () => {
@@ -136,7 +135,6 @@ const Navbar = () => {
     };
   }, []);
 
-
   const handleLogout = () => {
     setIsUserMenuOpen(false);
     logout();
@@ -202,21 +200,23 @@ const Navbar = () => {
           {/*  Alterado breakpoint de md para xl (1280px) para menu desktop */}
           {/* Navigation Items - Desktop */}
           <div className="hidden xl:flex items-center gap-0 absolute left-1/2 transform -translate-x-1/2 z-5">
-            {profileLoading ? null : navItems.length > 0 ? (
-              navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`px-5 py-4 text-[var(--color-text-dark)] no-underline font-medium text-base transition-all duration-200 border-b-3 border-transparent whitespace-nowrap h-16 flex items-center hover:bg-white/10 hover:text-[var(--color-text-dark)] ${
-                    router.pathname === item.path
-                      ? "bg-white/20 border-b-[var(--color-text-dark)] font-semibold"
-                      : ""
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))
-            ) : null}
+            {profileLoading
+              ? null
+              : navItems.length > 0
+              ? navItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    className={`px-5 py-4 text-[var(--color-text-dark)] no-underline font-medium text-base transition-all duration-200 border-b-3 border-transparent whitespace-nowrap h-16 flex items-center hover:bg-white/10 hover:text-[var(--color-text-dark)] ${
+                      router.pathname === item.path
+                        ? "bg-white/20 border-b-[var(--color-text-dark)] font-semibold"
+                        : ""
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))
+              : null}
           </div>
 
           {/* Fullscreen Toggle and User Profile */}
@@ -274,7 +274,9 @@ const Navbar = () => {
                         {profile?.nome || user?.name || "Usuário"}
                       </div>
                       <div className="text-gray-500">
-                        {profile?.email || user?.email || "sem-email@dominio.com"}
+                        {profile?.email ||
+                          user?.email ||
+                          "sem-email@dominio.com"}
                       </div>
                     </div>
 
@@ -400,22 +402,24 @@ const Navbar = () => {
 
             {/* Navigation Items */}
             <div className="flex flex-col py-4">
-              {profileLoading ? null : navItems.length > 0 ? (
-                navItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    className={`px-6 py-4 text-[var(--color-text-dark)] no-underline font-medium text-base transition-all duration-200 ${
-                      router.pathname === item.path
-                        ? "bg-white/20 font-semibold border-r-4 border-white"
-                        : "hover:bg-white/10"
-                    }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                ))
-              ) : null}
+              {profileLoading
+                ? null
+                : navItems.length > 0
+                ? navItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      className={`px-6 py-4 text-[var(--color-text-dark)] no-underline font-medium text-base transition-all duration-200 ${
+                        router.pathname === item.path
+                          ? "bg-white/20 font-semibold border-r-4 border-white"
+                          : "hover:bg-white/10"
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ))
+                : null}
             </div>
 
             {/* User Section */}
