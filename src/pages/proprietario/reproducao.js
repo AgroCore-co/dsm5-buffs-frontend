@@ -78,20 +78,24 @@ export default function Reproducao() {
           setLoadingBufalos(false);
           return;
         }
-        // Busca até 100 búfalos ativos da propriedade
-        const res = await bufaloService.listarBufalosPorPropriedade(
+        // Busca até 100 touros ativos
+        const resMacho = await bufaloService.filtrarBufalosPorSexoStatusPropriedade(
+          "M",
           propriedadeId,
+          true,
           1,
           100
         );
-        const bufalos = Array.isArray(res?.data) ? res.data : [];
-        // Garante que id_bufalo existe e status é true
-        setMales(
-          bufalos.filter((b) => b.sexo === "M" && b.status && b.id_bufalo)
+        // Busca até 100 matrizes ativas
+        const resFemea = await bufaloService.filtrarBufalosPorSexoStatusPropriedade(
+          "F",
+          propriedadeId,
+          true,
+          1,
+          100
         );
-        setFemales(
-          bufalos.filter((b) => b.sexo === "F" && b.status && b.id_bufalo)
-        );
+        setMales(Array.isArray(resMacho?.data) ? resMacho.data : []);
+        setFemales(Array.isArray(resFemea?.data) ? resFemea.data : []);
       } catch (err) {
         setMales([]);
         setFemales([]);
@@ -325,7 +329,7 @@ export default function Reproducao() {
                 <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
                   Taxa de Concepção
                 </h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                <span className="text-xs font-medium text-[var(--color-primary-dark]">
                   Média 12m
                 </span>
               </div>
