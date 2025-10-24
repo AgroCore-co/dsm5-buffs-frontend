@@ -360,7 +360,7 @@ export default function Rebanho() {
 													setBufaloSelecionado(b.id_bufalo);
 													setModalOpen(true);
 												}}
-												className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium"
+												className="bg-[#FFCF78] hover:bg-[#F2B84D] text-black px-3 py-1 rounded-lg text-sm font-medium"
 											>
 												Prontuário
 											</button>
