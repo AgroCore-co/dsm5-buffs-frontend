@@ -353,13 +353,15 @@ export default function PropriedadePage() {
                   </div>
                   <div className="mt-3 flex gap-2">
                     <button
-                      className="bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-600 transition-colors"
+                      // className="bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-600 transition-colors"
+                      className="bg-[#FCA90F] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
+
                       onClick={() => { setEditLoteId(lote.id_lote); setModalEditLoteOpen(true); }}
                     >
                       Editar
                     </button>
                     <button
-                      className="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700 transition-colors"
+                      className="bg-[#CE7D0A]  text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#FFCF78] transition-colors"
                       onClick={() => setDeleteLoteId(lote.id_lote)}
                     >
                       Excluir
@@ -417,13 +419,13 @@ export default function PropriedadePage() {
                       <td className="p-3 text-center">
                         <div className="inline-flex items-center gap-2">
                           <button
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-600 transition-colors"
+                            className="bg-[#FCA90F] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
                             onClick={() => openEditGrupoModal(grupo)}
                           >
                             Editar
                           </button>
                           <button
-                            className="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700 transition-colors"
+                            className="bg-[#CE7D0A] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
                             onClick={() => openDeleteGrupoModal(gid)}
                           >
                             Excluir
@@ -522,13 +524,13 @@ export default function PropriedadePage() {
                         </div>
                         <div className="mt-3 flex gap-2">
                           <button
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-600 transition-colors"
+                            className="bg-[#FCA90F] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
                             onClick={() => { setEditLoteId(lote.id_lote); setModalEditLoteOpen(true); setModalOpen(false); }}
                           >
                             Editar
                           </button>
                           <button
-                            className="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700 transition-colors"
+                            className="bg-[#CE7D0A] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
                             onClick={() => { setDeleteLoteId(lote.id_lote); setModalOpen(false); }}
                           >
                             Excluir
@@ -1175,7 +1177,7 @@ export default function PropriedadePage() {
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-bold text-gray-800">Definições de Alimentação</h2>
             <button
-              className="bg-blue-500 text-white px-4 py-2 rounded font-bold hover:bg-blue-600 transition-colors"
+              className="bg-[#FFCF78] text-gray-800 px-4 py-2 rounded font-bold hover:bg-[#F2B84D] transition-colors"
               onClick={() => setModalDefOpen(true)}
             >
               Nova Definição
@@ -1201,13 +1203,13 @@ export default function PropriedadePage() {
                     <td className="p-3 text-left text-sm text-gray-600">{def.descricao}</td>
                     <td className="p-3 text-left flex gap-2">
                       <button
-                        className="bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-600 transition-colors"
+                        className="bg-[#FCA90F] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
                         onClick={() => openEditDefModal(def)}
                       >
                         Editar
                       </button>
                       <button
-                        className="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700 transition-colors"
+                        className="bg-[#CE7D0A]  text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#FFCF78] transition-colors"
                         onClick={() => openDeleteDefModal(def)}
                       >
                         Excluir
@@ -1246,6 +1248,7 @@ export default function PropriedadePage() {
                   <th className="p-3 text-left font-medium text-gray-800 text-base">Frequência/Dia</th>
                   <th className="p-3 text-left font-medium text-gray-800 text-base">Usuário</th>
                   <th className="p-3 text-left font-medium text-gray-800 text-base">Data</th>
+                  <th className="p-3 text-left font-medium text-gray-800 text-base">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -1260,13 +1263,13 @@ export default function PropriedadePage() {
                     <td className="p-3 text-left text-sm text-gray-600">{reg.dt_registro ? new Date(reg.dt_registro).toLocaleDateString() : '-'}</td>
                     <td className="p-3 text-left flex gap-2">
                       <button
-                        className="bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-600 transition-colors"
+                        className="bg-[#FCA90F] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
                         onClick={() => openEditRegistroModal(reg)}
                       >
                         Editar
                       </button>
                       <button
-                        className="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700 transition-colors"
+                        className="bg-[#CE7D0A]  text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#FFCF78] transition-colors"
                         onClick={() => openDeleteRegistroModal(reg)}
                       >
                         Excluir
