@@ -48,8 +48,83 @@ const editarBufalo = async (idBufalo, dadosAtualizados) => {
   return response.data;
 };
 
+/**
+ * Filtra búfalos por sexo, status e propriedade.
+ * GET /bufalos/filtro/sexo/{sexo}/propriedade/{id_propriedade}/status/{status}?page={page}&limit={limit}
+ *
+ * @param {string} sexo - Sexo do búfalo ("M" ou "F")
+ * @param {string} idPropriedade - ID da propriedade (UUID)
+ * @param {string|boolean} status - Status do búfalo (true ou false)
+ * @param {number} [page=1] - Número da página (inicia em 1)
+ * @param {number} [limit=10] - Itens por página (máximo 100)
+ * @returns {Promise<{ data: Array, meta: Object }>} Retorna o payload completo do endpoint
+ */
+const filtrarBufalosPorSexoStatusPropriedade = async (
+  sexo,
+  idPropriedade,
+  status,
+  page = 1,
+  limit = 10
+) => {
+  if (!sexo) throw new Error("Sexo do búfalo é obrigatório");
+  if (!idPropriedade) throw new Error("ID da propriedade é obrigatório");
+  if (typeof status === "undefined") throw new Error("Status do búfalo é obrigatório");
+
+  const safePage = Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+  let safeLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 10;
+  if (safeLimit > 100) safeLimit = 100;
+
+  const response = await get(
+    `/bufalos/filtro/sexo/${sexo}/propriedade/${idPropriedade}/status/${status}?page=${safePage}&limit=${safeLimit}`
+  );
+  return response.data;
+};
+
+/**
+ * Filtragem avançada de búfalos por múltiplos critérios.
+ * GET /bufalos/filtro/propriedade/{id_propriedade}/avancado
+ *
+ * @param {Object} params - Parâmetros de filtro
+ * @param {string} params.idPropriedade - ID da propriedade (obrigatório)
+ * @param {string} [params.idRaca] - ID da raça (opcional)
+ * @param {string} [params.sexo] - Sexo do búfalo: "M" ou "F" (opcional)
+ * @param {string} [params.nivelMaturidade] - Maturidade: "B", "N", "V", "T" (opcional)
+ * @param {boolean} [params.status] - Status: true (ativo), false (inativo) (opcional)
+ * @param {string} [params.brinco] - Início do brinco (opcional)
+ * @param {number} [params.page=1] - Página (opcional)
+ * @param {number} [params.limit=10] - Itens por página (opcional)
+ * @returns {Promise<{ data: Array, meta: Object }>} Lista paginada de búfalos filtrados
+ */
+const filtrarBufalosAvancado = async ({
+  idPropriedade,
+  idRaca,
+  sexo,
+  nivelMaturidade,
+  status,
+  brinco,
+  page = 1,
+  limit = 10,
+}) => {
+  if (!idPropriedade) throw new Error("ID da propriedade é obrigatório");
+  const params = [];
+  if (idRaca) params.push(`id_raca=${idRaca}`);
+  if (sexo) params.push(`sexo=${sexo}`);
+  if (nivelMaturidade) params.push(`nivel_maturidade=${nivelMaturidade}`);
+  if (typeof status !== "undefined") params.push(`status=${status}`);
+  if (brinco) params.push(`brinco=${encodeURIComponent(brinco)}`);
+  if (page) params.push(`page=${page}`);
+  if (limit) params.push(`limit=${limit}`);
+  const queryString = params.length ? `?${params.join("&")}` : "";
+  const response = await get(
+    `/bufalos/filtro/propriedade/${idPropriedade}/avancado${queryString}`
+  );
+  return response.data;
+};
+
 export default {
   listarBufalosPorPropriedade,
   buscarBufaloPorId,
   editarBufalo,
+  filtrarBufalosPorSexoStatusPropriedade,
+  filtrarBufalosAvancado,
 };

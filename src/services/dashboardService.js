@@ -9,6 +9,17 @@ const dashboardService = {
       throw error;
     }
   },
+
+  async getLactacaoStatsByPropriedadeId(idPropriedade, ano) {
+    try {
+      const response = await apiClient.get(
+        `/dashboard/lactacao/${idPropriedade}?ano=${ano}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 export default dashboardService;
