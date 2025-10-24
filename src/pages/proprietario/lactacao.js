@@ -18,19 +18,24 @@ import {
   LabelList,
 } from "recharts";
 import dashboardService from "@/services/dashboardService";
+import cicloLactacaoService from "@/services/cicloLactacaoService";
+import { usePropriedade } from "@/contexts/propriedadeContext";
 
 export default function Lactacao() {
+  const { propriedadeId } = usePropriedade();
   const router = useRouter();
 
   // ==== estados locais ====
   const [viewMode, setViewMode] = React.useState("monthly"); // 'monthly' | 'yearly'
   const [lacPage, setLacPage] = React.useState(1); // paginação da tabela
   const [lactacaoStats, setLactacaoStats] = React.useState(null); // dados do endpoint
+  const [ciclosData, setCiclosData] = React.useState([]);
+  const [ciclosMeta, setCiclosMeta] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
 
   // Exemplo: pegar idPropriedade do router ou contexto
-  const idPropriedade = router.query.idPropriedade || "ID_EXEMPLO";
+  const idPropriedade = propriedadeId;
   const anoAtual = 2025; // ou use new Date().getFullYear()
 
   React.useEffect(() => {
@@ -38,6 +43,7 @@ export default function Lactacao() {
       setLoading(true);
       setError(null);
       try {
+        if (!idPropriedade) return;
         const data = await dashboardService.getLactacaoStatsByPropriedadeId(idPropriedade, anoAtual);
         setLactacaoStats(data);
       } catch (err) {
@@ -49,9 +55,27 @@ export default function Lactacao() {
     if (idPropriedade) fetchStats();
   }, [idPropriedade]);
 
+  React.useEffect(() => {
+    async function fetchCiclos() {
+      setLoading(true);
+      setError(null);
+      try {
+        if (!idPropriedade) return;
+        const res = await cicloLactacaoService.listarCiclosPorPropriedade(idPropriedade, lacPage, 10);
+        setCiclosData(res.data || []);
+        setCiclosMeta(res.meta || null);
+      } catch (err) {
+        setError("Erro ao buscar ciclos de lactação");
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (idPropriedade) fetchCiclos();
+  }, [idPropriedade, lacPage]);
+
   // ==== paginação da tabela removida ====
   // Exibe todos os ciclos de lactação sem paginação
-  const lactacoesPageData = lactacaoStats?.ciclos || [];
+  const lactacoesPageData = ciclosData;
 
   // (opcional) diário — se quiser usar em outro gráfico
   const dailyProductionData = [
@@ -318,43 +342,51 @@ export default function Lactacao() {
 
         {/* Tabela de Lactações (sem paginação) */}
         <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Controle Individual de Lactação</h2>
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-2xl font-bold text-gray-800">Controle Individual de Lactação</h2>
+              {/* Botão de ação, se necessário */}
+            </div>
             <p className="text-gray-600">
-              {loading ? "Carregando..." : error ? error : `Lista completa de búfalas em lactação com ${lactacoesPageData.length} animais ativos.`}
+              {loading ? "Carregando..." : error ? error : `Lista de ciclos de lactação com ${ciclosMeta?.total || 0} registros.`}
             </p>
           </div>
+
           <div className="overflow-x-auto w-full">
-            <table className="w-full border-collapse min-w-[650px] bg-white rounded-lg overflow-hidden shadow-sm">
+            <table className="w-full border-collapse min-w-[800px] bg-white rounded-lg overflow-hidden shadow-sm">
               <thead className="bg-[#f0f0f0]">
                 <tr>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Nome</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">ID</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">ID Bufala</th>
                   <th className="p-3 text-center font-medium text-gray-800 text-base">Parto</th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Dias em Lactação</th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Média Lactação</th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Total Lactação</th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Classificação</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Dias Padrão</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Secagem Real</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Status</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Observação</th>
                   <th className="p-3 text-center font-medium text-gray-800 text-base">Ações</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200">
                 {loading ? (
-                  <tr><td colSpan={7} className="p-6 text-center text-gray-500">Carregando...</td></tr>
-                ) : lactacoesPageData.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-6 text-center text-gray-500">Nenhum registro encontrado.</td>
+                    <td colSpan="8" className="text-center p-6 text-gray-500">Carregando ciclos...</td>
+                  </tr>
+                ) : ciclosData.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="text-center p-6 text-gray-500">Nenhum ciclo encontrado</td>
                   </tr>
                 ) : (
-                  lactacoesPageData.map((ciclo, idx) => (
-                    <tr key={ciclo.id_ciclo_lactacao} className={idx % 2 === 0 ? "bg-[#fafafa]" : "bg-white"}>
-                      <td className="p-3 text-center text-gray-800 text-base font-medium">{ciclo.nome_bufala}</td>
-                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.numero_parto}</td>
-                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.dias_em_lactacao}</td>
-                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.media_lactacao} L</td>
-                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.lactacao_total} L</td>
-                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.classificacao}</td>
-                      <td className="p-3 text-center text-base">
-                        <button className="bg-[#FFCF78] border-none text-gray-800 py-2 px-3.5 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#F2B84D] transition-colors">
+                  ciclosData.map((ciclo, idx) => (
+                    <tr key={ciclo.id_ciclo_lactacao} className={idx % 2 === 0 ? "bg-white" : "bg-[#fafafa]"}>
+                      <td className="p-3 text-center text-gray-800 text-base font-medium">{ciclo.id_ciclo_lactacao}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.id_bufala}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.dt_parto ? new Date(ciclo.dt_parto).toLocaleDateString() : '-'}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.padrao_dias}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.dt_secagem_real ? new Date(ciclo.dt_secagem_real).toLocaleDateString() : '-'}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.status}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.observacao}</td>
+                      <td className="p-3 text-center">
+                        <button className="bg-[#FFCF78] hover:bg-[#F2B84D] text-black px-3 py-1 rounded-lg text-sm font-medium">
                           Ver detalhes
                         </button>
                       </td>
@@ -364,6 +396,37 @@ export default function Lactacao() {
               </tbody>
             </table>
           </div>
+
+          {/* Paginação igual tela de rebanho */}
+          {ciclosMeta && ciclosMeta.totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-2 mt-4">
+              <button
+                onClick={() => setLacPage((p) => Math.max(1, p - 1))}
+                disabled={ciclosMeta.page <= 1}
+                className={`px-4 py-2 rounded-lg font-medium ${ciclosMeta.page <= 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
+              >
+                Anterior
+              </button>
+
+              {Array.from({ length: ciclosMeta.totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setLacPage(p)}
+                  className={`w-10 h-10 rounded-lg font-medium ${ciclosMeta.page === p ? "bg-[#CE7D0A] text-white" : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"}`}
+                >
+                  {p}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setLacPage((p) => Math.min(ciclosMeta.totalPages, p + 1))}
+                disabled={ciclosMeta.page >= ciclosMeta.totalPages}
+                className={`px-4 py-2 rounded-lg font-medium ${ciclosMeta.page >= ciclosMeta.totalPages ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
+              >
+                Próximo
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
