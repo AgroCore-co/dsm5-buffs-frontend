@@ -17,6 +17,7 @@ import {
   ReferenceLine,
   LabelList,
 } from "recharts";
+import dashboardService from "@/services/dashboardService";
 
 export default function Lactacao() {
   const router = useRouter();
@@ -24,31 +25,33 @@ export default function Lactacao() {
   // ==== estados locais ====
   const [viewMode, setViewMode] = React.useState("monthly"); // 'monthly' | 'yearly'
   const [lacPage, setLacPage] = React.useState(1); // paginação da tabela
+  const [lactacaoStats, setLactacaoStats] = React.useState(null); // dados do endpoint
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
-  // ==== dados mockados (produção/cabeçalho) ====
-  const productionDataMonthly = [
-    { name: "Jan", producao: 8500 },
-    { name: "Fev", producao: 9200 },
-    { name: "Mar", producao: 8800 },
-    { name: "Abr", producao: 9500 },
-    { name: "Mai", producao: 9800 },
-    { name: "Jun", producao: 10200 },
-    { name: "Jul", producao: 9900 },
-    { name: "Ago", producao: 10500 },
-    { name: "Set", producao: 10800 },
-    { name: "Out", producao: 11200 },
-    { name: "Nov", producao: 11500 },
-    { name: "Dez", producao: 11800 },
-  ];
-  const productionDataYearly = [
-    { name: "2020", producao: 68000 },
-    { name: "2021", producao: 78200 },
-    { name: "2022", producao: 88200 },
-    { name: "2023", producao: 99700 },
-    { name: "2024", producao: 112000 },
-  ];
-  const productionData =
-    viewMode === "monthly" ? productionDataMonthly : productionDataYearly;
+  // Exemplo: pegar idPropriedade do router ou contexto
+  const idPropriedade = router.query.idPropriedade || "ID_EXEMPLO";
+  const anoAtual = 2025; // ou use new Date().getFullYear()
+
+  React.useEffect(() => {
+    async function fetchStats() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await dashboardService.getLactacaoStatsByPropriedadeId(idPropriedade, anoAtual);
+        setLactacaoStats(data);
+      } catch (err) {
+        setError("Erro ao buscar dados de lactação");
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (idPropriedade) fetchStats();
+  }, [idPropriedade]);
+
+  // ==== paginação da tabela removida ====
+  // Exibe todos os ciclos de lactação sem paginação
+  const lactacoesPageData = lactacaoStats?.ciclos || [];
 
   // (opcional) diário — se quiser usar em outro gráfico
   const dailyProductionData = [
@@ -84,19 +87,6 @@ export default function Lactacao() {
     { day: 30, producao: 12.5 },
   ];
 
-  // ==== tabela de lactações (mock) ====
-  const lactacoesMock = [
-    { tag: "BUF001", mediaDiaria: 12.5, mediaSemanal: 87.5, ultimaOrdenha: "15/12/2024", variacao: -15.2, status: "Em observação" },
-    { tag: "BUF002", mediaDiaria: 13.8, mediaSemanal: 96.6, ultimaOrdenha: "15/12/2024", variacao: 5.2, status: "Ativa" },
-    { tag: "BUF003", mediaDiaria: 11.2, mediaSemanal: 78.4, ultimaOrdenha: "14/12/2024", variacao: -2.1, status: "Ativa" },
-    { tag: "BUF004", mediaDiaria: 14.1, mediaSemanal: 98.7, ultimaOrdenha: "15/12/2024", variacao: 8.7, status: "Ativa" },
-    { tag: "BUF005", mediaDiaria: 12.9, mediaSemanal: 90.3, ultimaOrdenha: "13/12/2024", variacao: 3.4, status: "Ativa" },
-    { tag: "BUF006", mediaDiaria: 13.5, mediaSemanal: 94.5, ultimaOrdenha: "15/12/2024", variacao: 6.8, status: "Ativa" },
-    { tag: "BUF007", mediaDiaria: 11.8, mediaSemanal: 82.6, ultimaOrdenha: "14/12/2024", variacao: -1.5, status: "Ativa" },
-    { tag: "BUF008", mediaDiaria: 14.3, mediaSemanal: 100.1, ultimaOrdenha: "15/12/2024", variacao: 12.1, status: "Ativa" },
-    // adicione mais se quiser testar paginação
-  ];
-
   // ==== helpers de UI ====
   const getStatusColor = (status) => {
     switch (status) {
@@ -111,14 +101,6 @@ export default function Lactacao() {
     }
   };
   const formatStatus = (status) => status || "Desconhecido";
-
-  // ==== paginação da tabela ====
-  const LAC_PER_PAGE = 10;
-  const lacTotal = lactacoesMock.length;
-  const lacTotalPages = Math.max(1, Math.ceil(lacTotal / LAC_PER_PAGE));
-  const lacStartIdx = (lacPage - 1) * LAC_PER_PAGE;
-  const lacEndIdx = Math.min(lacStartIdx + LAC_PER_PAGE, lacTotal);
-  const lactacoesPageData = lactacoesMock.slice(lacStartIdx, lacEndIdx);
 
   return (
     <>
@@ -334,91 +316,43 @@ export default function Lactacao() {
           })()}
         </div>
 
-        {/* Tabela de Lactações (com paginação) */}
+        {/* Tabela de Lactações (sem paginação) */}
         <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
           <div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Controle Individual de Lactação</h2>
-            <p className="text-gray-600">Lista completa de búfalas em lactação com {lactacoesMock.length} animais ativos.</p>
+            <p className="text-gray-600">
+              {loading ? "Carregando..." : error ? error : `Lista completa de búfalas em lactação com ${lactacoesPageData.length} animais ativos.`}
+            </p>
           </div>
-
-          {/* Controles de página (topo) */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">
-              Mostrando {lacTotal === 0 ? 0 : lacStartIdx + 1}–{lacEndIdx} de {lacTotal}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setLacPage((p) => Math.max(1, p - 1))}
-                disabled={lacPage === 1}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  lacPage === 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                }`}
-              >
-                Anterior
-              </button>
-              {Array.from({ length: lacTotalPages }, (_, i) => i + 1)
-                .slice(Math.max(0, lacPage - 4), Math.max(0, lacPage - 4) + 7)
-                .map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setLacPage(p)}
-                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                      p === lacPage ? "bg-[#CE7D0A] text-white" : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-              <button
-                onClick={() => setLacPage((p) => Math.min(lacTotalPages, p + 1))}
-                disabled={lacPage === lacTotalPages}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  lacPage === lacTotalPages ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                }`}
-              >
-                Próximo
-              </button>
-            </div>
-          </div>
-
           <div className="overflow-x-auto w-full">
             <table className="w-full border-collapse min-w-[650px] bg-white rounded-lg overflow-hidden shadow-sm">
               <thead className="bg-[#f0f0f0]">
                 <tr>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">TAG</th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Média Diária (7d)</th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Média Semanal</th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Última Ordenha</th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Variação</th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">Status</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Nome</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Parto</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Dias em Lactação</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Média Lactação</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Total Lactação</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Classificação</th>
                   <th className="p-3 text-center font-medium text-gray-800 text-base">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {lactacoesPageData.length === 0 ? (
+                {loading ? (
+                  <tr><td colSpan={7} className="p-6 text-center text-gray-500">Carregando...</td></tr>
+                ) : lactacoesPageData.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-6 text-center text-gray-500">
-                      Nenhum registro encontrado.
-                    </td>
+                    <td colSpan={7} className="p-6 text-center text-gray-500">Nenhum registro encontrado.</td>
                   </tr>
                 ) : (
-                  lactacoesPageData.map((lactacao, idx) => (
-                    <tr key={lactacao.tag} className={idx % 2 === 0 ? "bg-[#fafafa]" : "bg-white"}>
-                      <td className="p-3 text-center text-gray-800 text-base font-medium">{lactacao.tag}</td>
-                      <td className="p-3 text-center text-gray-800 text-base">{lactacao.mediaDiaria} L</td>
-                      <td className="p-3 text-center text-gray-800 text-base">{lactacao.mediaSemanal} L</td>
-                      <td className="p-3 text-center text-gray-800 text-base">{lactacao.ultimaOrdenha}</td>
-                      <td className="p-3 text-center text-gray-800 text-base">
-                        <span className={lactacao.variacao >= 0 ? "text-green-600" : "text-red-600"}>
-                          {lactacao.variacao >= 0 ? "+" : ""}
-                          {lactacao.variacao}%
-                        </span>
-                      </td>
-                      <td className="p-3 text-center text-gray-800 text-base">
-                        <span className={`px-2.5 py-1.5 rounded-full text-sm font-bold inline-block w-28 ${getStatusColor(lactacao.status)}`}>
-                          {formatStatus(lactacao.status)}
-                        </span>
-                      </td>
+                  lactacoesPageData.map((ciclo, idx) => (
+                    <tr key={ciclo.id_ciclo_lactacao} className={idx % 2 === 0 ? "bg-[#fafafa]" : "bg-white"}>
+                      <td className="p-3 text-center text-gray-800 text-base font-medium">{ciclo.nome_bufala}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.numero_parto}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.dias_em_lactacao}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.media_lactacao} L</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.lactacao_total} L</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.classificacao}</td>
                       <td className="p-3 text-center text-base">
                         <button className="bg-[#FFCF78] border-none text-gray-800 py-2 px-3.5 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#F2B84D] transition-colors">
                           Ver detalhes
@@ -429,46 +363,6 @@ export default function Lactacao() {
                 )}
               </tbody>
             </table>
-          </div>
-
-          {/* Controles de página (rodapé) */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">
-              Mostrando {lacTotal === 0 ? 0 : lacStartIdx + 1}–{lacEndIdx} de {lacTotal}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setLacPage((p) => Math.max(1, p - 1))}
-                disabled={lacPage === 1}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  lacPage === 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                }`}
-              >
-                Anterior
-              </button>
-              {Array.from({ length: lacTotalPages }, (_, i) => i + 1)
-                .slice(Math.max(0, lacPage - 4), Math.max(0, lacPage - 4) + 7)
-                .map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setLacPage(p)}
-                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                      p === lacPage ? "bg-[#CE7D0A] text-white" : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-              <button
-                onClick={() => setLacPage((p) => Math.min(lacTotalPages, p + 1))}
-                disabled={lacPage === lacTotalPages}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  lacPage === lacTotalPages ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                }`}
-              >
-                Próximo
-              </button>
-            </div>
           </div>
         </div>
       </div>
