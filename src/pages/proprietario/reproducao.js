@@ -104,7 +104,6 @@ export default function Reproducao() {
       }
     };
     fetchBufalos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propriedadeId]);
 
   useEffect(() => {

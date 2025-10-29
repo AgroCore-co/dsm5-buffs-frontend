@@ -121,10 +121,12 @@ const filtrarBufalosAvancado = async ({
   return response.data;
 };
 
-export default {
+const bufaloService = {
   listarBufalosPorPropriedade,
   buscarBufaloPorId,
   editarBufalo,
   filtrarBufalosPorSexoStatusPropriedade,
   filtrarBufalosAvancado,
 };
+
+export default bufaloService;

@@ -18,6 +18,8 @@ const listarDadosSanitariosPorBufalo = async (idBufalo, page = 1, limit = 10) =>
   return response.data;
 };
 
-export default {
+const dadosSanitariosService = {
   listarDadosSanitariosPorBufalo,
 };
+
+export default dadosSanitariosService;

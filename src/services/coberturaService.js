@@ -18,6 +18,8 @@ const listarCoberturasPorPropriedade = async (idPropriedade, page = 1, limit = 1
   return response.data;
 };
 
-export default {
+const coberturaService = {
   listarCoberturasPorPropriedade,
 };
+
+export default coberturaService;
