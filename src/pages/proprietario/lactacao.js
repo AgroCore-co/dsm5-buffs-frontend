@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { usePropriedade } from "@/contexts/propriedadeContext";
@@ -189,45 +189,68 @@ export default function Lactacao() {
 
 
   // ==== MOCK: ranking bufalas ====
-  const lactacoesPageData = [
-    {
-      id_ciclo_lactacao: "1",
-      id_bufala: "A-031",
-      nome_bufala: "Hera",
-      numero_parto: 1,
-      dt_parto: "2024-09-01",
-      dt_secagem_real: "2025-07-03",
-      dias_em_lactacao: 305,
-      media_lactacao: 7.62,
-      lactacao_total: 182.9,
-      classificacao: "Ótima",
-    },
-    {
-      id_ciclo_lactacao: "2",
-      id_bufala: "A-032",
-      nome_bufala: "Atena",
-      numero_parto: 1,
-      dt_parto: "2024-09-05",
-      dt_secagem_real: "2025-07-07",
-      dias_em_lactacao: 305,
-      media_lactacao: 7.54,
-      lactacao_total: 180.9,
-      classificacao: "Ótima",
-    },
-    {
-      id_ciclo_lactacao: "3",
-      id_bufala: "A-033",
-      nome_bufala: "Artemis",
-      numero_parto: 1,
-      dt_parto: "2024-09-30",
-      dt_secagem_real: "2025-08-01",
-      dias_em_lactacao: 305,
-      media_lactacao: 5.52,
-      lactacao_total: 132.6,
-      classificacao: "Boa",
-    },
-  ];
-  const rankingBufalas = [...lactacoesPageData].sort((a, b) => b.media_lactacao - a.media_lactacao);
+  // Dados reais de lactação vindo do dashboard
+  const [lactacaoStats, setLactacaoStats] = useState(null);
+  const [lactacaoLoading, setLactacaoLoading] = useState(false);
+  const [lactacaoError, setLactacaoError] = useState(null);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  // Paginação do ranking (comportamento semelhante a src/pages/proprietario/rebanho.js)
+  const [lactacaoPage, setLactacaoPage] = useState(1);
+  const [lactacaoLimit, setLactacaoLimit] = useState(10);
+
+  // Busca dados do dashboard para o ano selecionado
+  const fetchLactacaoStats = async (ano = selectedYear) => {
+    if (!propriedadeId) return;
+    setLactacaoLoading(true);
+    setLactacaoError(null);
+    try {
+      const data = await dashboardService.getLactacaoStatsByPropriedadeId(propriedadeId, ano);
+      setLactacaoStats(data);
+    } catch (err) {
+      setLactacaoError('Erro ao carregar estatísticas de lactação.');
+      setLactacaoStats(null);
+    } finally {
+      setLactacaoLoading(false);
+    }
+  };
+
+  // Buscar quando propriedadeId ou ano mudarem
+  useEffect(() => {
+    if (propriedadeId) fetchLactacaoStats(selectedYear);
+  }, [propriedadeId, selectedYear]);
+
+  // Ranking derivado dos ciclos retornados pelo dashboard
+  const rankingBufalas = useMemo(() => {
+    if (!lactacaoStats) return [];
+    let items = [];
+    if (Array.isArray(lactacaoStats.ciclos)) items = lactacaoStats.ciclos;
+    else if (Array.isArray(lactacaoStats.data)) items = lactacaoStats.data;
+    else if (Array.isArray(lactacaoStats.lactacoes)) items = lactacaoStats.lactacoes;
+    // fallback: if lactacaoStats itself is array
+    else if (Array.isArray(lactacaoStats)) items = lactacaoStats;
+
+    // Normalize numbers for sorting
+    const normalized = items.map((it) => ({
+      ...it,
+      media_lactacao: Number(it.media_lactacao ?? it.media ?? it.media_lact ?? 0),
+    }));
+    return normalized.sort((a, b) => (b.media_lactacao || 0) - (a.media_lactacao || 0));
+  }, [lactacaoStats]);
+
+  // Paginação client-side: derive página atual e meta a partir do ranking completo
+  const lactacaoMeta = useMemo(() => {
+    const total = rankingBufalas.length;
+    const totalPages = Math.max(1, Math.ceil(total / lactacaoLimit));
+    // ensure current page within bounds
+    const page = Math.min(Math.max(1, lactacaoPage), totalPages);
+    return { page, totalPages, total };
+  }, [rankingBufalas.length, lactacaoLimit, lactacaoPage]);
+
+  const paginatedRanking = useMemo(() => {
+    const start = (lactacaoMeta.page - 1) * lactacaoLimit;
+    return rankingBufalas.slice(start, start + lactacaoLimit);
+  }, [rankingBufalas, lactacaoMeta, lactacaoLimit]);
 
   return (
     <>
@@ -330,8 +353,19 @@ export default function Lactacao() {
 
         {/* Tabela ranking das melhores búfalas */}
         <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[#e0e0e0] shadow-sm">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Ranking de Búfalas em Lactação</h2>
-          <p className="text-gray-600">Lista completa de búfalas em lactação com {rankingBufalas.length} animais.</p>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Búfalas em Lactação</h2>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Ano:</label>
+              <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} className="border rounded px-2 py-1 text-sm">
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const y = currentYear - i;
+                  return <option key={y} value={y}>{y}</option>;
+                })}
+              </select>
+            </div>
+          </div>
+          <p className="text-gray-600">{lactacaoLoading ? 'Carregando...' : lactacaoError ? lactacaoError : `Lista completa de búfalas em lactação com ${lactacaoMeta.total} animais.`}</p>
           <div className="overflow-x-auto w-full">
             <table className="w-full border-collapse min-w-[650px] bg-white rounded-lg overflow-hidden shadow-sm">
               <thead className="bg-[#f0f0f0]">
@@ -348,8 +382,9 @@ export default function Lactacao() {
                 </tr>
               </thead>
               <tbody>
-                {rankingBufalas.map((ciclo, idx) => (
-                  <tr key={ciclo.id_ciclo_lactacao} className={idx % 2 === 0 ? "bg-[#fafafa]" : "bg-white"}>
+                {paginatedRanking.map((ciclo, idx) => (
+                  /* compute a stable key: prefer id_ciclo_lactacao, fallback to id_bufala + index */
+                  <tr key={ciclo.id_ciclo_lactacao ?? `${ciclo.id_bufala ?? 'buf'}-${(lactacaoMeta.page - 1) * lactacaoLimit + idx}`} className={idx % 2 === 0 ? "bg-[#fafafa]" : "bg-white"}>
                     <td className="p-3 text-center text-gray-800 text-base font-medium">{ciclo.nome_bufala}</td>
                     <td className="p-3 text-center text-gray-800 text-base">{ciclo.numero_parto}</td>
                     <td className="p-3 text-center text-gray-800 text-base">{ciclo.dt_parto}</td>
@@ -370,8 +405,38 @@ export default function Lactacao() {
               </tbody>
             </table>
           </div>
-        </div>
+          {/* Paginação similar à tela Rebanho */}
+          {lactacaoMeta && lactacaoMeta.totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-2 mt-4">
+              <button
+                onClick={() => setLactacaoPage((p) => Math.max(1, p - 1))}
+                disabled={lactacaoMeta.page <= 1}
+                className={`px-4 py-2 rounded-lg font-medium ${lactacaoMeta.page <= 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
+              >
+                Anterior
+              </button>
+
+              {Array.from({ length: lactacaoMeta.totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={`lapage-${p}`}
+                  onClick={() => setLactacaoPage(p)}
+                  className={`w-10 h-10 rounded-lg font-medium ${lactacaoMeta.page === p ? "bg-[#CE7D0A] text-white" : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"}`}
+                >
+                  {p}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setLactacaoPage((p) => Math.min(lactacaoMeta.totalPages, p + 1))}
+                disabled={lactacaoMeta.page >= lactacaoMeta.totalPages}
+                className={`px-4 py-2 rounded-lg font-medium ${lactacaoMeta.page >= lactacaoMeta.totalPages ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
+              >
+                Próximo
+              </button>
+            </div>
+          )}
       </div>
+    </div>
     </>
   );
 }
