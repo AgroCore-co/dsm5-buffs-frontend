@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import dashboardService from "@/services/dashboardService";
+import alertaService from "@/services/alertaService";
 
 export default function Lactacao() {
   // obter id da propriedade via context
@@ -21,6 +22,102 @@ export default function Lactacao() {
   const [bufalasLactando, setBufalasLactando] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [alertasLactacao, setAlertasLactacao] = useState([]);
+  const [alertasLoading, setAlertasLoading] = useState(false);
+  const [alertasError, setAlertasError] = useState(null);
+  const [alertasSummary, setAlertasSummary] = useState(null); // quando backend retorna apenas o resumo da verificação
+  // paginação
+  const [alertasPage, setAlertasPage] = useState(1);
+  const [alertasLimit, setAlertasLimit] = useState(5);
+  const [alertasTotal, setAlertasTotal] = useState(null); // total vindo do servidor (se houver)
+
+  // Função para buscar alertas de produção
+  const fetchAlertasProducao = async (page = alertasPage, limit = alertasLimit) => {
+    if (!propriedadeId) return;
+    setAlertasLoading(true);
+    setAlertasError(null);
+    try {
+      const data = await alertaService.listarAlertasPorPropriedade(propriedadeId, "PRODUCAO", page, limit);
+
+      // Se o backend retornou apenas o resumo da verificação (POST /alertas/verificar)
+      if (data && typeof data.success === 'boolean' && (data.alertas_criados !== undefined || data.nichos_verificados !== undefined)) {
+        setAlertasSummary(data);
+        setAlertasLactacao([]);
+        setAlertasTotal(0);
+        setAlertasLoading(false);
+        return;
+      }
+
+      // Otherwise limpa summary e processa listas
+      setAlertasSummary(null);
+
+      // Se o backend devolve um objeto com { data, meta }
+      if (data && data.data && Array.isArray(data.data)) {
+        setAlertasLactacao(sortAndNormalizeAlertas(data.data));
+        if (data.meta && typeof data.meta.total === 'number') setAlertasTotal(data.meta.total);
+        else setAlertasTotal(null);
+      } else if (Array.isArray(data)) {
+        // Recebeu array direto (backend sem paginação) -> armazenar e paginar client-side
+        setAlertasLactacao(sortAndNormalizeAlertas(data));
+        setAlertasTotal(data.length);
+      } else if (data && Array.isArray(data.alertas)) {
+        setAlertasLactacao(sortAndNormalizeAlertas(data.alertas));
+        setAlertasTotal(Array.isArray(data.alertas) ? data.alertas.length : null);
+      } else {
+        setAlertasLactacao([]);
+        setAlertasTotal(0);
+      }
+    } catch (err) {
+      setAlertasError("Não foi possível carregar alertas de produção.");
+      setAlertasLactacao([]);
+      setAlertasTotal(0);
+    } finally {
+      setAlertasLoading(false);
+    }
+  };
+
+  // ordena por data decrescente (se houver) e normaliza campos
+  const sortAndNormalizeAlertas = (arr) => {
+    const normalized = arr.map((a) => ({
+      tipo: a.tipo || a.titulo || a.level || null,
+      mensagem: a.mensagem || a.descricao || a.texto || a.message || '',
+      data: getAlertDate(a),
+      raw: a,
+    }));
+    normalized.sort((x, y) => {
+      if (x.data && y.data) return new Date(y.data) - new Date(x.data);
+      if (x.data) return -1;
+      if (y.data) return 1;
+      return 0;
+    });
+    return normalized;
+  };
+
+  const getAlertDate = (a) => {
+    if (!a) return null;
+    const candidates = ['created_at','createdAt','dt_registro','data','dt','timestamp','data_alerta'];
+    for (const k of candidates) {
+      if (a[k]) return a[k];
+    }
+    // try nested
+    if (a.raw && a.raw.data) return a.raw.data;
+    return null;
+  };
+
+  // Dispara verificação/geração de alertas apenas para produção e recarrega a lista
+  const verificarAlertasProducao = async () => {
+    if (!propriedadeId) return;
+    setAlertasLoading(true);
+    setAlertasError(null);
+    try {
+      await alertaService.verificarAlertasPorPropriedade(propriedadeId, "PRODUCAO");
+      await fetchAlertasProducao();
+    } catch (err) {
+      setAlertasError("Erro ao verificar alertas de produção.");
+    } finally {
+      setAlertasLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (propriedadeId) {
@@ -34,8 +131,18 @@ export default function Lactacao() {
           setError("Erro ao carregar búfalas lactando.");
           setLoading(false);
         });
+      // Buscar alertas de produção ao carregar a página (primeira página)
+      setAlertasPage(1);
+      fetchAlertasProducao(1, alertasLimit);
     }
   }, [propriedadeId]);
+
+  // Recarrega quando página ou limite mudarem
+  useEffect(() => {
+    if (!propriedadeId) return;
+    fetchAlertasProducao(alertasPage, alertasLimit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alertasPage, alertasLimit]);
 
   // Corrigir erro: definir totalBufalasLactando a partir do estado
   const totalBufalasLactando = bufalasLactando ?? 0;
@@ -50,7 +157,7 @@ export default function Lactacao() {
   const variacaoMesColor = variacaoMes >= 0 ? "text-emerald-700" : "text-red-700";
 
   // ==== MOCK: gráfico mês a mês ====
-  const graficoProducaoMes = [
+  const graficoProducaoMes = React.useMemo(() => [
     { mes: "Jan", litros: 3200 },
     { mes: "Fev", litros: 3100 },
     { mes: "Mar", litros: 3500 },
@@ -63,13 +170,23 @@ export default function Lactacao() {
     { mes: "Out", litros: 4150 },
     { mes: "Nov", litros: 4300 },
     { mes: "Dez", litros: 4400 },
-  ];
+  ], []);
 
-  // ==== MOCK: painel de alertas ====
-  const alertasLactacao = [
-    { tipo: "Baixa produção", mensagem: "Búfala Hera está 20% abaixo da média do grupo." },
-    { tipo: "Alta produção", mensagem: "Búfala Atena está 15% acima da média do grupo." },
-  ];
+  // Memoized chart component to avoid re-render when parent state (like alertas pagination) changes
+  const ProductionChart = React.useMemo(() => React.memo(function ProductionChartInner({ data }) {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="mes" />
+          <YAxis />
+          <Tooltip formatter={(v) => [`${v} L`, "Litros"]} />
+          <Line type="monotone" dataKey="litros" stroke="#34D399" strokeWidth={3} dot={{ r: 5 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }), []);
+
 
   // ==== MOCK: ranking bufalas ====
   const lactacoesPageData = [
@@ -132,7 +249,7 @@ export default function Lactacao() {
               ) : (
                 <span className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">{totalBufalasLactando}</span>
               )}
-            </div>
+            </div>  
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0] flex flex-col gap-1">
               <span className="text-sm font-semibold text-[var(--color-text-secondary)]">Leite produzido (mês atual)</span>
               <span className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">{litrosMesAtual} L</span>
@@ -149,28 +266,64 @@ export default function Lactacao() {
         <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="col-span-2 bg-white rounded-xl p-5 box-border border border-[#e0e0e0] shadow-sm">
             <h2 className="text-xl font-bold text-gray-800 mb-2">Produção mês a mês (2025)</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={graficoProducaoMes} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="mes" />
-                <YAxis />
-                <Tooltip formatter={(v) => [`${v} L`, "Litros"]} />
-                <Line type="monotone" dataKey="litros" stroke="#34D399" strokeWidth={3} dot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {/* Memoized chart: won't re-render when alertas pagination changes */}
+            <ProductionChart data={graficoProducaoMes} />
           </div>
           <div className="bg-white rounded-xl p-5 box-border border border-[#e0e0e0] shadow-sm flex flex-col gap-3">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Alertas de Lactação</h2>
-            {alertasLactacao.length === 0 ? (
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Alertas de Lactação</h2>
+              <div className="flex items-center gap-2">
+                <button onClick={verificarAlertasProducao} className="text-sm bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600">Verificar produção</button>
+              </div>
+            </div>
+
+            {alertasLoading ? (
+              <div className="text-gray-500 text-sm">Carregando alertas...</div>
+            ) : alertasError ? (
+              <div className="text-red-500 text-sm">{alertasError}</div>
+            ) : alertasSummary ? (
+              // Quando backend retorna apenas o resumo da verificação
+              <div className="text-sm text-gray-700">
+                <div className="font-semibold">{alertasSummary.message}</div>
+                <div className="mt-2">Propriedade: {alertasSummary.propriedade}</div>
+                <div>Nichos verificados: {Array.isArray(alertasSummary.nichos_verificados) ? alertasSummary.nichos_verificados.join(', ') : (alertasSummary.nichos_verificados || '')}</div>
+                <div>Alertas criados: {alertasSummary.alertas_criados ?? 0}</div>
+                {alertasSummary.detalhes && Object.keys(alertasSummary.detalhes).length > 0 && (
+                  <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-x-auto">{JSON.stringify(alertasSummary.detalhes, null, 2)}</pre>
+                )}
+              </div>
+            ) : alertasLactacao.length === 0 ? (
               <div className="text-gray-500 text-sm">Nenhum alerta no momento.</div>
             ) : (
-              <ul className="space-y-2">
-                {alertasLactacao.map((a, i) => (
-                  <li key={i} className="border-l-4 pl-3 py-2 text-sm" style={{ borderColor: a.tipo === "Baixa produção" ? "#F87171" : "#34D399" }}>
-                    <span className="font-semibold">{a.tipo}:</span> {a.mensagem}
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="space-y-2">
+                  {/** Se backend devolveu paginação real, alertasLactacao já contém apenas a página atual. Caso contrário, usamos slice client-side */}
+                  {(Array.isArray(alertasLactacao) ? alertasLactacao : []).map((a, i) => (
+                    <li key={i} className="border-l-4 pl-3 py-2 text-sm" style={{ borderColor: a.tipo && String(a.tipo).toLowerCase().includes("baixa") ? "#F87171" : "#34D399" }}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-semibold">{a.tipo || 'Alerta'}:</span>
+                          <span className="ml-2">{a.mensagem}</span>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {a.data ? new Date(a.data).toLocaleString() : ''}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Paginação simples */}
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="text-sm text-gray-600">Exibindo página {alertasPage}{alertasTotal ? ` de ${Math.max(1, Math.ceil(alertasTotal / alertasLimit))}` : ''}</div>
+                  <div className="flex items-center gap-2">
+                    <button disabled={alertasPage <= 1} onClick={() => setAlertasPage((p) => Math.max(1, p - 1))} className={`py-1 px-3 rounded ${alertasPage <= 1 ? 'bg-gray-200 text-gray-400' : 'bg-white border'}`}>
+                      Anterior
+                    </button>
+                    <button onClick={() => setAlertasPage((p) => p + 1)} className={`py-1 px-3 rounded bg-white border`}>Próxima</button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
