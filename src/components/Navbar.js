@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/authContext";
 import { getMyProfile } from "@/services/userService";
-// MODIFICADO: Trocamos os ícones de tela cheia
 import { MdOutlineFullscreen, MdOutlineFullscreenExit } from "react-icons/md"; 
 import Link from "next/link";
 import Image from "next/image";

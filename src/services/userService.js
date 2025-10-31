@@ -1,4 +1,4 @@
-import { get, post } from "../lib/apiClient";
+import { get, post, patch } from "../lib/apiClient";
 
 // Busca o perfil do usuário logado
 export async function getMyProfile() {
@@ -9,6 +9,12 @@ export async function getMyProfile() {
 // Cria o perfil de proprietário
 export async function createOwnerProfile({ nome, telefone }) {
   const response = await post("/usuarios", { nome, telefone });
+  return response.data;
+}
+
+// Atualiza o perfil do usuário logado
+export async function updateProfile({ nome, telefone }) {
+  const response = await patch("/usuarios/me", { nome, telefone });
   return response.data;
 }
 
