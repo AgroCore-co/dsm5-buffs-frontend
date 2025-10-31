@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/authContext";
 import { getMyProfile } from "@/services/userService";
-import { FiMaximize, FiMinimize } from "react-icons/fi";
+// MODIFICADO: Trocamos os ícones de tela cheia
+import { MdOutlineFullscreen, MdOutlineFullscreenExit } from "react-icons/md"; 
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
+
+// NOVO: Função para pegar as iniciais do nome
+const getInitials = (name) => {
+  if (!name) return "";
+  const names = name.split(" ");
+  const firstName = names[0];
+  const lastName = names.length > 1 ? names[names.length - 1] : "";
+
+  if (!lastName) {
+    return firstName.substring(0, 2).toUpperCase();
+  }
+  
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+};
+
 
 const Navbar = () => {
   const router = useRouter();
@@ -13,6 +29,7 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [initials, setInitials] = useState(""); // NOVO: State para as iniciais
 
   useEffect(() => {
     let ignore = false;
@@ -26,6 +43,7 @@ const Navbar = () => {
         const data = await getMyProfile();
         if (!ignore) {
           setProfile(data);
+          setInitials(getInitials(data.nome)); // NOVO: Define as iniciais
         }
       } catch {
         if (!ignore) setProfile(null);
@@ -146,8 +164,8 @@ const Navbar = () => {
   };
 
   const handleSystemSettings = () => {
-    setIsUserMenuOpen(false);
     router.push("/configuracoes");
+    setIsUserMenuOpen(false);
   };
 
   return (
@@ -157,9 +175,11 @@ const Navbar = () => {
         role="navigation"
         aria-label="Principal"
       >
-        <div className="w-full flex items-center justify-between px-16 h-16 relative lg:px-20">
-          {/* Logo e Menu Hamburguer */}
-          <div className="flex items-center absolute left-8 z-10 gap-3">
+        {/* MODIFICADO: Layout simplificado - logo esquerda, user direita */}
+        <div className="w-full flex items-center justify-between px-6 h-16 max-w-screen-2xl mx-auto lg:px-8">
+          
+          {/* Bloco da Esquerda: Logo e Menu Hamburguer */}
+          <div className="flex items-center flex-shrink-0 gap-3">
             <Link href="/dashboard" passHref>
               <Image
                 src="/images/Logo-buffs.svg"
@@ -170,7 +190,7 @@ const Navbar = () => {
               />
             </Link>
 
-            {/* Botão menu mobile - Movido para cá */}
+            {/* Botão menu mobile */}
             <div className="xl:hidden flex items-center">
               <button
                 className="text-[var(--color-text-dark)] p-2"
@@ -197,9 +217,8 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/*  Alterado breakpoint de md para xl (1280px) para menu desktop */}
-          {/* Navigation Items - Desktop */}
-          <div className="hidden xl:flex items-center gap-0 absolute left-1/2 transform -translate-x-1/2 z-5">
+          {/* Bloco Central: Navigation Items - Desktop */}
+          <div className="hidden xl:flex flex-1 items-center justify-center gap-0">
             {profileLoading
               ? null
               : navItems.length > 0
@@ -207,7 +226,7 @@ const Navbar = () => {
                   <Link
                     key={item.path}
                     href={item.path}
-                    className={`px-5 py-4 text-[var(--color-text-dark)] no-underline font-medium text-base transition-all duration-200 border-b-3 border-transparent whitespace-nowrap h-16 flex items-center hover:bg-white/10 hover:text-[var(--color-text-dark)] ${
+                    className={`px-5 py-4 text-[var(--color-text-dark)] no-underline font-medium text-base transition-all duration-200 border-b-4 border-transparent whitespace-nowrap h-16 flex items-center hover:bg-white/10 hover:text-[var(--color-text-dark)] ${
                       router.pathname === item.path
                         ? "bg-white/20 border-b-[var(--color-text-dark)] font-semibold"
                         : ""
@@ -219,24 +238,8 @@ const Navbar = () => {
               : null}
           </div>
 
-          {/* Fullscreen Toggle and User Profile */}
-          <div className="flex items-center absolute right-8 z-10 lg:right-10 gap-3">
-            {/* Botão de Tela Cheia */}
-            <button
-              onClick={toggleFullscreen}
-              className="p-2 cursor-pointer transition-colors duration-200 text-[var(--color-text-dark)] hover:opacity-80"
-              aria-label={
-                isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"
-              }
-              title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
-            >
-              {isFullscreen ? (
-                <FiMinimize className="w-5 h-5" />
-              ) : (
-                <FiMaximize className="w-5 h-5" />
-              )}
-            </button>
-
+          {/* Bloco da Direita: Apenas Perfil (sem fullscreen) */}
+          <div className="flex items-center flex-shrink-0">
             {/* Menu usuário */}
             <div className="relative">
               <button
@@ -244,24 +247,31 @@ const Navbar = () => {
                   e.stopPropagation();
                   toggleUserMenu();
                 }}
-                className="w-10 h-10 rounded-full bg-white border-2 border-white/30 cursor-pointer transition-all duration-200 hover:border-white/60 hover:scale-105"
+                className="w-10 h-10 rounded-full bg-white border-2 border-white/30 cursor-pointer transition-all duration-200 hover:border-white/60 hover:scale-105 flex items-center justify-center"
                 aria-label="Menu do usuário"
               >
-                <div className="w-full h-full rounded-full bg-gray-300 flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-gray-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
+                {profile && initials ? (
+                  <span className="font-semibold text-sm text-[var(--color-text-dark)]">
+                    {initials}
+                  </span>
+                ) : (
+                  <div className="w-full h-full rounded-full bg-gray-300 flex items-center justify-center">
+                    <svg
+                      className="w-5 h-5 text-gray-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                )}
               </button>
 
+              {/* Dropdown do usuário */}
               {isUserMenuOpen && (
                 <div
                   className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-[1003]"
@@ -316,7 +326,13 @@ const Navbar = () => {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M11 11V7a1 1 0 112 0v4a1 1 0 11-2 0zm0 6a1 1 0 112 0v-2a1 1 0 11-2 0v2z"
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
                       <span>Configurações</span>
@@ -347,13 +363,9 @@ const Navbar = () => {
               )}
             </div>
           </div>
-
-          {/*  Alterado breakpoint de md para xl para botão menu mobile */}
-          {/* Botão menu mobile */}
         </div>
       </nav>
 
-      {/*  Transformado menu mobile em sidebar lateral com animação */}
       {/* Mobile Menu - Sidebar */}
       {isMobileMenuOpen && (
         <>
@@ -364,6 +376,7 @@ const Navbar = () => {
           />
 
           {/* Sidebar */}
+          {/* MODIFICADO: Fundo amarelo restaurado */}
           <div
             className={`xl:hidden fixed top-0 left-0 h-full w-80 bg-[var(--color-primary)] shadow-xl z-[1003] transform transition-transform duration-300 ease-in-out ${
               isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
@@ -409,6 +422,7 @@ const Navbar = () => {
                     <Link
                       key={item.path}
                       href={item.path}
+                      // MODIFICADO: Cores restauradas para fundo amarelo
                       className={`px-6 py-4 text-[var(--color-text-dark)] no-underline font-medium text-base transition-all duration-200 ${
                         router.pathname === item.path
                           ? "bg-white/20 font-semibold border-r-4 border-white"
@@ -423,21 +437,29 @@ const Navbar = () => {
             </div>
 
             {/* User Section */}
+            {/* MODIFICADO: Fundo amarelo restaurado */}
             <div className="absolute bottom-0 left-0 right-0 border-t border-white/20 bg-[var(--color-primary)]">
               <div className="p-4">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-[var(--color-text-dark)]"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    {/* MODIFICADO: Mostra iniciais ou ícone fallback */}
+                    {profile && initials ? (
+                      <span className="font-semibold text-sm text-[var(--color-text-dark)]">
+                        {initials}
+                      </span>
+                    ) : (
+                      <svg
+                        className="w-5 h-5 text-[var(--color-text-dark)]"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
                   </div>
                   <div>
                     <div className="text-[var(--color-text-dark)] font-medium text-sm">
