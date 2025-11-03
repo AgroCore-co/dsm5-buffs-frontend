@@ -153,6 +153,10 @@
   outline: none;
   transition: border-color 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1), background 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   box-sizing: border-box;
+  height: 48px;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
 }
 
 .input:focus {
@@ -173,8 +177,8 @@
 .label {
   position: absolute;
   left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 14px;
+  transform: none;
   font-size: 16px;
   color: var(--color-text-tertiary) !important;
   padding: 0 4px;
@@ -186,7 +190,7 @@
 /* MODIFICADO: Fundo do label flutuante */
 .input:focus + .label,
 .input:not(:placeholder-shown) + .label {
-  top: 0;
+  top: -8px;
   font-size: 12px;
   /* Garante que o fundo seja o do painel */
   background: var(--color-background-primary, #fff) !important; 
