@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePropriedade } from "@/contexts/propriedadeContext";
 import dashboardService from "@/services/dashboardService";
 import bufaloService from "@/services/bufaloService";
+import dadosSanitariosService from "@/services/dadosSanitariosService";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, XAxis, YAxis, Bar } from "recharts";
 import BuffaloModal from "@/components/proprietario/rebanho/prontuarioModal";
 
@@ -23,6 +24,10 @@ export default function Rebanho() {
 	const [limit, setLimit] = useState(10);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [bufaloSelecionado, setBufaloSelecionado] = useState(null);
+
+	// frequência de doenças
+	const [frequenciaDoencas, setFrequenciaDoencas] = useState([]);
+	const [loadingDoencas, setLoadingDoencas] = useState(false);
 
 	useEffect(() => {
 		if (!propriedadeId) {
@@ -71,6 +76,24 @@ export default function Rebanho() {
 		})();
 		return () => { ignore = true; };
 	}, [propriedadeId, page, limit]);
+
+	// buscar frequência de doenças
+	useEffect(() => {
+		if (!propriedadeId) return;
+		let ignore = false;
+		(async () => {
+			setLoadingDoencas(true);
+			try {
+				const data = await dadosSanitariosService.obterFrequenciaDoencasPorPropriedade(propriedadeId);
+				if (!ignore) setFrequenciaDoencas(data.dados || []);
+			} catch (e) {
+				if (!ignore) setFrequenciaDoencas([]);
+			} finally {
+				if (!ignore) setLoadingDoencas(false);
+			}
+		})();
+		return () => { ignore = true; };
+	}, [propriedadeId]);
 
 	// helpers para exibir valores com fallback
 	const totalAtivos =
@@ -401,6 +424,25 @@ export default function Rebanho() {
 							Próximo
 						</button>
 					</div>
+				)}
+			</div>
+
+			{/* Gráfico de Frequência de Doenças */}
+			<div className="w-full flex flex-col bg-white rounded-xl p-5 gap-4 box-border border border-[var(--color-border-primary)] shadow-sm">
+				<h2 className="text-2xl font-bold text-[var(--color-text-dark)]">Frequência de Doenças</h2>
+				{loadingDoencas ? (
+					<p className="text-[var(--color-text-tertiary)]">Carregando dados...</p>
+				) : frequenciaDoencas.length === 0 ? (
+					<p className="text-[var(--color-text-tertiary)]">Nenhum dado disponível</p>
+				) : (
+					<ResponsiveContainer width="100%" height={300}>
+						<BarChart data={frequenciaDoencas} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+							<XAxis dataKey="doenca" stroke="var(--color-text-secondary)" />
+							<YAxis stroke="var(--color-text-secondary)" />
+							<Tooltip contentStyle={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border-primary)' }} />
+							<Bar dataKey="frequencia" fill="var(--color-primary)" />
+						</BarChart>
+					</ResponsiveContainer>
 				)}
 			</div>
 
