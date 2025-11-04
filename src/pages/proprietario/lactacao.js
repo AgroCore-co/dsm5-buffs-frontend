@@ -31,6 +31,26 @@ export default function Lactacao() {
   const [alertasLimit, setAlertasLimit] = useState(5);
   const [alertasTotal, setAlertasTotal] = useState(null); // total vindo do servidor (se houver)
 
+  // Estado para produção mensal
+  const [producaoMensal, setProducaoMensal] = useState(null);
+  const [producaoLoading, setProducaoLoading] = useState(false);
+  const [producaoError, setProducaoError] = useState(null);
+
+  // Função para buscar produção mensal
+  const fetchProducaoMensal = async (ano = new Date().getFullYear()) => {
+    if (!propriedadeId) return;
+    setProducaoLoading(true);
+    setProducaoError(null);
+    try {
+      const data = await dashboardService.getProducaoMensalByPropriedadeId(propriedadeId, ano);
+      setProducaoMensal(data);
+    } catch (err) {
+      setProducaoError("Não foi possível carregar os dados de produção mensal.");
+    } finally {
+      setProducaoLoading(false);
+    }
+  };
+
   // Função para buscar alertas de produção
   const fetchAlertasProducao = async (page = alertasPage, limit = alertasLimit) => {
     if (!propriedadeId) return;
@@ -134,6 +154,7 @@ export default function Lactacao() {
       // Buscar alertas de produção ao carregar a página (primeira página)
       setAlertasPage(1);
       fetchAlertasProducao(1, alertasLimit);
+      fetchProducaoMensal();
     }
   }, [propriedadeId]);
 
@@ -150,27 +171,20 @@ export default function Lactacao() {
   // ==== MOCKS: indicadores header ====
   // Exemplo de uso do idPropriedade
   // const idPropriedade = propriedadeId || "ID_EXEMPLO";
-  const litrosMesAtual = 4200;
-  const litrosMesAnterior = 4000;
-  const variacaoMes = ((litrosMesAtual - litrosMesAnterior) / litrosMesAnterior) * 100;
+  const litrosMesAtual = producaoMensal?.mes_atual_litros || 0;
+  const litrosMesAnterior = producaoMensal?.mes_anterior_litros || 0;
+  const variacaoMes = producaoMensal?.variacao_percentual || 0;
   const variacaoMesLabel = variacaoMes >= 0 ? `+${variacaoMes.toFixed(1)}%` : `${variacaoMes.toFixed(1)}%`;
   const variacaoMesColor = variacaoMes >= 0 ? "text-emerald-700" : "text-red-700";
 
   // ==== MOCK: gráfico mês a mês ====
-  const graficoProducaoMes = React.useMemo(() => [
-    { mes: "Jan", litros: 3200 },
-    { mes: "Fev", litros: 3100 },
-    { mes: "Mar", litros: 3500 },
-    { mes: "Abr", litros: 3700 },
-    { mes: "Mai", litros: 3900 },
-    { mes: "Jun", litros: 4100 },
-    { mes: "Jul", litros: 4300 },
-    { mes: "Ago", litros: 4200 },
-    { mes: "Set", litros: 4000 },
-    { mes: "Out", litros: 4150 },
-    { mes: "Nov", litros: 4300 },
-    { mes: "Dez", litros: 4400 },
-  ], []);
+  const graficoProducaoMes = useMemo(() => {
+    if (!producaoMensal?.serie_historica) return [];
+    return producaoMensal.serie_historica.map((item) => ({
+      mes: new Date(item.mes).toLocaleString("pt-BR", { month: "short" }),
+      litros: item.total_litros,
+    }));
+  }, [producaoMensal]);
 
   // Memoized chart component to avoid re-render when parent state (like alertas pagination) changes
   const ProductionChart = React.useMemo(() => React.memo(function ProductionChartInner({ data }) {
@@ -431,9 +445,9 @@ export default function Lactacao() {
                 disabled={lactacaoMeta.page >= lactacaoMeta.totalPages}
                 className={`px-4 py-2 rounded-lg font-medium ${lactacaoMeta.page >= lactacaoMeta.totalPages ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
               >
-                Próximo
-              </button>
-            </div>
+              Próximo
+            </button>
+          </div>
           )}
       </div>
     </div>
