@@ -43,8 +43,11 @@ export default function Lactacao() {
     setProducaoError(null);
     try {
       const data = await dashboardService.getProducaoMensalByPropriedadeId(propriedadeId, ano);
+      console.log('📊 Dados de Produção Mensal:', data);
+      console.log('📊 Série Histórica:', data?.serie_historica);
       setProducaoMensal(data);
     } catch (err) {
+      console.error('❌ Erro ao buscar produção mensal:', err);
       setProducaoError("Não foi possível carregar os dados de produção mensal.");
     } finally {
       setProducaoLoading(false);
@@ -141,13 +144,17 @@ export default function Lactacao() {
 
   useEffect(() => {
     if (propriedadeId) {
+      console.log('🔄 Carregando dados da propriedade:', propriedadeId);
       setLoading(true);
       dashboardService.getDashboardStatsByPropriedadeId(propriedadeId)
         .then((data) => {
+          console.log('✅ Dashboard Stats recebido:', data);
+          console.log('  - Búfalas lactando:', data.qtd_bufalas_lactando);
           setBufalasLactando(data.qtd_bufalas_lactando);
           setLoading(false);
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error('❌ Erro ao carregar dashboard stats:', err);
           setError("Erro ao carregar búfalas lactando.");
           setLoading(false);
         });
@@ -156,6 +163,7 @@ export default function Lactacao() {
       fetchAlertasProducao(1, alertasLimit);
       fetchProducaoMensal();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propriedadeId]);
 
   // Recarrega quando página ou limite mudarem
@@ -169,21 +177,31 @@ export default function Lactacao() {
   const totalBufalasLactando = bufalasLactando ?? 0;
 
   // ==== MOCKS: indicadores header ====
-  // Exemplo de uso do idPropriedade
-  // const idPropriedade = propriedadeId || "ID_EXEMPLO";
+  // Usar dados reais do backend de produção mensal
   const litrosMesAtual = producaoMensal?.mes_atual_litros || 0;
   const litrosMesAnterior = producaoMensal?.mes_anterior_litros || 0;
   const variacaoMes = producaoMensal?.variacao_percentual || 0;
+  const bufalasLactantesAtual = producaoMensal?.bufalas_lactantes_atual || totalBufalasLactando;
   const variacaoMesLabel = variacaoMes >= 0 ? `+${variacaoMes.toFixed(1)}%` : `${variacaoMes.toFixed(1)}%`;
   const variacaoMesColor = variacaoMes >= 0 ? "text-emerald-700" : "text-red-700";
 
   // ==== MOCK: gráfico mês a mês ====
   const graficoProducaoMes = useMemo(() => {
-    if (!producaoMensal?.serie_historica) return [];
-    return producaoMensal.serie_historica.map((item) => ({
-      mes: new Date(item.mes).toLocaleString("pt-BR", { month: "short" }),
-      litros: item.total_litros,
-    }));
+    if (!producaoMensal?.serie_historica) {
+      console.log('⚠️ Nenhum dado de série histórica encontrado');
+      return [];
+    }
+    
+    console.log('📈 Processando série histórica para o gráfico:', producaoMensal.serie_historica);
+    
+    return producaoMensal.serie_historica.map((item) => {
+      const mesFormatado = new Date(item.mes + '-01').toLocaleString("pt-BR", { month: "short" });
+      console.log(`  - ${item.mes}: ${item.total_litros}L (${mesFormatado})`);
+      return {
+        mes: mesFormatado,
+        litros: item.total_litros,
+      };
+    });
   }, [producaoMensal]);
 
   // Memoized chart component to avoid re-render when parent state (like alertas pagination) changes
@@ -232,24 +250,27 @@ export default function Lactacao() {
   // Buscar quando propriedadeId ou ano mudarem
   useEffect(() => {
     if (propriedadeId) fetchLactacaoStats(selectedYear);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propriedadeId, selectedYear]);
 
   // Ranking derivado dos ciclos retornados pelo dashboard
   const rankingBufalas = useMemo(() => {
-    if (!lactacaoStats) return [];
-    let items = [];
-    if (Array.isArray(lactacaoStats.ciclos)) items = lactacaoStats.ciclos;
-    else if (Array.isArray(lactacaoStats.data)) items = lactacaoStats.data;
-    else if (Array.isArray(lactacaoStats.lactacoes)) items = lactacaoStats.lactacoes;
-    // fallback: if lactacaoStats itself is array
-    else if (Array.isArray(lactacaoStats)) items = lactacaoStats;
-
-    // Normalize numbers for sorting
-    const normalized = items.map((it) => ({
-      ...it,
-      media_lactacao: Number(it.media_lactacao ?? it.media ?? it.media_lact ?? 0),
+    if (!lactacaoStats?.ciclos) return [];
+    
+    // O backend retorna DashboardLactacaoDto com array de CicloLactacaoMetricaDto
+    // Já vem ordenado de melhor para pior classificação
+    return lactacaoStats.ciclos.map((ciclo, index) => ({
+      posicao: index + 1,
+      id_bufala: ciclo.id_bufala,
+      nome_bufala: ciclo.nome_bufala,
+      numero_parto: ciclo.numero_parto,
+      dt_parto: ciclo.dt_parto,
+      dt_secagem_real: ciclo.dt_secagem_real,
+      dias_em_lactacao: ciclo.dias_em_lactacao,
+      media_lactacao: ciclo.media_lactacao,
+      lactacao_total: ciclo.lactacao_total,
+      classificacao: ciclo.classificacao, // 'Ótima', 'Boa', 'Mediana', 'Ruim'
     }));
-    return normalized.sort((a, b) => (b.media_lactacao || 0) - (a.media_lactacao || 0));
   }, [lactacaoStats]);
 
   // Paginação client-side: derive página atual e meta a partir do ranking completo
@@ -275,7 +296,7 @@ export default function Lactacao() {
       <div className="p-6 flex flex-col gap-8">
         {/* Header - Indicadores de Lactação */}
         <div className="w-full flex flex-col bg-white rounded-xl p-6 gap-6 box-border border border-[#e0e0e0] shadow-sm">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Lactação - Indicadores</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Controle de Produção</h1>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0] flex flex-col gap-1">
               <span className="text-sm font-semibold text-[var(--color-text-secondary)]">Búfalas Lactando</span>
@@ -284,17 +305,26 @@ export default function Lactacao() {
               ) : error ? (
                 <span className="text-red-500">{error}</span>
               ) : (
-                <span className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">{totalBufalasLactando}</span>
+                <>
+                  <span className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                    {bufalasLactantesAtual}
+                  </span>
+                  {producaoMensal?.bufalas_lactantes_atual && (
+                    <span className="text-xs text-gray-500">Dados do mês atual</span>
+                  )}
+                </>
               )}
             </div>  
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0] flex flex-col gap-1">
               <span className="text-sm font-semibold text-[var(--color-text-secondary)]">Leite produzido (mês atual)</span>
-              <span className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">{litrosMesAtual} L</span>
+              <span className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                {litrosMesAtual.toFixed(1)} L
+              </span>
             </div>
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0] flex flex-col gap-1">
               <span className="text-sm font-semibold text-[var(--color-text-secondary)]">Comparação mês anterior</span>
               <span className={`text-2xl font-bold ${variacaoMesColor}`}>{variacaoMesLabel}</span>
-              <span className="text-xs text-gray-500">{litrosMesAnterior} L no mês anterior</span>
+              <span className="text-xs text-gray-500">{litrosMesAnterior.toFixed(1)} L no mês anterior</span>
             </div>
           </div>
         </div>
@@ -302,9 +332,16 @@ export default function Lactacao() {
         {/* Gráfico produção mês a mês + painel de alertas */}
         <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="col-span-2 bg-white rounded-xl p-5 box-border border border-[#e0e0e0] shadow-sm">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Produção mês a mês (2025)</h2>
-            {/* Memoized chart: won't re-render when alertas pagination changes */}
-            <ProductionChart data={graficoProducaoMes} />
+            <h2 className="text-xl font-bold text-gray-800 mb-2">
+              Produção mês a mês ({producaoMensal?.ano || new Date().getFullYear()})
+            </h2>
+            {producaoLoading ? (
+              <div className="text-gray-500 text-center py-20">Carregando dados de produção...</div>
+            ) : producaoError ? (
+              <div className="text-red-500 text-center py-20">{producaoError}</div>
+            ) : (
+              <ProductionChart data={graficoProducaoMes} />
+            )}
           </div>
           <div className="bg-white rounded-xl p-5 box-border border border-[#e0e0e0] shadow-sm flex flex-col gap-3">
             <div className="flex items-center justify-between">
@@ -379,6 +416,12 @@ export default function Lactacao() {
               </select>
             </div>
           </div>
+          {lactacaoStats?.media_rebanho_ano && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <span className="text-sm font-semibold text-blue-800">Média do Rebanho ({selectedYear}): </span>
+              <span className="text-lg font-bold text-blue-900">{lactacaoStats.media_rebanho_ano.toFixed(2)} L</span>
+            </div>
+          )}
           <p className="text-gray-600">{lactacaoLoading ? 'Carregando...' : lactacaoError ? lactacaoError : `Lista completa de búfalas em lactação com ${lactacaoMeta.total} animais.`}</p>
           <div className="overflow-x-auto w-full">
             <table className="w-full border-collapse min-w-[650px] bg-white rounded-lg overflow-hidden shadow-sm">
@@ -396,26 +439,43 @@ export default function Lactacao() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedRanking.map((ciclo, idx) => (
-                  /* compute a stable key: prefer id_ciclo_lactacao, fallback to id_bufala + index */
-                  <tr key={ciclo.id_ciclo_lactacao ?? `${ciclo.id_bufala ?? 'buf'}-${(lactacaoMeta.page - 1) * lactacaoLimit + idx}`} className={idx % 2 === 0 ? "bg-[#fafafa]" : "bg-white"}>
-                    <td className="p-3 text-center text-gray-800 text-base font-medium">{ciclo.nome_bufala}</td>
-                    <td className="p-3 text-center text-gray-800 text-base">{ciclo.numero_parto}</td>
-                    <td className="p-3 text-center text-gray-800 text-base">{ciclo.dt_parto}</td>
-                    <td className="p-3 text-center text-gray-800 text-base">{ciclo.dt_secagem_real}</td>
-                    <td className="p-3 text-center text-gray-800 text-base">{ciclo.dias_em_lactacao}</td>
-                    <td className="p-3 text-center text-gray-800 text-base">{ciclo.media_lactacao} L</td>
-                    <td className="p-3 text-center text-gray-800 text-base">{ciclo.lactacao_total} L</td>
-                    <td className="p-3 text-center text-gray-800 text-base">{ciclo.classificacao}</td>
-                    <td className="p-3 text-center text-base">
-                      <Link href={`/lactacao/bufala/${ciclo.id_bufala}/resumo-producao`}>
-                        <span className="bg-[#FFCF78] border-none text-gray-800 py-2 px-3.5 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#F2B84D] transition-colors" style={{ display: 'inline-block', textAlign: 'center' }}>
-                          Prontuário
+                {paginatedRanking.map((ciclo, idx) => {
+                  // Definir cor da classificação
+                  const getClassificacaoColor = (classificacao) => {
+                    switch (classificacao) {
+                      case 'Ótima': return 'bg-green-100 text-green-800 border border-green-300';
+                      case 'Boa': return 'bg-blue-100 text-blue-800 border border-blue-300';
+                      case 'Mediana': return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+                      case 'Ruim': return 'bg-red-100 text-red-800 border border-red-300';
+                      default: return 'bg-gray-100 text-gray-800 border border-gray-300';
+                    }
+                  };
+                  
+                  return (
+                    /* compute a stable key: prefer id_ciclo_lactacao, fallback to id_bufala + index */
+                    <tr key={ciclo.id_ciclo_lactacao ?? `${ciclo.id_bufala ?? 'buf'}-${(lactacaoMeta.page - 1) * lactacaoLimit + idx}`} className={idx % 2 === 0 ? "bg-[#fafafa]" : "bg-white"}>
+                      <td className="p-3 text-center text-gray-800 text-base font-medium">{ciclo.nome_bufala}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.numero_parto}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.dt_parto}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.dt_secagem_real || '-'}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.dias_em_lactacao}</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.media_lactacao?.toFixed(2)} L</td>
+                      <td className="p-3 text-center text-gray-800 text-base">{ciclo.lactacao_total?.toFixed(2)} L</td>
+                      <td className="p-3 text-center text-base">
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getClassificacaoColor(ciclo.classificacao)}`}>
+                          {ciclo.classificacao}
                         </span>
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="p-3 text-center text-base">
+                        <Link href={`/lactacao/bufala/${ciclo.id_bufala}/resumo-producao`}>
+                          <span className="bg-[#FFCF78] border-none text-gray-800 py-2 px-3.5 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#F2B84D] transition-colors" style={{ display: 'inline-block', textAlign: 'center' }}>
+                            Prontuário
+                          </span>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
