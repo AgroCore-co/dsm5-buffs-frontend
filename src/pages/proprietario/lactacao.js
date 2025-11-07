@@ -15,6 +15,7 @@ import dashboardService from "@/services/dashboardService";
 import alertaService from "@/services/alertaService";
 import bufaloService from "@/services/bufaloService";
 import ProducaoModal from "@/components/proprietario/lactacao/ProducaoModal";
+import AlertaDetalhesModal from "@/components/proprietario/lactacao/AlertaDetalhesModal";
 
 export default function Lactacao() {
   // obter id da propriedade via context
@@ -24,57 +25,15 @@ export default function Lactacao() {
   const [bufalasLactando, setBufalasLactando] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // Dados mockados de alertas
-  const alertasMockados = [
-    {
-      tipo: "Baixa Produção",
-      mensagem:
-        "Búfala Mimosa apresentou queda de 15% na produção nos últimos 3 dias",
-      data: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 horas atrás
-    },
-    {
-      tipo: "Atenção",
-      mensagem:
-        "Búfala Estrela está há 280 dias em lactação - próxima à secagem",
-      data: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 horas atrás
-    },
-    {
-      tipo: "Produção Normal",
-      mensagem: "Búfala Bela mantém produção estável de 12L/dia",
-      data: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 dia atrás
-    },
-    {
-      tipo: "Baixa Produção",
-      mensagem:
-        "Búfala Docinha com produção abaixo da média - verificar alimentação",
-      data: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 dias atrás
-    },
-    {
-      tipo: "Atenção",
-      mensagem: "Búfala Flor deve entrar em período de secagem em 15 dias",
-      data: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 dias atrás
-    },
-    {
-      tipo: "Produção Normal",
-      mensagem: "Búfala Princesa mantém boa produção de 14L/dia",
-      data: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 dias atrás
-    },
-    {
-      tipo: "Baixa Produção",
-      mensagem:
-        "Búfala Rosa apresentou queda de 20% na produção - atenção veterinária",
-      data: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 dias atrás
-    },
-  ];
-
-  const [alertasLactacao, setAlertasLactacao] = useState(alertasMockados);
+  const [alertasLactacao, setAlertasLactacao] = useState([]);
   const [alertasLoading, setAlertasLoading] = useState(false);
   const [alertasError, setAlertasError] = useState(null);
   const [alertasSummary, setAlertasSummary] = useState(null); // quando backend retorna apenas o resumo da verificação
   // paginação
   const [alertasPage, setAlertasPage] = useState(1);
-  const [alertasLimit, setAlertasLimit] = useState(5);
-  const [alertasTotal, setAlertasTotal] = useState(alertasMockados.length); // total vindo do servidor (se houver)
+  const [alertasLimit, setAlertasLimit] = useState(2); // Mostrar apenas 2 alertas por página
+  const [alertasTotal, setAlertasTotal] = useState(0); // total vindo do servidor (se houver)
+  const [mostrarTodosAlertas, setMostrarTodosAlertas] = useState(false); // Toggle para mostrar alertas visualizados
   // Cache de nomes de búfalos para evitar múltiplas chamadas à API
   const [bufaloNamesCache, setBufaloNamesCache] = useState({});
 
@@ -120,6 +79,7 @@ export default function Lactacao() {
         propriedadeId,
         {
           nichos: 'CLINICO', // Filtrar apenas alertas clínicos
+          incluirVistos: mostrarTodosAlertas, // true = mostrar todos, false = mostrar apenas não visualizados
           page,
           limit,
         }
@@ -325,13 +285,19 @@ export default function Lactacao() {
       fetchAlertasProducao(alertasPage, alertasLimit);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [alertasPage, alertasLimit]);
+  }, [alertasPage, alertasLimit, mostrarTodosAlertas]);
 
-  // Paginação client-side para dados mockados - não precisa recarregar
+  // Calcular alertas paginados (se a API não fizer paginação server-side)
   const alertasPaginados = useMemo(() => {
+    // Se a API já retorna paginado, usar diretamente alertasLactacao
+    // Caso contrário, fazer paginação client-side
+    if (alertasTotal && alertasLactacao.length <= alertasLimit) {
+      return alertasLactacao; // API já retornou apenas a página atual
+    }
+    // Fallback: paginação client-side
     const start = (alertasPage - 1) * alertasLimit;
     return alertasLactacao.slice(start, start + alertasLimit);
-  }, [alertasLactacao, alertasPage, alertasLimit]);
+  }, [alertasLactacao, alertasPage, alertasLimit, alertasTotal]);
 
   // Corrigir erro: definir totalBufalasLactando a partir do estado
   const totalBufalasLactando = bufalasLactando ?? 0;
@@ -417,6 +383,10 @@ export default function Lactacao() {
   const [modalProducaoOpen, setModalProducaoOpen] = useState(false);
   const [bufalaIdSelecionada, setBufalaIdSelecionada] = useState(null);
 
+  // Estado para o modal de alerta
+  const [modalAlertaOpen, setModalAlertaOpen] = useState(false);
+  const [alertaIdSelecionado, setAlertaIdSelecionado] = useState(null);
+
   // Função para abrir o modal de produção
   const abrirModalProducao = (idBufala) => {
     setBufalaIdSelecionada(idBufala);
@@ -427,6 +397,18 @@ export default function Lactacao() {
   const fecharModalProducao = () => {
     setModalProducaoOpen(false);
     setBufalaIdSelecionada(null);
+  };
+
+  // Função para abrir o modal de alerta
+  const abrirModalAlerta = (idAlerta) => {
+    setAlertaIdSelecionado(idAlerta);
+    setModalAlertaOpen(true);
+  };
+
+  // Função para fechar o modal de alerta
+  const fecharModalAlerta = () => {
+    setModalAlertaOpen(false);
+    setAlertaIdSelecionado(null);
   };
 
   // Busca dados do dashboard para o ano selecionado
@@ -566,7 +548,7 @@ export default function Lactacao() {
               <ProductionChart data={graficoProducaoMes} />
             )}
           </div>
-          <div className="bg-white rounded-xl box-border border border-[#e0e0e0] shadow-sm flex flex-col">
+          <div className="bg-white rounded-xl box-border border border-[#e0e0e0] shadow-sm flex flex-col h-full">
             {/* Header fixo */}
             <div className="flex items-center justify-between border-b border-gray-200 p-5 pb-3">
               <div className="flex items-center gap-2">
@@ -575,19 +557,35 @@ export default function Lactacao() {
                   Alertas Clínicos
                 </h2>
               </div>
-              {alertasTotal > 0 && !alertasLoading && (
-                <span className="bg-[#CE7D0A] text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                  {alertasTotal}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setMostrarTodosAlertas(!mostrarTodosAlertas);
+                    setAlertasPage(1); // Resetar para primeira página ao trocar filtro
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    mostrarTodosAlertas
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'bg-[#FFCF78] text-gray-800 hover:bg-[#F2B84D]'
+                  }`}
+                  title={mostrarTodosAlertas ? 'Mostrar apenas não vistos' : 'Mostrar todos os alertas'}
+                >
+                  {mostrarTodosAlertas ? 'Não Vistos' : 'Ver Todos'}
+                </button>
+                {alertasTotal > 0 && !alertasLoading && (
+                  <span className="bg-[#CE7D0A] text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                    {alertasTotal}
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* Conteúdo com scroll - altura calculada */}
-            <div className="flex-1 overflow-y-auto px-5 py-3" style={{ maxHeight: 'calc(100% - 140px)' }}>
+            {/* Conteúdo - altura fixa sem scroll */}
+            <div className="flex-1 px-5 py-4 flex flex-col justify-between" style={{ minHeight: '280px' }}>
               {alertasLoading ? (
-                <div className="text-gray-500 text-sm">Carregando alertas...</div>
+                <div className="text-gray-500 text-sm flex items-center justify-center h-full">Carregando alertas...</div>
               ) : alertasError ? (
-                <div className="text-red-500 text-sm">{alertasError}</div>
+                <div className="text-red-500 text-sm flex items-center justify-center h-full">{alertasError}</div>
               ) : alertasSummary ? (
                 <div className="text-sm text-gray-700">
                   <div className="font-semibold">{alertasSummary.message}</div>
@@ -603,19 +601,13 @@ export default function Lactacao() {
                   <div>
                     Alertas criados: {alertasSummary.alertas_criados ?? 0}
                   </div>
-                  {alertasSummary.detalhes &&
-                    Object.keys(alertasSummary.detalhes).length > 0 && (
-                      <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-x-auto">
-                        {JSON.stringify(alertasSummary.detalhes, null, 2)}
-                      </pre>
-                    )}
                 </div>
               ) : alertasLactacao.length === 0 ? (
-                <div className="text-gray-500 text-sm text-center py-8">
+                <div className="text-gray-500 text-sm text-center flex items-center justify-center h-full">
                   Nenhum alerta no momento.
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3 flex-1">
                   {alertasPaginados.map((a, i) => {
                     // Define cor da borda e background baseada na prioridade
                     const getPrioridadeStyle = (prioridade) => {
@@ -652,23 +644,19 @@ export default function Lactacao() {
                     // Obter nome do búfalo do cache
                     const animalId = a.raw?.animal_id;
                     const bufaloNome = animalId ? bufaloNamesCache[animalId] : null;
-                    
-                    // Criar preview da mensagem (primeiros 100 caracteres)
-                    const mensagemPreview = a.mensagem && a.mensagem.length > 100
-                      ? `${a.mensagem.substring(0, 100)}...`
-                      : a.mensagem;
 
                     return (
                       <div
                         key={a.id || i}
-                        className={`border-l-4 ${style.bgColor} rounded-r-lg p-3 shadow-sm hover:shadow-md transition-shadow`}
+                        onClick={() => abrirModalAlerta(a.id)}
+                        className={`border-l-4 ${style.bgColor} rounded-r-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all`}
                         style={{
                           borderColor: style.borderColor,
                         }}
                       >
                         <div className="flex flex-col gap-2">
-                          {/* Cabeçalho com tipo e prioridade */}
-                          <div className="flex items-start justify-between gap-2">
+                          {/* Cabeçalho com tipo, prioridade e data */}
+                          <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-1">
                               <span className="font-bold text-gray-900 text-sm">
                                 {a.tipo || "Alerta"}
@@ -693,32 +681,27 @@ export default function Lactacao() {
                             </span>
                           </div>
 
-                          {/* Nome do búfalo */}
-                          {bufaloNome && (
-                            <div className="flex items-center gap-1.5">
-                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                              <span className="text-sm font-semibold text-gray-800">
-                                {bufaloNome}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Mensagem (preview) */}
-                          {mensagemPreview && (
-                            <p className="text-sm text-gray-700 leading-relaxed">
-                              {mensagemPreview}
-                            </p>
-                          )}
-
-                          {/* Informações adicionais - apenas grupo */}
-                          {a.grupo && (
-                            <div className="text-xs text-gray-600 pt-1 border-t border-gray-200">
-                              <span className="font-medium">Grupo:</span>{" "}
-                              <span>{a.grupo}</span>
-                            </div>
-                          )}
+                          {/* Nome do búfalo e grupo em uma linha */}
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                            {bufaloNome && (
+                              <div className="flex items-center gap-1">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span className="font-semibold text-gray-800">
+                                  {bufaloNome}
+                                </span>
+                              </div>
+                            )}
+                            {a.grupo && (
+                              <div className="flex items-center gap-1">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                <span>{a.grupo}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -973,6 +956,13 @@ export default function Lactacao() {
         open={modalProducaoOpen}
         onClose={fecharModalProducao}
         idBufala={bufalaIdSelecionada}
+      />
+
+      {/* Modal de Detalhes do Alerta */}
+      <AlertaDetalhesModal
+        open={modalAlertaOpen}
+        onClose={fecharModalAlerta}
+        idAlerta={alertaIdSelecionado}
       />
     </>
   );

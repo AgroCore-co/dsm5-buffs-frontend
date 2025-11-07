@@ -1,4 +1,4 @@
-import { post, get } from "@/lib/apiClient";
+import { post, get, patch } from "@/lib/apiClient";
 
 /**
  * Verifica e cria alertas pendentes para uma propriedade específica.
@@ -113,9 +113,95 @@ const listarAlertasPorPropriedade = async (idPropriedade, filtros = {}) => {
   return response.data;
 };
 
+/**
+ * Busca um alerta específico por ID com detalhes completos.
+ * GET /alertas/{id}
+ *
+ * @param {string} idAlerta - UUID do alerta (obrigatório)
+ * @returns {Promise<Object>} Objeto completo do alerta com todas as informações detalhadas
+ *
+ * Exemplo de uso:
+ * await buscarAlertaPorId('fca0965e-e5b4-4bb6-9346-6dec6034fd9c');
+ * 
+ * Retorna:
+ * {
+ *   id_alerta: string,
+ *   animal_id: string,
+ *   grupo: string,
+ *   localizacao: string,
+ *   motivo: string,
+ *   nicho: string,
+ *   data_alerta: string,
+ *   prioridade: string,
+ *   observacao: string,
+ *   visto: boolean,
+ *   id_evento_origem: string | null,
+ *   tipo_evento_origem: string | null,
+ *   id_propriedade: string,
+ *   created_at: string,
+ *   updated_at: string
+ * }
+ */
+const buscarAlertaPorId = async (idAlerta) => {
+  if (!idAlerta) throw new Error("ID do alerta é obrigatório");
+  
+  const response = await get(`/alertas/${idAlerta}`);
+  return response.data;
+};
+
+/**
+ * Marca um alerta como visto ou não visto para controle do usuário.
+ * PATCH /alertas/{id}/visto
+ *
+ * @param {string} idAlerta - UUID do alerta (obrigatório)
+ * @param {boolean} status - true = marcar como visto, false = marcar como não visto (obrigatório)
+ * @returns {Promise<Object>} Objeto atualizado do alerta com o novo status de visualização
+ *
+ * **Funcionalidade:**
+ * - Permite rastreamento de quais alertas já foram verificados
+ * - Útil para filtrar apenas alertas pendentes de atenção
+ * - Não afeta a prioridade ou outros dados do alerta
+ *
+ * Exemplos de uso:
+ * 
+ * // Marcar alerta como visto
+ * await atualizarStatusVisto('fca0965e-e5b4-4bb6-9346-6dec6034fd9c', true);
+ * 
+ * // Marcar alerta como não visto
+ * await atualizarStatusVisto('fca0965e-e5b4-4bb6-9346-6dec6034fd9c', false);
+ * 
+ * Retorna:
+ * {
+ *   id_alerta: string,
+ *   animal_id: string,
+ *   grupo: string,
+ *   localizacao: string,
+ *   motivo: string,
+ *   nicho: string,
+ *   data_alerta: string,
+ *   prioridade: string,
+ *   observacao: string,
+ *   visto: boolean, // Atualizado com o novo status
+ *   id_evento_origem: string | null,
+ *   tipo_evento_origem: string | null,
+ *   id_propriedade: string,
+ *   created_at: string,
+ *   updated_at: string
+ * }
+ */
+const atualizarStatusVisto = async (idAlerta, status) => {
+  if (!idAlerta) throw new Error("ID do alerta é obrigatório");
+  if (typeof status !== "boolean") throw new Error("Status deve ser um valor booleano (true ou false)");
+  
+  const response = await patch(`/alertas/${idAlerta}/visto?status=${status}`);
+  return response.data;
+};
+
 const alertaService = {
   verificarAlertasPorPropriedade,
   listarAlertasPorPropriedade,
+  buscarAlertaPorId,
+  atualizarStatusVisto,
 };
 
 export default alertaService;
