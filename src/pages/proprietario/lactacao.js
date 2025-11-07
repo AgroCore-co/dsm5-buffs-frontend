@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import dashboardService from "@/services/dashboardService";
 import alertaService from "@/services/alertaService";
+import bufaloService from "@/services/bufaloService";
 import ProducaoModal from "@/components/proprietario/lactacao/ProducaoModal";
 
 export default function Lactacao() {
@@ -74,6 +75,8 @@ export default function Lactacao() {
   const [alertasPage, setAlertasPage] = useState(1);
   const [alertasLimit, setAlertasLimit] = useState(5);
   const [alertasTotal, setAlertasTotal] = useState(alertasMockados.length); // total vindo do servidor (se houver)
+  // Cache de nomes de búfalos para evitar múltiplas chamadas à API
+  const [bufaloNamesCache, setBufaloNamesCache] = useState({});
 
   // Estado para produção mensal
   const [producaoMensal, setProducaoMensal] = useState(null);
@@ -103,7 +106,7 @@ export default function Lactacao() {
     }
   };
 
-  // Função para buscar alertas de produção
+  // Função para buscar alertas de produção (apenas clínicos)
   const fetchAlertasProducao = async (
     page = alertasPage,
     limit = alertasLimit
@@ -112,11 +115,14 @@ export default function Lactacao() {
     setAlertasLoading(true);
     setAlertasError(null);
     try {
+      // Buscar apenas alertas clínicos usando o novo formato do serviço
       const data = await alertaService.listarAlertasPorPropriedade(
         propriedadeId,
-        "PRODUCAO",
-        page,
-        limit
+        {
+          nichos: 'CLINICO', // Filtrar apenas alertas clínicos
+          page,
+          limit,
+        }
       );
 
       // Se o backend retornou apenas o resumo da verificação (POST /alertas/verificar)
@@ -138,25 +144,53 @@ export default function Lactacao() {
 
       // Se o backend devolve um objeto com { data, meta }
       if (data && data.data && Array.isArray(data.data)) {
-        setAlertasLactacao(sortAndNormalizeAlertas(data.data));
+        const normalized = sortAndNormalizeAlertas(data.data);
+        setAlertasLactacao(normalized);
         if (data.meta && typeof data.meta.total === "number")
           setAlertasTotal(data.meta.total);
         else setAlertasTotal(null);
+        
+        // Buscar nomes dos búfalos dos alertas
+        const animalIds = normalized
+          .map(a => a.raw?.animal_id)
+          .filter(id => id);
+        if (animalIds.length > 0) {
+          fetchBufaloNames(animalIds);
+        }
       } else if (Array.isArray(data)) {
         // Recebeu array direto (backend sem paginação) -> armazenar e paginar client-side
-        setAlertasLactacao(sortAndNormalizeAlertas(data));
+        const normalized = sortAndNormalizeAlertas(data);
+        setAlertasLactacao(normalized);
         setAlertasTotal(data.length);
+        
+        // Buscar nomes dos búfalos dos alertas
+        const animalIds = normalized
+          .map(a => a.raw?.animal_id)
+          .filter(id => id);
+        if (animalIds.length > 0) {
+          fetchBufaloNames(animalIds);
+        }
       } else if (data && Array.isArray(data.alertas)) {
-        setAlertasLactacao(sortAndNormalizeAlertas(data.alertas));
+        const normalized = sortAndNormalizeAlertas(data.alertas);
+        setAlertasLactacao(normalized);
         setAlertasTotal(
           Array.isArray(data.alertas) ? data.alertas.length : null
         );
+        
+        // Buscar nomes dos búfalos dos alertas
+        const animalIds = normalized
+          .map(a => a.raw?.animal_id)
+          .filter(id => id);
+        if (animalIds.length > 0) {
+          fetchBufaloNames(animalIds);
+        }
       } else {
         setAlertasLactacao([]);
         setAlertasTotal(0);
       }
     } catch (err) {
-      setAlertasError("Não foi possível carregar alertas de produção.");
+      console.error("❌ Erro ao buscar alertas clínicos:", err);
+      setAlertasError("Não foi possível carregar alertas clínicos.");
       setAlertasLactacao([]);
       setAlertasTotal(0);
     } finally {
@@ -167,9 +201,15 @@ export default function Lactacao() {
   // ordena por data decrescente (se houver) e normaliza campos
   const sortAndNormalizeAlertas = (arr) => {
     const normalized = arr.map((a) => ({
-      tipo: a.tipo || a.titulo || a.level || null,
-      mensagem: a.mensagem || a.descricao || a.texto || a.message || "",
+      id: a.id_alerta || a.id,
+      tipo: a.motivo || a.tipo || a.titulo || a.nicho || 'Alerta',
+      mensagem: a.observacao || a.mensagem || a.descricao || a.texto || a.message || "",
       data: getAlertDate(a),
+      prioridade: a.prioridade,
+      nicho: a.nicho,
+      localizacao: a.localizacao,
+      grupo: a.grupo,
+      visto: a.visto,
       raw: a,
     }));
     normalized.sort((x, y) => {
@@ -184,13 +224,13 @@ export default function Lactacao() {
   const getAlertDate = (a) => {
     if (!a) return null;
     const candidates = [
+      "data_alerta",
       "created_at",
       "createdAt",
       "dt_registro",
       "data",
       "dt",
       "timestamp",
-      "data_alerta",
     ];
     for (const k of candidates) {
       if (a[k]) return a[k];
@@ -224,6 +264,36 @@ export default function Lactacao() {
     }, 1500);
   };
 
+  // Função para buscar nomes de búfalos e popular o cache
+  const fetchBufaloNames = async (animalIds) => {
+    if (!animalIds || animalIds.length === 0) return;
+    
+    // Filtrar IDs que ainda não estão no cache
+    const idsToFetch = animalIds.filter(id => id && !bufaloNamesCache[id]);
+    
+    if (idsToFetch.length === 0) return; // Todos já estão no cache
+    
+    // Buscar búfalos em lote
+    const promises = idsToFetch.map(async (id) => {
+      try {
+        const bufalo = await bufaloService.buscarBufaloPorId(id);
+        return { id, nome: bufalo?.nome || bufalo?.brinco || 'Sem nome' };
+      } catch (err) {
+        console.error(`Erro ao buscar búfalo ${id}:`, err);
+        return { id, nome: 'Desconhecido' };
+      }
+    });
+    
+    const results = await Promise.all(promises);
+    
+    // Atualizar cache
+    const newCache = { ...bufaloNamesCache };
+    results.forEach(({ id, nome }) => {
+      newCache[id] = nome;
+    });
+    setBufaloNamesCache(newCache);
+  };
+
   useEffect(() => {
     if (propriedadeId) {
       console.log("🔄 Carregando dados da propriedade:", propriedadeId);
@@ -243,9 +313,19 @@ export default function Lactacao() {
         });
       // Dados mockados já carregados no useState inicial
       fetchProducaoMensal();
+      // Buscar alertas clínicos da API
+      fetchAlertasProducao();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propriedadeId]);
+
+  // Buscar alertas quando a paginação mudar
+  useEffect(() => {
+    if (propriedadeId) {
+      fetchAlertasProducao(alertasPage, alertasLimit);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alertasPage, alertasLimit]);
 
   // Paginação client-side para dados mockados - não precisa recarregar
   const alertasPaginados = useMemo(() => {
@@ -469,7 +549,7 @@ export default function Lactacao() {
 
         {/* Gráfico produção mês a mês + painel de alertas */}
         <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="col-span-2 bg-white rounded-xl p-5 box-border border border-[#e0e0e0] shadow-sm">
+          <div className="col-span-2 bg-white rounded-xl p-5 box-border border border-[#e0e0e0] shadow-sm flex flex-col">
             <h2 className="text-xl font-bold text-gray-800 mb-2">
               Produção mês a mês (
               {producaoMensal?.ano || new Date().getFullYear()})
@@ -486,114 +566,205 @@ export default function Lactacao() {
               <ProductionChart data={graficoProducaoMes} />
             )}
           </div>
-          <div className="bg-white rounded-xl p-5 box-border border border-[#e0e0e0] shadow-sm flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800 mb-2">
-                Alertas de Lactação
-              </h2>
+          <div className="bg-white rounded-xl box-border border border-[#e0e0e0] shadow-sm flex flex-col">
+            {/* Header fixo */}
+            <div className="flex items-center justify-between border-b border-gray-200 p-5 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-6 rounded-full"></div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Alertas Clínicos
+                </h2>
+              </div>
+              {alertasTotal > 0 && !alertasLoading && (
+                <span className="bg-[#CE7D0A] text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                  {alertasTotal}
+                </span>
+              )}
             </div>
 
-            {alertasLoading ? (
-              <div className="text-gray-500 text-sm">Carregando alertas...</div>
-            ) : alertasError ? (
-              <div className="text-red-500 text-sm">{alertasError}</div>
-            ) : alertasSummary ? (
-              <div className="text-sm text-gray-700">
-                <div className="font-semibold">{alertasSummary.message}</div>
-                <div className="mt-2">
-                  Propriedade: {alertasSummary.propriedade}
+            {/* Conteúdo com scroll - altura calculada */}
+            <div className="flex-1 overflow-y-auto px-5 py-3" style={{ maxHeight: 'calc(100% - 140px)' }}>
+              {alertasLoading ? (
+                <div className="text-gray-500 text-sm">Carregando alertas...</div>
+              ) : alertasError ? (
+                <div className="text-red-500 text-sm">{alertasError}</div>
+              ) : alertasSummary ? (
+                <div className="text-sm text-gray-700">
+                  <div className="font-semibold">{alertasSummary.message}</div>
+                  <div className="mt-2">
+                    Propriedade: {alertasSummary.propriedade}
+                  </div>
+                  <div>
+                    Nichos verificados:{" "}
+                    {Array.isArray(alertasSummary.nichos_verificados)
+                      ? alertasSummary.nichos_verificados.join(", ")
+                      : alertasSummary.nichos_verificados || ""}
+                  </div>
+                  <div>
+                    Alertas criados: {alertasSummary.alertas_criados ?? 0}
+                  </div>
+                  {alertasSummary.detalhes &&
+                    Object.keys(alertasSummary.detalhes).length > 0 && (
+                      <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-x-auto">
+                        {JSON.stringify(alertasSummary.detalhes, null, 2)}
+                      </pre>
+                    )}
                 </div>
-                <div>
-                  Nichos verificados:{" "}
-                  {Array.isArray(alertasSummary.nichos_verificados)
-                    ? alertasSummary.nichos_verificados.join(", ")
-                    : alertasSummary.nichos_verificados || ""}
+              ) : alertasLactacao.length === 0 ? (
+                <div className="text-gray-500 text-sm text-center py-8">
+                  Nenhum alerta no momento.
                 </div>
-                <div>
-                  Alertas criados: {alertasSummary.alertas_criados ?? 0}
-                </div>
-                {alertasSummary.detalhes &&
-                  Object.keys(alertasSummary.detalhes).length > 0 && (
-                    <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-x-auto">
-                      {JSON.stringify(alertasSummary.detalhes, null, 2)}
-                    </pre>
-                  )}
-              </div>
-            ) : alertasLactacao.length === 0 ? (
-              <div className="text-gray-500 text-sm">
-                Nenhum alerta no momento.
-              </div>
-            ) : (
-              <>
-                <ul className="space-y-2">
-                  {alertasPaginados.map((a, i) => (
-                    <li
-                      key={i}
-                      className="border-l-4 pl-3 py-2 text-sm"
-                      style={{
-                        borderColor:
-                          a.tipo &&
-                          String(a.tipo).toLowerCase().includes("baixa")
-                            ? "#F87171"
-                            : "#34D399",
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-semibold">
-                            {a.tipo || "Alerta"}:
-                          </span>
-                          <span className="ml-2">{a.mensagem}</span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {a.data
-                            ? new Date(a.data).toLocaleString("pt-BR", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : ""}
+              ) : (
+                <div className="space-y-2">
+                  {alertasPaginados.map((a, i) => {
+                    // Define cor da borda e background baseada na prioridade
+                    const getPrioridadeStyle = (prioridade) => {
+                      switch (prioridade) {
+                        case 'ALTA':
+                          return {
+                            borderColor: '#DC2626',
+                            bgColor: 'bg-red-50',
+                            badgeClass: 'bg-red-100 text-red-800 border-red-300',
+                          };
+                        case 'MEDIA':
+                          return {
+                            borderColor: '#F59E0B',
+                            bgColor: 'bg-orange-50',
+                            badgeClass: 'bg-orange-100 text-orange-800 border-orange-300',
+                          };
+                        case 'BAIXA':
+                          return {
+                            borderColor: '#3B82F6',
+                            bgColor: 'bg-blue-50',
+                            badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
+                          };
+                        default:
+                          return {
+                            borderColor: '#9CA3AF',
+                            bgColor: 'bg-gray-50',
+                            badgeClass: 'bg-gray-100 text-gray-800 border-gray-300',
+                          };
+                      }
+                    };
+
+                    const style = getPrioridadeStyle(a.prioridade);
+                    
+                    // Obter nome do búfalo do cache
+                    const animalId = a.raw?.animal_id;
+                    const bufaloNome = animalId ? bufaloNamesCache[animalId] : null;
+                    
+                    // Criar preview da mensagem (primeiros 100 caracteres)
+                    const mensagemPreview = a.mensagem && a.mensagem.length > 100
+                      ? `${a.mensagem.substring(0, 100)}...`
+                      : a.mensagem;
+
+                    return (
+                      <div
+                        key={a.id || i}
+                        className={`border-l-4 ${style.bgColor} rounded-r-lg p-3 shadow-sm hover:shadow-md transition-shadow`}
+                        style={{
+                          borderColor: style.borderColor,
+                        }}
+                      >
+                        <div className="flex flex-col gap-2">
+                          {/* Cabeçalho com tipo e prioridade */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-1">
+                              <span className="font-bold text-gray-900 text-sm">
+                                {a.tipo || "Alerta"}
+                              </span>
+                              {a.prioridade && (
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${style.badgeClass}`}
+                                >
+                                  {a.prioridade}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500 whitespace-nowrap">
+                              {a.data
+                                ? new Date(a.data).toLocaleString("pt-BR", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : ""}
+                            </span>
+                          </div>
+
+                          {/* Nome do búfalo */}
+                          {bufaloNome && (
+                            <div className="flex items-center gap-1.5">
+                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              <span className="text-sm font-semibold text-gray-800">
+                                {bufaloNome}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Mensagem (preview) */}
+                          {mensagemPreview && (
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {mensagemPreview}
+                            </p>
+                          )}
+
+                          {/* Informações adicionais - apenas grupo */}
+                          {a.grupo && (
+                            <div className="text-xs text-gray-600 pt-1 border-t border-gray-200">
+                              <span className="font-medium">Grupo:</span>{" "}
+                              <span>{a.grupo}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Paginação simples */}
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    Exibindo página {alertasPage} de{" "}
-                    {Math.max(1, Math.ceil(alertasTotal / alertasLimit))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      disabled={alertasPage <= 1}
-                      onClick={() => setAlertasPage((p) => Math.max(1, p - 1))}
-                      className={`py-1 px-3 rounded ${
-                        alertasPage <= 1
-                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                          : "bg-white border hover:bg-gray-50"
-                      }`}
-                    >
-                      Anterior
-                    </button>
-                    <button
-                      disabled={
-                        alertasPage >= Math.ceil(alertasTotal / alertasLimit)
-                      }
-                      onClick={() => setAlertasPage((p) => p + 1)}
-                      className={`py-1 px-3 rounded ${
-                        alertasPage >= Math.ceil(alertasTotal / alertasLimit)
-                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                          : "bg-white border hover:bg-gray-50"
-                      }`}
-                    >
-                      Próxima
-                    </button>
-                  </div>
+                    );
+                  })}
                 </div>
-              </>
+              )}
+            </div>
+
+            {/* Paginação fixa no rodapé */}
+            {!alertasLoading && !alertasError && !alertasSummary && alertasLactacao.length > 0 && (
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                  <span>
+                    Total: <span className="font-semibold">{alertasTotal || 0}</span> alerta{alertasTotal !== 1 ? 's' : ''}
+                  </span>
+                  <span>
+                    Página {alertasPage} de {Math.max(1, Math.ceil(alertasTotal / alertasLimit))}
+                  </span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    disabled={alertasPage <= 1}
+                    onClick={() => setAlertasPage((p) => Math.max(1, p - 1))}
+                    className={`py-1.5 px-4 rounded-md text-sm font-medium transition-colors ${
+                      alertasPage <= 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800 shadow-sm"
+                    }`}
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    disabled={
+                      alertasPage >= Math.ceil(alertasTotal / alertasLimit)
+                    }
+                    onClick={() => setAlertasPage((p) => p + 1)}
+                    className={`py-1.5 px-4 rounded-md text-sm font-medium transition-colors ${
+                      alertasPage >= Math.ceil(alertasTotal / alertasLimit)
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800 shadow-sm"
+                    }`}
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
