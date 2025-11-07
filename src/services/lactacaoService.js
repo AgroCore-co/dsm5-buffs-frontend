@@ -52,9 +52,36 @@ const buscarOrdenhasPorCiclo = async (idCicloLactacao, page = 1, limit = 20) => 
   }
 };
 
+/**
+ * Busca as estatísticas dos ciclos de lactação de uma propriedade específica.
+ * GET /ciclos-lactacao/propriedade/{id_propriedade}/estatisticas
+ *
+ * @param {string} idPropriedade - ID da propriedade (UUID, obrigatório)
+ * @returns {Promise<Object>} Estatísticas dos ciclos contendo:
+ *   - total_ciclos: Total de ciclos
+ *   - ciclos_ativos: Total de ciclos ativos
+ *   - ciclos_secos: Total de ciclos encerrados
+ *   - media_dias_lactacao: Média de duração dos ciclos
+ *   - ciclos_proximos_secagem: Ciclos próximos da secagem
+ *   - ciclos_secagem_atrasada: Ciclos com secagem atrasada
+ */
+const buscarEstatisticasCiclosPorPropriedade = async (idPropriedade) => {
+  if (!idPropriedade) throw new Error("ID da propriedade é obrigatório");
+  try {
+    console.log(`[lactacaoService] Buscando estatísticas dos ciclos para propriedade: ${idPropriedade}`);
+    const response = await get(`/ciclos-lactacao/propriedade/${idPropriedade}/estatisticas`);
+    console.log(`[lactacaoService] Estatísticas recebidas:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`[lactacaoService] Erro ao buscar estatísticas dos ciclos:`, error);
+    throw error;
+  }
+};
+
 const lactacaoService = {
   buscarResumoProducaoPorBufala,
   buscarOrdenhasPorCiclo,
+  buscarEstatisticasCiclosPorPropriedade,
 };
 
 export default lactacaoService;
