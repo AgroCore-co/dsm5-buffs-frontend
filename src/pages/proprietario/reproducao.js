@@ -826,7 +826,7 @@ export default function Reproducao() {
                   </div>
                 </div>
 
-                {/* <CHANGE> Reorganized metrics with visual indicators and better spacing */}
+                {/* Métricas de Consanguinidade */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 transition-colors">
                     <div className="flex items-center justify-between mb-2">
@@ -838,7 +838,7 @@ export default function Reproducao() {
                       </span>
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.consanguinidade_macho}%
+                      {simulationResult.raw?.consanguinidade_macho ?? 0}%
                     </p>
                   </div>
 
@@ -852,7 +852,7 @@ export default function Reproducao() {
                       </span>
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.consanguinidade_femea}%
+                      {simulationResult.raw?.consanguinidade_femea ?? 0}%
                     </p>
                   </div>
 
@@ -861,11 +861,20 @@ export default function Reproducao() {
                       <span className="text-sm text-gray-600">
                         Parentesco dos Pais
                       </span>
-                      
+                      {simulationResult.raw?.detalhes?.tem_parentesco_direto && (
+                        <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">
+                          ⚠️
+                        </span>
+                      )}
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.parentesco_pais}%
+                      {simulationResult.raw?.parentesco_pais ?? 0}%
                     </p>
+                    {simulationResult.raw?.nivel_parentesco && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        {simulationResult.raw.nivel_parentesco}
+                      </p>
+                    )}
                   </div>
 
                   <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 transition-colors">
@@ -873,23 +882,28 @@ export default function Reproducao() {
                       <span className="text-sm text-gray-600">
                         Consanguinidade da Prole
                       </span>
-                      
+                      {simulationResult.raw?.consanguinidade_prole > 12.5 && (
+                        <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                          Alto
+                        </span>
+                      )}
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.consanguinidade_prole}%
+                      {simulationResult.raw?.consanguinidade_prole ?? 0}%
                     </p>
                   </div>
                 </div>
 
-                {/* <CHANGE> Enhanced recommendation section with prominent styling */}
+                {/* Painel de Risco e Recomendação */}
                 <div className="space-y-4">
                   <div
                     className={`rounded-lg p-5 border-2 ${
                       simulationResult.raw?.risco_consanguinidade === "Baixo"
                         ? "bg-green-50 border-green-300"
-                        : simulationResult.raw?.risco_consanguinidade ===
-                          "Médio"
+                        : simulationResult.raw?.risco_consanguinidade === "Médio"
                         ? "bg-yellow-50 border-yellow-300"
+                        : simulationResult.raw?.risco_consanguinidade === "Alto"
+                        ? "bg-orange-50 border-orange-300"
                         : "bg-red-50 border-red-300"
                     }`}
                   >
@@ -899,44 +913,48 @@ export default function Reproducao() {
                       </span>
                       <span
                         className={`text-lg font-bold px-4 py-1.5 rounded-full ${
-                          simulationResult.raw?.risco_consanguinidade ===
-                          "Baixo"
+                          simulationResult.raw?.risco_consanguinidade === "Baixo"
                             ? "bg-green-600 text-white"
-                            : simulationResult.raw?.risco_consanguinidade ===
-                              "Médio"
+                            : simulationResult.raw?.risco_consanguinidade === "Médio"
                             ? "bg-yellow-600 text-white"
+                            : simulationResult.raw?.risco_consanguinidade === "Alto"
+                            ? "bg-orange-600 text-white"
                             : "bg-red-600 text-white"
                         }`}
                       >
-                        {simulationResult.raw?.risco_consanguinidade}
+                        {simulationResult.raw?.risco_consanguinidade || "Desconhecido"}
                       </span>
                     </div>
                     <div className="flex items-start gap-2">
                       <div className="flex-1">
-                        <p className="text-xs text-gray-600 mb-1 font-medium">
+                        <p className="text-xs text-gray-600 mb-1 font-medium uppercase tracking-wide">
                           Recomendação
                         </p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {simulationResult.raw?.recomendacao}
+                        <p className="text-sm font-semibold text-gray-900 leading-relaxed">
+                          {simulationResult.raw?.recomendacao || "Sem recomendação disponível"}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {simulationResult.raw?.predicao_producao_femea &&
-                    simulationResult.raw.predicao_producao_femea !== "-" && (
-                      <div className="bg-white rounded-lg p-5 border border-indigo-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg">📊</span>
-                          <span className="text-sm font-medium text-gray-700">
-                            Predição de Produção da Fêmea
-                          </span>
-                        </div>
-                        <p className="text-xl font-bold text-indigo-600 ml-7">
-                          {simulationResult.raw.predicao_producao_femea}
-                        </p>
+                 
+
+                  {/* Predição de Produção */}
+                  {simulationResult.raw?.predicao_producao_femea && (
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-5 border border-indigo-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span className="text-sm font-semibold text-gray-700">
+                          Predição de Produção da Fêmea
+                        </span>
                       </div>
-                    )}
+                      <p className="text-xl font-bold text-indigo-600 ml-7">
+                        {simulationResult.raw.predicao_producao_femea}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
