@@ -32,6 +32,10 @@ export default function Reproducao() {
   const [maleSearch, setMaleSearch] = useState("");
   const [femaleSearch, setFemaleSearch] = useState("");
 
+  // Estado para análise de búfalas (fêmeas disponíveis para reprodução)
+  const [femeasDisponiveis, setFemeasDisponiveis] = useState([]);
+  const [loadingFemeasDisponiveis, setLoadingFemeasDisponiveis] = useState(true);
+
   const filteredMales = males.filter(
     (m) =>
       (m.nome || m.name || "")
@@ -140,73 +144,100 @@ export default function Reproducao() {
     };
   }, [propriedadeId, page, limit]);
 
-  // Tabela geral (lista base de reproduções)
-  const reproducoesMock = [
-    {
-      tag: "BUF001",
-      vetResponsavel: "Dr. Silva",
-      dataInseminacao: "15/11/2024",
-      tipoInseminacao: "IA",
-      status: "Prenha",
-      dataStatus: "15/12/2024",
-    },
-    {
-      tag: "BUF002",
-      vetResponsavel: "Dra. Santos",
-      dataInseminacao: "10/11/2024",
-      tipoInseminacao: "IA",
-      status: "Prenha",
-      dataStatus: "10/12/2024",
-    },
-    {
-      tag: "BUF003",
-      vetResponsavel: "Dr. Costa",
-      dataInseminacao: "05/11/2024",
-      tipoInseminacao: "Monta",
-      status: "No cio",
-      dataStatus: "05/12/2024",
-    },
-    {
-      tag: "BUF004",
-      vetResponsavel: "Dra. Oliveira",
-      dataInseminacao: "01/11/2024",
-      tipoInseminacao: "IA",
-      status: "No cio",
-      dataStatus: "01/12/2024",
-    },
-    {
-      tag: "BUF005",
-      vetResponsavel: "Dr. Pereira",
-      dataInseminacao: "28/10/2024",
-      tipoInseminacao: "IA",
-      status: "Prenha",
-      dataStatus: "28/11/2024",
-    },
-    {
-      tag: "BUF006",
-      vetResponsavel: "Dra. Ferreira",
-      dataInseminacao: "25/10/2024",
-      tipoInseminacao: "Monta",
-      status: "Em processo",
-      dataStatus: "25/11/2024",
-    },
-    {
-      tag: "BUF007",
-      vetResponsavel: "Dr. Rodrigues",
-      dataInseminacao: "20/10/2024",
-      tipoInseminacao: "IA",
-      status: "Em processo",
-      dataStatus: "20/11/2024",
-    },
-    {
-      tag: "BUF008",
-      vetResponsavel: "Dra. Almeida",
-      dataInseminacao: "15/10/2024",
-      tipoInseminacao: "IA",
-      status: "Prenha",
-      dataStatus: "15/11/2024",
-    },
-  ];
+  // Buscar fêmeas disponíveis para análise de búfalas
+  useEffect(() => {
+    if (!propriedadeId) {
+      setFemeasDisponiveis([]);
+      return;
+    }
+    let ignore = false;
+    async function fetchFemeasDisponiveis() {
+      setLoadingFemeasDisponiveis(true);
+      try {
+        // Busca todas as fêmeas disponíveis para reprodução
+        const res = await coberturaService.listarFemeasDisponiveisReproducao(
+          propriedadeId,
+          "todas" // pode ser: "aptas", "solteiras", "vazias", "todas"
+        );
+        if (!ignore) {
+          // O serviço já retorna response.data, então res já é o array
+          const femeas = Array.isArray(res) ? res : [];
+          
+          // Função para calcular score de prioridade para reprodução
+          const calcularScore = (femea) => {
+            let score = 0;
+                
+            // 1. Fêmeas com histórico de lactação/reprodução (mais experientes)
+            if (femea.ciclo_atual && femea.ciclo_atual.numero_ciclo > 0) {
+              score += 30; // +30 pontos para fêmeas experientes
+              // Bônus para múltiplos ciclos
+              score += Math.min(femea.ciclo_atual.numero_ciclo * 5, 20);
+            }
+            
+            // 2. Tempo desde última cobertura (ideal: 60-180 dias)
+            if (femea.dias_desde_ultima_cobertura) {
+              if (femea.dias_desde_ultima_cobertura >= 60 && femea.dias_desde_ultima_cobertura <= 180) {
+                score += 25; // Período ideal
+              } else if (femea.dias_desde_ultima_cobertura > 180 && femea.dias_desde_ultima_cobertura <= 365) {
+                score += 15; // Ainda bom
+              } else if (femea.dias_desde_ultima_cobertura > 365) {
+                score += 10; // Muito tempo sem cobertura
+              }
+            } else {
+              // Primeira cobertura - depende da idade
+              if (femea.idade_meses >= 24 && femea.idade_meses <= 48) {
+                score += 20; // Idade ideal para primeira cobertura
+              }
+            }
+            
+            // 3. Idade ideal (24-144 meses = 2-12 anos)
+            if (femea.idade_meses >= 36 && femea.idade_meses <= 120) {
+              score += 20; // Idade produtiva ideal
+            } else if (femea.idade_meses >= 24 && femea.idade_meses < 36) {
+              score += 15; // Jovem, mas apta
+            } else if (femea.idade_meses > 120 && femea.idade_meses <= 144) {
+              score += 10; // Mais velha, mas ainda produtiva
+            }
+            
+            // 4. Sem recomendações especiais = totalmente pronta
+            if (Array.isArray(femea.recomendacoes) && femea.recomendacoes.length === 0) {
+              score += 15; // Sem restrições
+            }
+            
+            // 5. Status de lactação
+            if (femea.ciclo_atual && femea.ciclo_atual.dias_em_lactacao) {
+              // Ideal: já em lactação avançada (180+ dias)
+              if (femea.ciclo_atual.dias_em_lactacao >= 180) {
+                score += 10;
+              }
+            }
+            
+            return score;
+          };
+          
+          // Ordenar fêmeas por score (melhor primeiro) e pegar as top 5
+          const femeasOrdenadas = femeas
+            .map(f => ({ ...f, score: calcularScore(f) }))
+            .sort((a, b) => b.score - a.score);
+          
+          setFemeasDisponiveis(femeasOrdenadas);
+        }
+      } catch (e) {
+        console.error("Erro ao buscar fêmeas disponíveis:", e);
+        if (!ignore) {
+          setFemeasDisponiveis([]);
+        }
+      } finally {
+        if (!ignore) setLoadingFemeasDisponiveis(false);
+      }
+    }
+    fetchFemeasDisponiveis();
+    return () => {
+      ignore = true;
+    };
+  }, [propriedadeId]);
+
+ 
 
   const recommendationsMock = [
     {
@@ -410,117 +441,113 @@ export default function Reproducao() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-gradient-to-br from-white to-orange-50 p-6 rounded-xl shadow border border-orange-200">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                Análise de Búfalas
+                Top 5 Búfalas para Reprodução
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Todas as matrizes — melhor primeiro.
+                Classificadas por prontidão, idade, histórico e período ideal para cobertura.
               </p>
 
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse min-w-[500px] bg-white rounded-lg overflow-hidden shadow-sm">
+                <table className="w-full border-collapse min-w-[650px] bg-white rounded-lg overflow-hidden shadow-sm">
                   <thead className="bg-[#f0f0f0]">
                     <tr>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
+                        Rank
+                      </th>
                       <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                        #
-                      </th>
-                      <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                        TAG
+                        Nome/Brinco
                       </th>
                       <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Tentativas
+                        Idade
                       </th>
                       <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Concepções
+                        Ciclos
                       </th>
                       <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Taxa
+                        Última Cobertura
                       </th>
                       <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Status
+                        Score
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      {
-                        tag: "BUF031",
-                        tentativas: 5,
-                        concepcoes: 4,
-                        taxa: 80,
-                        status: "Prenha",
-                      },
-                      {
-                        tag: "BUF022",
-                        tentativas: 4,
-                        concepcoes: 3,
-                        taxa: 75,
-                        status: "Prenha",
-                      },
-                      {
-                        tag: "BUF017",
-                        tentativas: 3,
-                        concepcoes: 2,
-                        taxa: 66.7,
-                        status: "Em processo",
-                      },
-                      {
-                        tag: "BUF043",
-                        tentativas: 6,
-                        concepcoes: 4,
-                        taxa: 66.7,
-                        status: "Prenha",
-                      },
-                      {
-                        tag: "BUF050",
-                        tentativas: 5,
-                        concepcoes: 3,
-                        taxa: 60,
-                        status: "No cio",
-                      },
-                      {
-                        tag: "BUF064",
-                        tentativas: 4,
-                        concepcoes: 2,
-                        taxa: 50,
-                        status: "Em processo",
-                      },
-                    ].map((b, i) => (
-                      <tr
-                        key={b.tag}
-                        className={
-                          i === 0
-                            ? "bg-[#FFF4E0]"
-                            : i % 2 === 0
-                            ? "bg-[#fafafa]"
-                            : "bg-white"
-                        }
-                      >
-                        <td className="p-3 text-left text-gray-800 text-sm font-semibold">
-                          {i + 1}
-                        </td>
-                        <td className="p-3 text-left text-gray-800 text-sm font-semibold">
-                          {b.tag}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {b.tentativas}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {b.concepcoes}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm font-bold">
-                          {b.taxa}%
-                        </td>
-                        <td className="p-3 text-center">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(
-                              b.status
-                            )}`}
-                          >
-                            {b.status}
-                          </span>
+                    {loadingFemeasDisponiveis ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-gray-500">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#CE7D0A]"></div>
+                            <span>Carregando fêmeas disponíveis...</span>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : femeasDisponiveis.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-gray-500">
+                          Nenhuma fêmea disponível para reprodução.
+                        </td>
+                      </tr>
+                    ) : (
+                      femeasDisponiveis.slice(0, 5).map((femea, i) => {
+                        const rankBadge = i === 0 ? "1º" : i === 1 ? "2º" : i === 2 ? "3º" : `${i + 1}º`;
+                        const rankBadgeColor = 
+                          i === 0 ? "bg-yellow-500 text-white" :
+                          i === 1 ? "bg-gray-400 text-white" :
+                          i === 2 ? "bg-orange-700 text-white" :
+                          "bg-gray-300 text-gray-700";
+                        const scoreColor = 
+                          femea.score >= 80 ? "text-green-600 font-bold" :
+                          femea.score >= 60 ? "text-orange-600 font-semibold" :
+                          "text-gray-600";
+                        
+                        return (
+                          <tr
+                            key={femea.id_bufalo || i}
+                            className={
+                              i === 0
+                                ? "bg-[#FFF4E0]"
+                                : i % 2 === 0
+                                ? "bg-[#fafafa]"
+                                : "bg-white"
+                            }
+                          >
+                            <td className="p-3 text-center text-gray-800 text-base font-bold">
+                              <div className="flex items-center justify-center">
+                                <span className={`px-2 py-1 rounded-md text-xs font-bold ${rankBadgeColor}`}>
+                                  {rankBadge}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-3 text-left text-gray-800 text-sm font-semibold">
+                              <div>
+                                <div>{femea.nome || `Fêmea #${femea.id_bufalo}`}</div>
+                                {femea.brinco && (
+                                  <div className="text-xs text-gray-500">{femea.brinco}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {femea.idade_meses 
+                                ? `${Math.floor(femea.idade_meses / 12)}a ${femea.idade_meses % 12}m` 
+                                : "-"}
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {femea.ciclo_atual?.numero_ciclo || "1º"}
+                            </td>
+                            <td className="p-3 text-center text-gray-700 text-xs">
+                              {femea.dias_desde_ultima_cobertura 
+                                ? `${femea.dias_desde_ultima_cobertura} dias`
+                                : "Primeira"}
+                            </td>
+                            <td className="p-3 text-center">
+                              <span className={`text-base font-bold ${scoreColor}`}>
+                                {femea.score || 0}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
