@@ -16,6 +16,7 @@ import alertaService from "@/services/alertaService";
 import bufaloService from "@/services/bufaloService";
 import ProducaoModal from "@/components/proprietario/lactacao/ProducaoModal";
 import AlertaDetalhesModal from "@/components/proprietario/lactacao/AlertaDetalhesModal";
+import lactacaoService from "@/services/lactacaoService";
 
 export default function Lactacao() {
   // obter id da propriedade via context
@@ -41,6 +42,11 @@ export default function Lactacao() {
   const [producaoMensal, setProducaoMensal] = useState(null);
   const [producaoLoading, setProducaoLoading] = useState(false);
   const [producaoError, setProducaoError] = useState(null);
+
+  // Estado para estatísticas dos ciclos de lactação
+  const [estatisticasCiclos, setEstatisticasCiclos] = useState(null);
+  const [loadingEstatisticas, setLoadingEstatisticas] = useState(false);
+  const [errorEstatisticas, setErrorEstatisticas] = useState(null);
 
   // Função para buscar produção mensal
   const fetchProducaoMensal = async (ano = new Date().getFullYear()) => {
@@ -430,11 +436,38 @@ export default function Lactacao() {
     }
   };
 
+  // Buscar estatísticas dos ciclos de lactação
+  useEffect(() => {
+    const fetchEstatisticasCiclos = async () => {
+      if (!propriedadeId) return;
+      setLoadingEstatisticas(true);
+      try {
+        const data = await lactacaoService.buscarEstatisticasCiclosPorPropriedade(propriedadeId);
+        setEstatisticasCiclos(data);
+      } catch (error) {
+        setErrorEstatisticas(error);
+      } finally {
+        setLoadingEstatisticas(false);
+      }
+    };
+
+    fetchEstatisticasCiclos();
+  }, [propriedadeId]);
+
   // Buscar quando propriedadeId ou ano mudarem
   useEffect(() => {
-    if (propriedadeId) fetchLactacaoStats(selectedYear);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (propriedadeId) {
+      fetchLactacaoStats(selectedYear);
+    }
   }, [propriedadeId, selectedYear]);
+
+  // Indicadores
+  const totalCiclos = estatisticasCiclos?.total_ciclos || 0;
+  const ciclosAtivos = estatisticasCiclos?.ciclos_ativos || 0;
+  const ciclosSecos = estatisticasCiclos?.ciclos_secos || 0;
+  const mediaDiasLactacao = estatisticasCiclos?.media_dias_lactacao || 0;
+
+
 
   // Ranking derivado dos ciclos retornados pelo dashboard
   const rankingBufalas = useMemo(() => {
@@ -485,7 +518,7 @@ export default function Lactacao() {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             Controle de Produção
           </h1>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0] flex flex-col gap-1">
               <span className="text-sm font-semibold text-[var(--color-text-secondary)]">
                 Búfalas Lactando
@@ -526,8 +559,24 @@ export default function Lactacao() {
                 {litrosMesAnterior.toFixed(1)} L no mês anterior
               </span>
             </div>
+            <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0] flex flex-col gap-1">
+              <span className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                Total de Ciclos
+              </span>
+              {loadingEstatisticas ? (
+                <span className="text-gray-500">Carregando...</span>
+              ) : errorEstatisticas ? (
+                <span className="text-red-500">Erro</span>
+              ) : (
+                <span className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
+                  {totalCiclos}
+                </span>
+              )}
+            </div>
           </div>
         </div>
+
+        
 
         {/* Gráfico produção mês a mês + painel de alertas */}
         <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
