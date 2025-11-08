@@ -292,7 +292,8 @@ const RelatorioRebanho = forwardRef(({ data, meta, propriedadeNome }, ref) => {
                           <span style={{ padding: '4px 8px', borderRadius: '9999px', fontSize: '12px', fontWeight: 'bold', display: 'inline-block', minWidth: '80px', backgroundColor: '#fecaca', color: '#991b1b' }}>
                             Inativo
                           </span>
-                        )}
+                        )}CORS_ORIGIN="http://localhost:3001,http://localhost:3000,http://10.153.1.255:3000,htt://10.188.7.31:3000"
+
                       </td>
                     </tr>
                   ))
