@@ -8,6 +8,7 @@ import dadosSanitariosService from "@/services/dadosSanitariosService";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, XAxis, YAxis, Bar } from "recharts";
 import BuffaloModal from "@/components/proprietario/rebanho/prontuarioModal";
 import CriarBufaloModal from "@/components/proprietario/rebanho/CriarBufaloModal";
+import GerarRelatorioModal from "@/components/proprietario/relatorios/GerarRelatorioModal";
 
 export default function Rebanho() {
 	// obter id da propriedade via context
@@ -26,6 +27,7 @@ export default function Rebanho() {
 	const [modalOpen, setModalOpen] = useState(false);
 	const [bufaloSelecionado, setBufaloSelecionado] = useState(null);
 	const [modalCriarBufaloOpen, setModalCriarBufaloOpen] = useState(false);
+	const [modalRelatorioOpen, setModalRelatorioOpen] = useState(false);
 
 	// frequência de doenças
 	const [frequenciaDoencas, setFrequenciaDoencas] = useState([]);
@@ -292,12 +294,23 @@ export default function Rebanho() {
 				<div className="mb-4">
 					<div className="flex justify-between items-center mb-2">
 						<h2 className="text-2xl font-bold text-gray-800">Registro de Búfalos</h2>
-						<button
-							className="bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800 font-medium py-2 px-4 rounded-lg"
-							onClick={() => setModalCriarBufaloOpen(true)}
-						>
-							+ Adicionar Búfalo
-						</button>
+						<div className="flex gap-3">
+							<button
+								className="bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg border border-gray-300 flex items-center gap-2 transition-colors"
+								onClick={() => setModalRelatorioOpen(true)}
+							>
+								<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+								</svg>
+								Gerar Relatório
+							</button>
+							<button
+								className="bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800 font-medium py-2 px-4 rounded-lg"
+								onClick={() => setModalCriarBufaloOpen(true)}
+							>
+								+ Adicionar Búfalo
+							</button>
+						</div>
 					</div>
 					<p className="text-gray-600">Lista estática para visualização do layout.</p>
 				</div>
@@ -450,17 +463,22 @@ export default function Rebanho() {
 					</ResponsiveContainer>
 				)}
 			</div>
-
-			<BuffaloModal open={modalOpen} onClose={() => setModalOpen(false)} idBufalo={bufaloSelecionado} />
-			<CriarBufaloModal
-				open={modalCriarBufaloOpen}
-				onClose={() => setModalCriarBufaloOpen(false)}
-				propriedadeId={propriedadeId}
-				onSuccess={() => {
-					// Atualizar lista de búfalos após criar um novo
-					setPage(1); // Reinicia a paginação para carregar a lista atualizada
-				}}
-			/>
-		</div>
+		<BuffaloModal open={modalOpen} onClose={() => setModalOpen(false)} idBufalo={bufaloSelecionado} />
+		<CriarBufaloModal
+			open={modalCriarBufaloOpen}
+			onClose={() => setModalCriarBufaloOpen(false)}
+			propriedadeId={propriedadeId}
+			onSuccess={() => {
+				// Atualizar lista de búfalos após criar um novo
+				setPage(1); // Reinicia a paginação para carregar a lista atualizada
+			}}
+		/>
+		<GerarRelatorioModal
+			open={modalRelatorioOpen}
+			onClose={() => setModalRelatorioOpen(false)}
+			propriedadeId={propriedadeId}
+			propriedadeNome={bufalos[0]?.propriedade?.nome || "Propriedade"}
+		/>
+	</div>
 	);
 }
