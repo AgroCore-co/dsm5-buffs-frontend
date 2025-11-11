@@ -36,6 +36,11 @@ export default function Reproducao() {
   const [femeasDisponiveis, setFemeasDisponiveis] = useState([]);
   const [loadingFemeasDisponiveis, setLoadingFemeasDisponiveis] = useState(true);
 
+  // Estado para análise de touros (machos disponíveis para reprodução)
+  const [machosDisponiveis, setMachosDisponiveis] = useState([]);
+  const [loadingMachos, setLoadingMachos] = useState(true);
+  const [errorMachos, setErrorMachos] = useState(null);
+
   const filteredMales = males.filter(
     (m) =>
       (m.nome || m.name || "")
@@ -155,72 +160,17 @@ export default function Reproducao() {
       setLoadingFemeasDisponiveis(true);
       try {
         // Busca todas as fêmeas disponíveis para reprodução
-        const res = await coberturaService.listarFemeasDisponiveisReproducao(
-          propriedadeId,
-          "todas" // pode ser: "aptas", "solteiras", "vazias", "todas"
+        const res = await coberturaService.listarRecomendacoesFemeas(
+          propriedadeId
         );
         if (!ignore) {
           // O serviço já retorna response.data, então res já é o array
           const femeas = Array.isArray(res) ? res : [];
-          
-          // Função para calcular score de prioridade para reprodução
-          const calcularScore = (femea) => {
-            let score = 0;
-                
-            // 1. Fêmeas com histórico de lactação/reprodução (mais experientes)
-            if (femea.ciclo_atual && femea.ciclo_atual.numero_ciclo > 0) {
-              score += 30; // +30 pontos para fêmeas experientes
-              // Bônus para múltiplos ciclos
-              score += Math.min(femea.ciclo_atual.numero_ciclo * 5, 20);
-            }
-            
-            // 2. Tempo desde última cobertura (ideal: 60-180 dias)
-            if (femea.dias_desde_ultima_cobertura) {
-              if (femea.dias_desde_ultima_cobertura >= 60 && femea.dias_desde_ultima_cobertura <= 180) {
-                score += 25; // Período ideal
-              } else if (femea.dias_desde_ultima_cobertura > 180 && femea.dias_desde_ultima_cobertura <= 365) {
-                score += 15; // Ainda bom
-              } else if (femea.dias_desde_ultima_cobertura > 365) {
-                score += 10; // Muito tempo sem cobertura
-              }
-            } else {
-              // Primeira cobertura - depende da idade
-              if (femea.idade_meses >= 24 && femea.idade_meses <= 48) {
-                score += 20; // Idade ideal para primeira cobertura
-              }
-            }
-            
-            // 3. Idade ideal (24-144 meses = 2-12 anos)
-            if (femea.idade_meses >= 36 && femea.idade_meses <= 120) {
-              score += 20; // Idade produtiva ideal
-            } else if (femea.idade_meses >= 24 && femea.idade_meses < 36) {
-              score += 15; // Jovem, mas apta
-            } else if (femea.idade_meses > 120 && femea.idade_meses <= 144) {
-              score += 10; // Mais velha, mas ainda produtiva
-            }
-            
-            // 4. Sem recomendações especiais = totalmente pronta
-            if (Array.isArray(femea.recomendacoes) && femea.recomendacoes.length === 0) {
-              score += 15; // Sem restrições
-            }
-            
-            // 5. Status de lactação
-            if (femea.ciclo_atual && femea.ciclo_atual.dias_em_lactacao) {
-              // Ideal: já em lactação avançada (180+ dias)
-              if (femea.ciclo_atual.dias_em_lactacao >= 180) {
-                score += 10;
-              }
-            }
-            
-            return score;
-          };
-          
+
           // Ordenar fêmeas por score (melhor primeiro) e pegar as top 5
-          const femeasOrdenadas = femeas
-            .map(f => ({ ...f, score: calcularScore(f) }))
-            .sort((a, b) => b.score - a.score);
-          
-          setFemeasDisponiveis(femeasOrdenadas);
+          const femeasOrdenadas = femeas.sort((a, b) => b.score - a.score);
+
+          setFemeasDisponiveis(femeasOrdenadas.slice(0, 5));
         }
       } catch (e) {
         console.error("Erro ao buscar fêmeas disponíveis:", e);
@@ -237,26 +187,38 @@ export default function Reproducao() {
     };
   }, [propriedadeId]);
 
- 
-
-  const recommendationsMock = [
-    {
-      male: { tag: "Apolo #1033", symbol: "♂" },
-      female: { tag: "Safira #1048", symbol: "♀" },
-      score: 88,
-    },
-    {
-      male: { tag: "Thor #1028", symbol: "♂" },
-      female: { tag: "Bella #1041", symbol: "♀" },
-      score: 85,
-    },
-    {
-      male: { tag: "Hades #1029", symbol: "♂" },
-      female: { tag: "Jade #1044", symbol: "♀" },
-      score: 79,
-    },
-  ];
-
+  // Buscar machos disponíveis para análise de touros
+  useEffect(() => {
+    if (!propriedadeId) {
+      setMachosDisponiveis([]);
+      return;
+    }
+    let ignore = false;
+    async function fetchMachosDisponiveis() {
+      setLoadingMachos(true);
+      setErrorMachos(null);
+      try {
+        const response = await coberturaService.listarRecomendacoesMachos(
+          propriedadeId,
+          { limit: 5 }
+        );
+        if (!ignore) {
+          setMachosDisponiveis(response);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setErrorMachos("Erro ao carregar machos disponíveis para reprodução.");
+        }
+      } finally {
+        if (!ignore) setLoadingMachos(false);
+      }
+    }
+    fetchMachosDisponiveis();
+    return () => {
+      ignore = true;
+    };
+  }, [propriedadeId]);
+  
   // Os búfalos disponíveis agora vêm do backend (males, females)
 
   // Função de simulação de acasalamento via backend
@@ -461,12 +423,12 @@ export default function Reproducao() {
                         Idade
                       </th>
                       <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Ciclos
+                        Raça
                       </th>
                       <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Última Cobertura
+                        Status
                       </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
+                      <th className="p-3 text-center">
                         Score
                       </th>
                     </tr>
@@ -488,7 +450,7 @@ export default function Reproducao() {
                         </td>
                       </tr>
                     ) : (
-                      femeasDisponiveis.slice(0, 5).map((femea, i) => {
+                      femeasDisponiveis.map((femea, i) => {
                         const rankBadge = i === 0 ? "1º" : i === 1 ? "2º" : i === 2 ? "3º" : `${i + 1}º`;
                         const rankBadgeColor = 
                           i === 0 ? "bg-yellow-500 text-white" :
@@ -499,7 +461,7 @@ export default function Reproducao() {
                           femea.score >= 80 ? "text-green-600 font-bold" :
                           femea.score >= 60 ? "text-orange-600 font-semibold" :
                           "text-gray-600";
-                        
+
                         return (
                           <tr
                             key={femea.id_bufalo || i}
@@ -532,12 +494,10 @@ export default function Reproducao() {
                                 : "-"}
                             </td>
                             <td className="p-3 text-center text-gray-800 text-sm">
-                              {femea.ciclo_atual?.numero_ciclo || "1º"}
+                              {femea.raca || "-"}
                             </td>
-                            <td className="p-3 text-center text-gray-700 text-xs">
-                              {femea.dias_desde_ultima_cobertura 
-                                ? `${femea.dias_desde_ultima_cobertura} dias`
-                                : "Primeira"}
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {femea.dados_reprodutivos?.status || "-"}
                             </td>
                             <td className="p-3 text-center">
                               <span className={`text-base font-bold ${scoreColor}`}>
@@ -555,97 +515,103 @@ export default function Reproducao() {
 
             <div className="bg-gradient-to-br from-white to-blue-50 p-6 rounded-xl shadow border border-blue-200">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                Análise de Touros
+                Top 5 Touros para Reprodução
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Todos os touros — melhor primeiro.
+                Classificados por idade, histórico, taxa de sucesso e qualidade genética.
               </p>
 
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse min-w-[520px] bg-white rounded-lg overflow-hidden shadow-sm">
+                <table className="w-full border-collapse min-w-[650px] bg-white rounded-lg overflow-hidden shadow-sm">
                   <thead className="bg-[#f0f0f0]">
                     <tr>
-                      <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                        #
-                      </th>
-                      <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                        Touro
-                      </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Coberturas
-                      </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Prenhezes
-                      </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Taxa
-                      </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Intervalo
-                      </th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Rank</th>
+                      <th className="p-3 text-left font-medium text-gray-800 text-sm">Nome/Brinco</th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Idade</th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Raça</th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Status</th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Score</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      {
-                        nome: "Touro Titan",
-                        coberturas: 40,
-                        prenhezes: 32,
-                        taxa: 80,
-                        mediaIntervaloDias: 19,
-                      },
-                      {
-                        nome: "Touro Atlas",
-                        coberturas: 36,
-                        prenhezes: 27,
-                        taxa: 75,
-                        mediaIntervaloDias: 21,
-                      },
-                      {
-                        nome: "Touro Brutus",
-                        coberturas: 28,
-                        prenhezes: 20,
-                        taxa: 71.4,
-                        mediaIntervaloDias: 22,
-                      },
-                      {
-                        nome: "Touro Magnus",
-                        coberturas: 25,
-                        prenhezes: 17,
-                        taxa: 68,
-                        mediaIntervaloDias: 23,
-                      },
-                    ].map((t, i) => (
-                      <tr
-                        key={t.nome}
-                        className={
-                          i === 0
-                            ? "bg-[#FFF4E0]"
-                            : i % 2 === 0
-                            ? "bg-[#fafafa]"
-                            : "bg-white"
-                        }
-                      >
-                        <td className="p-3 text-left text-gray-800 text-sm font-semibold">
-                          {i + 1}
-                        </td>
-                        <td className="p-3 text-left text-gray-800 text-sm font-semibold">
-                          {t.nome}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {t.coberturas}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {t.prenhezes}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm font-bold">
-                          {t.taxa}%
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {t.mediaIntervaloDias} dias
+                    {loadingMachos ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-gray-500">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                            <span>Carregando touros disponíveis...</span>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : errorMachos ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-red-500">
+                          {errorMachos}
+                        </td>
+                      </tr>
+                    ) : machosDisponiveis.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-gray-500">
+                          Nenhum touro disponível para reprodução.
+                        </td>
+                      </tr>
+                    ) : (
+                      machosDisponiveis.map((macho, i) => {
+                        const rankBadgeColor =
+                          i === 0
+                            ? "bg-blue-500 text-white"
+                            : i === 1
+                            ? "bg-blue-400 text-white"
+                            : i === 2
+                            ? "bg-blue-300 text-white"
+                            : "bg-gray-200 text-gray-800";
+
+                        return (
+                          <tr
+                            key={macho.id_bufalo || i}
+                            className={
+                              i === 0
+                                ? "bg-[#E0F7FF]"
+                                : i % 2 === 0
+                                ? "bg-[#fafafa]"
+                                : "bg-white"
+                            }
+                          >
+                            <td className="p-3 text-center text-gray-800 text-base font-bold">
+                              <div className="flex items-center justify-center">
+                                <span className={`px-2 py-1 rounded-md text-xs font-bold ${rankBadgeColor}`}>
+                                  {i + 1}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-3 text-left text-gray-800 text-sm font-semibold">
+                              <div>
+                                <div>{macho.nome || `Touro #${macho.id_bufalo}`}</div>
+                                {macho.brinco && (
+                                  <div className="text-xs text-gray-500">{macho.brinco}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {macho.idade_meses
+                                ? `${Math.floor(macho.idade_meses / 12)}a ${macho.idade_meses % 12}m`
+                                : "-"}
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {macho.raca || "-"}
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {macho.dados_reprodutivos?.status || "-"}
+                            </td>
+                            <td className="p-3 text-center">
+                              <span className="text-base font-bold text-gray-800">
+                                {macho.score}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
