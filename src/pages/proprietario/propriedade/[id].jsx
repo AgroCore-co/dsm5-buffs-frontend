@@ -339,6 +339,9 @@ export default function PropriedadePage() {
                   <span className={`w-2 h-2 rounded-full ${lote.status === "ativo" ? "bg-green-500" : "bg-red-500"}`}></span>
                 </div>
                 <div className="space-y-2">
+                  <div className="text-xs text-gray-500 mb-2 truncate" title={lote.id_lote}>
+                    ID: {lote.id_lote}
+                  </div>
                   <div className="text-xs text-gray-600">
                     <div><span className="font-bold">{lote.qtd_max || 0}</span> búfalos</div>
                     <div className="truncate"><span className="font-bold">{lote.area_m2 || "-"}</span> m²</div>
@@ -392,6 +395,7 @@ export default function PropriedadePage() {
             <table className="w-full border-collapse min-w-[700px] bg-white rounded-lg overflow-hidden">
               <thead className="bg-[#f8f8f8]">
                 <tr>
+                  <th className="p-3 text-left font-medium text-gray-800 text-sm">ID</th>
                   <th className="p-3 text-left font-medium text-gray-800 text-sm">Nome</th>
                   <th className="p-3 text-left font-medium text-gray-800 text-sm">Cor</th>
                   <th className="p-3 text-left font-medium text-gray-800 text-sm">Nível</th>
@@ -408,6 +412,9 @@ export default function PropriedadePage() {
                       style={{ backgroundColor: isEven ? 'var(--table-row-even)' : 'white' }}
                       className="hover:opacity-95"
                     >
+                      <td className="p-3 text-left text-gray-500 text-xs" title={gid}>
+                        {gid ? gid : '-'}
+                      </td>
                       <td className="p-3 text-left text-gray-800 text-sm font-medium">{grupo.nome_grupo}</td>
                       <td className="p-3 text-left text-gray-700 text-sm">
                         <div className="inline-flex items-center gap-2">
@@ -512,6 +519,9 @@ export default function PropriedadePage() {
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-base font-semibold text-gray-800 truncate">{lote.nome_lote}</h3>
                         <span className={`w-2 h-2 rounded-full ${lote.status === "ativo" ? "bg-green-500" : "bg-red-500"}`}></span>
+                      </div>
+                      <div className="text-xs text-gray-500 mb-2 truncate" title={lote.id_lote}>
+                        ID: {lote.id_lote}
                       </div>
                       <div className="text-xs text-gray-600 mb-1">{lote.tipo_lote}</div>
                       <div className="space-y-1">

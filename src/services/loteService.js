@@ -60,11 +60,23 @@ const removerLote = async (id) => {
   }
 };
 
+/**
+ * Busca um lote pelo ID
+ * @param {string} id - ID do lote (UUID)
+ * @returns {Promise<Object>} Dados do lote
+ */
+const buscarLotePorId = async (id) => {
+  if (!id) throw new Error("ID do lote é obrigatório");
+  const response = await get(`/lotes/${id}`);
+  return response.data;
+};
+
 const loteService = {
   listarLotesPorPropriedade,
   atualizarLote,
   criarLote,
   removerLote,
+  buscarLotePorId,
 };
 
 export default loteService;
