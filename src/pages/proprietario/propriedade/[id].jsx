@@ -395,36 +395,82 @@ export default function PropriedadePage() {
             <table className="w-full border-collapse min-w-[700px] bg-white rounded-lg overflow-hidden">
               <thead className="bg-[#f8f8f8]">
                 <tr>
-                  <th className="p-3 text-left font-medium text-gray-800 text-sm">ID</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-sm">Nome</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-sm">Cor</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-sm">Nível</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-sm">ID</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-sm">Nome</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-sm">Cor</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-sm">Nível</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-sm">Status</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-sm">Piquete</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-sm">Desde</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-sm">Dias no Local</th>
                   <th className="p-3 text-center font-medium text-gray-800 text-sm">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {grupos.map((grupo, index) => {
                   const gid = grupo.id_grupo || grupo.id || grupo._id;
-                  const isEven = index % 2 === 1; // 0-based index: odd index => even row visually
+                  const isEven = index % 2 === 1;
+                  // Estado para status do grupo
+                  const [statusGrupo, setStatusGrupo] = useState(null);
+                  const [nomeLote, setNomeLote] = useState('-');
+                  useEffect(() => {
+                    let mounted = true;
+                    async function fetchStatusAndLote() {
+                      try {
+                        const movLoteService = (await import('@/services/movLoteService')).default;
+                        const status = await movLoteService.verificarStatusGrupo(gid);
+                        if (mounted) setStatusGrupo(status);
+                        // Buscar nome do lote se houver id_lote
+                        if (status?.localizacao_atual?.id_lote) {
+                          const loteService = (await import('@/services/loteService')).default;
+                          const lote = await loteService.buscarLotePorId(status.localizacao_atual.id_lote);
+                          if (mounted) setNomeLote(lote?.nome_lote || '-');
+                        } else {
+                          if (mounted) setNomeLote('-');
+                        }
+                      } catch (err) {
+                        if (mounted) {
+                          setStatusGrupo({ mensagem: 'Sem movimentações', notFound: true });
+                          setNomeLote('-');
+                        }
+                      }
+                    }
+                    fetchStatusAndLote();
+                    return () => { mounted = false; };
+                  }, [gid]);
                   return (
                     <tr
                       key={gid}
                       style={{ backgroundColor: isEven ? 'var(--table-row-even)' : 'white' }}
                       className="hover:opacity-95"
                     >
-                      <td className="p-3 text-left text-gray-500 text-xs" title={gid}>
-                        {gid ? gid : '-'}
-                      </td>
-                      <td className="p-3 text-left text-gray-800 text-sm font-medium">{grupo.nome_grupo}</td>
-                      <td className="p-3 text-left text-gray-700 text-sm">
-                        <div className="inline-flex items-center gap-2">
+                      <td className="p-3 text-center text-gray-500 text-xs" title={gid}>{gid ? gid : '-'}</td>
+                      <td className="p-3 text-center text-gray-800 text-sm font-medium">{grupo.nome_grupo}</td>
+                      <td className="p-3 text-center text-gray-700 text-sm">
+                        <div className="inline-flex items-center gap-2 justify-center">
                           <span className="w-4 h-4 rounded-full border" style={{ backgroundColor: grupo.color || '#ddd' }} />
                           <span className="text-sm text-gray-700">{grupo.color || '-'}</span>
                         </div>
                       </td>
-                      <td className="p-3 text-left text-gray-800 text-sm">{nivelLabel(grupo.nivel_maturidade)}</td>
+                      <td className="p-3 text-center text-gray-800 text-sm">{nivelLabel(grupo.nivel_maturidade)}</td>
+                      {/* STATUS COLUMN */}
+                      <td className="p-3 text-center text-gray-800 text-sm">
+                        {statusGrupo === null ? (
+                          <span className="text-gray-400">Carregando...</span>
+                        ) : statusGrupo.notFound ? (
+                          <span className="text-red-500">Grupo sem movimentações registradas</span>
+                        ) : statusGrupo.localizacao_atual ? (
+                          <span className="text-green-700">Em lote</span>
+                        ) : (
+                          <span className="text-gray-500">Status desconhecido</span>
+                        )}
+                      </td>
+                      {/* NOME DO PIQUETE (LOTE) */}
+                      <td className="p-3 text-center text-gray-800 text-xs">{statusGrupo === null ? <span className="text-gray-400">Carregando...</span> : nomeLote}</td>
+                      <td className="p-3 text-center text-gray-800 text-xs">{statusGrupo?.localizacao_atual?.desde ? new Date(statusGrupo.localizacao_atual.desde).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</td>
+                      <td className="p-3 text-center text-gray-800 text-xs">{statusGrupo?.localizacao_atual?.dias_no_local != null ? statusGrupo.localizacao_atual.dias_no_local : '-'}</td>
                       <td className="p-3 text-center">
-                        <div className="inline-flex items-center gap-2">
+                        <div className="inline-flex items-center gap-2 justify-center">
                           <button
                             className="bg-[#FCA90F] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
                             onClick={() => openEditGrupoModal(grupo)}
@@ -1201,17 +1247,17 @@ export default function PropriedadePage() {
             <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
               <thead className="bg-[#f0f0f0]">
                 <tr>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Tipo</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Descrição</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Ações</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Tipo</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Descrição</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {definicoes.map((def) => (
                   <tr key={def.id_aliment_def} className="border-b border-gray-200">
-                    <td className="p-3 text-left text-sm font-medium text-gray-800">{def.tipo_alimentacao}</td>
-                    <td className="p-3 text-left text-sm text-gray-600">{def.descricao}</td>
-                    <td className="p-3 text-left flex gap-2">
+                    <td className="p-3 text-center text-sm font-medium text-gray-800">{def.tipo_alimentacao}</td>
+                    <td className="p-3 text-center text-sm text-gray-600">{def.descricao}</td>
+                    <td className="p-3 text-center flex gap-2">
                       <button
                         className="bg-[#FCA90F] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
                         onClick={() => openEditDefModal(def)}
@@ -1251,27 +1297,27 @@ export default function PropriedadePage() {
             <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
               <thead className="bg-[#f0f0f0]">
                 <tr>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Grupo</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Tipo</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Descrição</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Quantidade</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Frequência/Dia</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Usuário</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Data</th>
-                  <th className="p-3 text-left font-medium text-gray-800 text-base">Ações</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Grupo</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Tipo</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Descrição</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Quantidade</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Frequência/Dia</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Usuário</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Data</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {registros.map((reg) => (
                   <tr key={reg.id_registro} className="border-b border-gray-200">
-                    <td className="p-3 text-left text-sm font-medium text-gray-800">{reg.grupo?.nome_grupo || '-'}</td>
-                    <td className="p-3 text-left text-sm text-gray-800">{reg.alimentacao_def?.tipo_alimentacao || '-'}</td>
-                    <td className="p-3 text-left text-sm text-gray-600">{reg.alimentacao_def?.descricao || '-'}</td>
-                    <td className="p-3 text-left text-sm text-gray-600">{reg.quantidade} {reg.unidade_medida}</td>
-                    <td className="p-3 text-left text-sm text-gray-600">{reg.freq_dia}</td>
-                    <td className="p-3 text-left text-sm text-gray-600">{reg.usuario?.nome || '-'}</td>
-                    <td className="p-3 text-left text-sm text-gray-600">{reg.dt_registro ? new Date(reg.dt_registro).toLocaleDateString() : '-'}</td>
-                    <td className="p-3 text-left flex gap-2">
+                    <td className="p-3 text-center text-sm font-medium text-gray-800">{reg.grupo?.nome_grupo || '-'}</td>
+                    <td className="p-3 text-center text-sm text-gray-800">{reg.alimentacao_def?.tipo_alimentacao || '-'}</td>
+                    <td className="p-3 text-center text-sm text-gray-600">{reg.alimentacao_def?.descricao || '-'}</td>
+                    <td className="p-3 text-center text-sm text-gray-600">{reg.quantidade} {reg.unidade_medida}</td>
+                    <td className="p-3 text-center text-sm text-gray-600">{reg.freq_dia}</td>
+                    <td className="p-3 text-center text-sm text-gray-600">{reg.usuario?.nome || '-'}</td>
+                    <td className="p-3 text-center text-sm text-gray-600">{reg.dt_registro ? new Date(reg.dt_registro).toLocaleDateString() : '-'}</td>
+                    <td className="p-3 text-center flex gap-2">
                       <button
                         className="bg-[#FCA90F] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
                         onClick={() => openEditRegistroModal(reg)}

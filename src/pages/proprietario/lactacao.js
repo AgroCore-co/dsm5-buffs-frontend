@@ -914,6 +914,34 @@ export default function Lactacao() {
               </tbody>
             </table>
           </div>
+          {/* Paginação igual à tela de rebanho */}
+          {lactacaoMeta.totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-2 mt-4">
+              <button
+                onClick={() => setLactacaoPage((p) => Math.max(1, p - 1))}
+                disabled={lactacaoMeta.page <= 1}
+                className={`px-4 py-2 rounded-lg font-medium ${lactacaoMeta.page <= 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
+              >
+                Anterior
+              </button>
+              {Array.from({ length: lactacaoMeta.totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setLactacaoPage(p)}
+                  className={`w-10 h-10 rounded-lg font-medium ${lactacaoMeta.page === p ? "bg-[#CE7D0A] text-white" : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"}`}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() => setLactacaoPage((p) => Math.min(lactacaoMeta.totalPages, p + 1))}
+                disabled={lactacaoMeta.page >= lactacaoMeta.totalPages}
+                className={`px-4 py-2 rounded-lg font-medium ${lactacaoMeta.page >= lactacaoMeta.totalPages ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
+              >
+                Próximo
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
