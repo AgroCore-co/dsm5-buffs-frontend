@@ -8,6 +8,7 @@ import alimentacaoDefService from "@/services/alimentacaoDefService";
 import alimentacaoRegistroService from "@/services/alimentacaoRegistroService";
 import grupoService from "@/services/grupoService";
 import dynamic from "next/dynamic";
+import GrupoDetalhesModal from "@/components/proprietario/propriedades/GrupoDetalhesModal";
 import GrupoCreateModal from "@/components/proprietario/propriedades/GrupoCreateModal";
 import GrupoEditModal from "@/components/proprietario/propriedades/GrupoEditModal";
 import LoteEditModal from "@/components/proprietario/propriedades/LoteEditModal";
@@ -208,6 +209,18 @@ export default function PropriedadePage() {
   const [modalEditGrupoOpen, setModalEditGrupoOpen] = useState(false);
   const [modalCreateGrupoOpen, setModalCreateGrupoOpen] = useState(false);
   const [formGrupo, setFormGrupo] = useState({ nome_grupo: "", color: "", nivel_maturidade: "" });
+  // Modal de detalhes do grupo
+  const [grupoDetalhesOpen, setGrupoDetalhesOpen] = useState(false);
+  const [grupoSelecionado, setGrupoSelecionado] = useState(null);
+
+  function handleOpenGrupoDetalhes(grupo) {
+    setGrupoSelecionado(grupo);
+    setGrupoDetalhesOpen(true);
+  }
+  function handleCloseGrupoDetalhes() {
+    setGrupoDetalhesOpen(false);
+    setGrupoSelecionado(null);
+  }
   const [savingGrupo, setSavingGrupo] = useState(false);
   const [deletingGrupoId, setDeletingGrupoId] = useState(null);
   const [deletingGrupo, setDeletingGrupo] = useState(false);
@@ -441,8 +454,9 @@ export default function PropriedadePage() {
                   return (
                     <tr
                       key={gid}
-                      style={{ backgroundColor: isEven ? 'var(--table-row-even)' : 'white' }}
+                      style={{ backgroundColor: isEven ? 'var(--table-row-even)' : 'white', cursor: 'pointer' }}
                       className="hover:opacity-95"
+                      onClick={() => handleOpenGrupoDetalhes(grupo)}
                     >
                       <td className="p-3 text-center text-gray-500 text-xs" title={gid}>{gid ? gid : '-'}</td>
                       <td className="p-3 text-center text-gray-800 text-sm font-medium">{grupo.nome_grupo}</td>
@@ -473,13 +487,13 @@ export default function PropriedadePage() {
                         <div className="inline-flex items-center gap-2 justify-center">
                           <button
                             className="bg-[#FCA90F] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
-                            onClick={() => openEditGrupoModal(grupo)}
+                            onClick={e => { e.stopPropagation(); openEditGrupoModal(grupo); }}
                           >
                             Editar
                           </button>
                           <button
                             className="bg-[#CE7D0A] text-white px-3 py-1 rounded text-xs font-bold hover:bg-[#e6b866] transition-colors"
-                            onClick={() => openDeleteGrupoModal(gid)}
+                            onClick={e => { e.stopPropagation(); openDeleteGrupoModal(gid); }}
                           >
                             Excluir
                           </button>
@@ -519,6 +533,9 @@ export default function PropriedadePage() {
           propriedadeId={id}
           onUpdated={(updated) => setLotes(prev => prev.map(l => (l.id_lote === editLoteId ? updated : l)))}
         />
+
+        {/* Modal de detalhes do grupo */}
+        <GrupoDetalhesModal open={grupoDetalhesOpen} onClose={handleCloseGrupoDetalhes} grupo={grupoSelecionado} />
 
         <LoteCreateModal
           isOpen={createLoteOpen}
