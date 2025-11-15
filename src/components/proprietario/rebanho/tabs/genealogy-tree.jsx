@@ -114,7 +114,9 @@ export default function GenealogyTree({ current, parents, grandparents, greatGra
     const obs = new ResizeObserver(recalc)
     if (canvasRef.current) obs.observe(canvasRef.current)
     const onResize = () => recalc()
-    window.addEventListener("resize", onResize)
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", onResize)
+    }
 
     const onFsChange = () => {
       const doc = document
@@ -129,7 +131,9 @@ export default function GenealogyTree({ current, parents, grandparents, greatGra
 
     return () => {
       obs.disconnect()
-      window.removeEventListener("resize", onResize)
+      if (typeof window !== "undefined") {
+        window.removeEventListener("resize", onResize)
+      }
       document.removeEventListener("fullscreenchange", onFsChange)
       document.removeEventListener("webkitfullscreenchange", onFsChange)
       document.removeEventListener("MSFullscreenChange", onFsChange)
