@@ -33,39 +33,39 @@ export default function Login() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!validate()) return;
 
-    setLoading(true);
-    setErrors({});
+  setLoading(true);
+  setErrors({});
 
-    try {
-      const data = await signin({ email, password });
+  try {
+    const data = await signin({ email, password });
 
-      if (data.access_token) {
-        localStorage.setItem("token", data.access_token);
-        if (data.refresh_token)
-          localStorage.setItem("refresh_token", data.refresh_token);
+    if (data.access_token) {
+      localStorage.setItem("token", data.access_token);
+      if (data.refresh_token)
+        localStorage.setItem("refresh_token", data.refresh_token);
 
-        // Redireciona sem recarregar a página
-        router.push("/");
-        router.refresh(); // opcional – atualiza dados server-side
-      } else {
-        setErrors({ general: "Resposta inesperada do servidor." });
-      }
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        setErrors({
-          general: "Credenciais inválidas ou email não confirmado.",
-        });
-      } else {
-        setErrors({ general: "Erro ao tentar fazer login. Tente novamente." });
-      }
-    } finally {
-      setLoading(false);
+      router.push("/");
+      router.refresh(); // opcional
+    } else {
+      setErrors({ general: "Resposta inesperada do servidor." });
     }
-  };
+  } catch (err: any) {
+    if (err.response?.status === 401) {
+      setErrors({
+        general: "Credenciais inválidas ou email não confirmado.",
+      });
+    } else {
+      setErrors({ general: "Erro ao tentar fazer login. Tente novamente." });
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className={`${styles.container} ${styles.loginPage}`}>
