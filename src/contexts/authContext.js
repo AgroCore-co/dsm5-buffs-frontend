@@ -32,7 +32,9 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("token");
     localStorage.removeItem("refresh_token");
     setUser(null);
-    window.location.href = "/auth/login";
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login";
+    }
   }
 
   return (

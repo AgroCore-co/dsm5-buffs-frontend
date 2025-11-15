@@ -30,7 +30,9 @@ export default function Login() {
       if (data.access_token) {
         localStorage.setItem("token", data.access_token);
         if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
-        window.location.href = "/";
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        }
       } else {
         setErrors({ general: "Resposta inesperada do servidor." });
       }
