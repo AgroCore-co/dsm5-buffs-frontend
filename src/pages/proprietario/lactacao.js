@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { usePropriedade } from "@/contexts/propriedadeContext";
@@ -406,7 +406,7 @@ export default function Lactacao() {
   };
 
   // Busca dados do dashboard para o ano selecionado
-  const fetchLactacaoStats = async (ano = selectedYear) => {
+  const fetchLactacaoStats = useCallback(async (ano = selectedYear) => {
     if (!propriedadeId) return;
     setLactacaoLoading(true);
     setLactacaoError(null);
@@ -422,10 +422,10 @@ export default function Lactacao() {
     } finally {
       setLactacaoLoading(false);
     }
-  };
+  }, [propriedadeId, selectedYear]);
 
   // Função para buscar búfalas em lactação
-  const fetchFemeasEmLactacao = async () => {
+  const fetchFemeasEmLactacao = useCallback(async () => {
     if (!propriedadeId) return;
     setLactacaoLoading(true);
     setLactacaoError(null);
@@ -465,7 +465,7 @@ export default function Lactacao() {
     } finally {
       setLactacaoLoading(false);
     }
-  };
+  }, [propriedadeId]);
 
   // Buscar estatísticas dos ciclos de lactação
   useEffect(() => {
@@ -491,7 +491,7 @@ export default function Lactacao() {
       fetchLactacaoStats(selectedYear);
       fetchFemeasEmLactacao(); // Buscar búfalas em lactação
     }
-  }, [propriedadeId, selectedYear]);
+    }, [propriedadeId, selectedYear, fetchFemeasEmLactacao, fetchLactacaoStats]);
 
   // Indicadores
   const totalCiclos = estatisticasCiclos?.total_ciclos || 0;
