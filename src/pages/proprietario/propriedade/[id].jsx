@@ -263,8 +263,12 @@ export default function PropriedadePage() {
     }
 
     // Listen for drawn polygon from MapaPiquetes
+    useEffect(() => {/* Lines 267-278 omitted */}, []);
     useEffect(() => {
-      function handler(e) {
+      // Evita erro no servidor
+      if (typeof window === 'undefined') return;
+
+      const handler = (e) => {
         const geo = e?.detail?.geo_mapa;
         const area_m2 = e?.detail?.area_m2 ?? null;
         if (geo) {
@@ -272,7 +276,8 @@ export default function PropriedadePage() {
           setCreateLoteArea(area_m2);
           setCreateLoteOpen(true);
         }
-      }
+      };
+
       window.addEventListener('mapa:nova-geometria', handler);
       return () => window.removeEventListener('mapa:nova-geometria', handler);
     }, []);
