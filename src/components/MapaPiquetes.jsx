@@ -149,7 +149,9 @@ export default function MapaPiquetes({ propriedadeId, lotes: externalLotes, onLo
     if (typeof onLotesChange === 'function') {
       try { onLotesChange(prev => prev); } catch (e) { /* no-op */ }
     }
-    window.dispatchEvent(new CustomEvent('mapa:nova-geometria', { detail: { geo_mapa, area_m2 } }));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent('mapa:nova-geometria', { detail: { geo_mapa, area_m2 } }));
+    }
     setDrawing(false);
     setDrawPoints([]);
   };
