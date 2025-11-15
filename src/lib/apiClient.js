@@ -38,7 +38,9 @@ apiClient.interceptors.response.use(
         const token = localStorage.getItem("token");
         if (token) {
           localStorage.removeItem("token");
-          window.location.href = "/auth/login";
+          if (typeof window !== "undefined") {
+            window.location.href = "/auth/login";
+          }
         }
         // Se não há token, não redireciona (ex: tentativa de login com senha errada)
       }
