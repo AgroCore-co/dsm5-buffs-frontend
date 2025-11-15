@@ -31,6 +31,8 @@ export default function ProducaoModal({ open, onClose, idBufala }) {
   const [error, setError] = useState(null);
   const [ordenhasPage, setOrdenhasPage] = useState(1);
   const [ordenhasLimit, setOrdenhasLimit] = useState(5);
+  const [ciclosPage, setCiclosPage] = useState(1);
+  const [ciclosLimit, setCiclosLimit] = useState(10);
 
   useEffect(() => {
     if (open && idBufala) {
@@ -176,6 +178,10 @@ export default function ProducaoModal({ open, onClose, idBufala }) {
     }
     return null;
   };
+
+  const totalCiclos = comparativo_ciclos?.length || 0;
+  const totalPagesCiclos = Math.max(1, Math.ceil(totalCiclos / ciclosLimit));
+  const ciclosPaginados = comparativo_ciclos?.slice((ciclosPage - 1) * ciclosLimit, ciclosPage * ciclosLimit) || [];
 
   return (
     <div
@@ -347,7 +353,7 @@ export default function ProducaoModal({ open, onClose, idBufala }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {comparativo_ciclos.map((ciclo, idx) => (
+                        {ciclosPaginados.map((ciclo, idx) => (
                           <tr key={ciclo.numero_ciclo} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${idx % 2 === 0 ? "" : "bg-gray-50/50"}`}>
                             <td className="p-2.5 text-gray-900 text-xs font-semibold">
                               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#CE7D0A] text-white text-xs font-bold">
@@ -366,6 +372,34 @@ export default function ProducaoModal({ open, onClose, idBufala }) {
                       </tbody>
                     </table>
                   </div>
+                  {/* Paginação igual à tela de rebanho */}
+                  {totalPagesCiclos > 1 && (
+                    <div className="flex justify-center items-center space-x-2 mt-4">
+                      <button
+                        onClick={() => setCiclosPage((p) => Math.max(1, p - 1))}
+                        disabled={ciclosPage <= 1}
+                        className={`px-4 py-2 rounded-lg font-medium ${ciclosPage <= 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
+                      >
+                        Anterior
+                      </button>
+                      {Array.from({ length: totalPagesCiclos }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setCiclosPage(p)}
+                          className={`w-10 h-10 rounded-lg font-medium ${ciclosPage === p ? "bg-[#CE7D0A] text-white" : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"}`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setCiclosPage((p) => Math.min(totalPagesCiclos, p + 1))}
+                        disabled={ciclosPage >= totalPagesCiclos}
+                        className={`px-4 py-2 rounded-lg font-medium ${ciclosPage >= totalPagesCiclos ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
+                      >
+                        Próximo
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -52,9 +52,83 @@ const listarFemeasDisponiveisReproducao = async (idPropriedade, filtro = 'aptas'
   return response.data;
 };
 
+/**
+ * Lista ranking de fêmeas recomendadas para acasalamento.
+ * GET /cobertura/recomendacoes/femeas/{id_propriedade}
+ *
+ * Calcula score de prioridade baseado em critérios zootécnicos:
+ * - Experiência reprodutiva (0-50 pts)
+ * - Intervalo reprodutivo adequado (0-25 pts)
+ * - Idade ideal (0-20 pts)
+ * - Ausência de restrições (0-15 pts)
+ * - Status de lactação (0-10 pts)
+ *
+ * @param {string} idPropriedade - ID da propriedade (obrigatório)
+ * @param {number} [limit] - Limitar quantidade de resultados (ex: top 10)
+ * @returns {Promise<Array>} Lista ordenada de fêmeas por score decrescente (0-100)
+ * 
+ * @example
+ * // Buscar top 10 fêmeas recomendadas
+ * const top10 = await listarRecomendacoesFemeas('uuid-propriedade', 10);
+ * 
+ * // Buscar todas as fêmeas recomendadas
+ * const todas = await listarRecomendacoesFemeas('uuid-propriedade');
+ */
+const listarRecomendacoesFemeas = async (idPropriedade, limit) => {
+  if (!idPropriedade) throw new Error("ID da propriedade é obrigatório");
+  
+  let url = `/cobertura/recomendacoes/femeas/${idPropriedade}`;
+  
+  // Adicionar limit à query string se fornecido
+  if (limit && Number.isInteger(Number(limit)) && Number(limit) > 0) {
+    url += `?limit=${limit}`;
+  }
+  
+  const response = await get(url);
+  return response.data;
+};
+
+/**
+ * Lista ranking de machos recomendados para acasalamento.
+ * GET /cobertura/recomendacoes/machos/{id_propriedade}
+ *
+ * Calcula score de prioridade baseado em critérios:
+ * - Idade e maturidade (0-25 pts)
+ * - Histórico de acasalamentos (0-25 pts)
+ * - Taxa de sucesso (0-30 pts)
+ * - Intervalo de descanso (0-10 pts)
+ * - Qualidade genética ABCB (0-10 pts)
+ *
+ * @param {string} idPropriedade - ID da propriedade (obrigatório)
+ * @param {number} [limit] - Limitar quantidade de resultados (ex: top 5)
+ * @returns {Promise<Array>} Lista ordenada de machos por score decrescente (0-100)
+ * 
+ * @example
+ * // Buscar top 5 machos recomendados
+ * const top5 = await listarRecomendacoesMachos('uuid-propriedade', 5);
+ * 
+ * // Buscar todos os machos recomendados
+ * const todos = await listarRecomendacoesMachos('uuid-propriedade');
+ */
+const listarRecomendacoesMachos = async (idPropriedade, limit) => {
+  if (!idPropriedade) throw new Error("ID da propriedade é obrigatório");
+  
+  let url = `/cobertura/recomendacoes/machos/${idPropriedade}`;
+  
+  // Adicionar limit à query string se fornecido
+  if (limit && Number.isInteger(Number(limit)) && Number(limit) > 0) {
+    url += `?limit=${limit}`;
+  }
+  
+  const response = await get(url);
+  return response.data;
+};
+
 const coberturaService = {
   listarCoberturasPorPropriedade,
   listarFemeasDisponiveisReproducao,
+  listarRecomendacoesFemeas,
+  listarRecomendacoesMachos,
 };
 
 export default coberturaService;

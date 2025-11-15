@@ -78,10 +78,31 @@ const buscarEstatisticasCiclosPorPropriedade = async (idPropriedade) => {
   }
 };
 
+/**
+ * Lista todas as búfalas em lactação de uma propriedade específica.
+ * GET /lactacao/femeas/em-lactacao/{id_propriedade}
+ *
+ * @param {string} idPropriedade - ID da propriedade (UUID, obrigatório)
+ * @returns {Promise<Array>} Lista de búfalas em lactação com seus dados de produção.
+ */
+const listarFemeasEmLactacao = async (idPropriedade) => {
+  if (!idPropriedade) throw new Error("ID da propriedade é obrigatório");
+  try {
+    console.log(`[lactacaoService] Buscando fêmeas em lactação para propriedade: ${idPropriedade}`);
+    const response = await get(`/lactacao/femeas/em-lactacao/${idPropriedade}`);
+    console.log(`[lactacaoService] Fêmeas em lactação recebidas:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`[lactacaoService] Erro ao buscar fêmeas em lactação:`, error);
+    throw error;
+  }
+};
+
 const lactacaoService = {
   buscarResumoProducaoPorBufala,
   buscarOrdenhasPorCiclo,
   buscarEstatisticasCiclosPorPropriedade,
+  listarFemeasEmLactacao,
 };
 
 export default lactacaoService;

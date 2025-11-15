@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { usePropriedade } from "@/contexts/propriedadeContext";
@@ -58,11 +58,9 @@ export default function Lactacao() {
         propriedadeId,
         ano
       );
-      console.log("📊 Dados de Produção Mensal:", data);
-      console.log("📊 Série Histórica:", data?.serie_historica);
       setProducaoMensal(data);
     } catch (err) {
-      console.error("❌ Erro ao buscar produção mensal:", err);
+      console.error("Erro ao buscar produção mensal:", err);
       setProducaoError(
         "Não foi possível carregar os dados de produção mensal."
       );
@@ -262,18 +260,15 @@ export default function Lactacao() {
 
   useEffect(() => {
     if (propriedadeId) {
-      console.log("🔄 Carregando dados da propriedade:", propriedadeId);
       setLoading(true);
       dashboardService
         .getDashboardStatsByPropriedadeId(propriedadeId)
         .then((data) => {
-          console.log("✅ Dashboard Stats recebido:", data);
-          console.log("  - Búfalas lactando:", data.qtd_bufalas_lactando);
           setBufalasLactando(data.qtd_bufalas_lactando);
           setLoading(false);
         })
         .catch((err) => {
-          console.error("❌ Erro ao carregar dashboard stats:", err);
+          console.error("Erro ao carregar dashboard stats:", err);
           setError("Erro ao carregar búfalas lactando.");
           setLoading(false);
         });
@@ -325,20 +320,13 @@ export default function Lactacao() {
   // ==== MOCK: gráfico mês a mês ====
   const graficoProducaoMes = useMemo(() => {
     if (!producaoMensal?.serie_historica) {
-      console.log("⚠️ Nenhum dado de série histórica encontrado");
       return [];
     }
-
-    console.log(
-      "📈 Processando série histórica para o gráfico:",
-      producaoMensal.serie_historica
-    );
 
     return producaoMensal.serie_historica.map((item) => {
       const mesFormatado = new Date(item.mes + "-01").toLocaleString("pt-BR", {
         month: "short",
       });
-      console.log(`  - ${item.mes}: ${item.total_litros}L (${mesFormatado})`);
       return {
         mes: mesFormatado,
         litros: item.total_litros,
@@ -418,7 +406,7 @@ export default function Lactacao() {
   };
 
   // Busca dados do dashboard para o ano selecionado
-  const fetchLactacaoStats = async (ano = selectedYear) => {
+  const fetchLactacaoStats = useCallback(async (ano = selectedYear) => {
     if (!propriedadeId) return;
     setLactacaoLoading(true);
     setLactacaoError(null);
@@ -434,7 +422,50 @@ export default function Lactacao() {
     } finally {
       setLactacaoLoading(false);
     }
-  };
+  }, [propriedadeId, selectedYear]);
+
+  // Função para buscar búfalas em lactação
+  const fetchFemeasEmLactacao = useCallback(async () => {
+    if (!propriedadeId) return;
+    setLactacaoLoading(true);
+    setLactacaoError(null);
+    try {
+      const data = await lactacaoService.listarFemeasEmLactacao(propriedadeId);
+      
+      // Atualizar lactacaoStats com os dados recebidos
+      setLactacaoStats({
+        ciclos: data.map((bufala, index) => {
+          // Tentar diferentes possíveis localizações dos campos
+          const brinco = bufala.brinco || bufala.numero_brinco || bufala.identificacao || null;
+          const raca = bufala.raca || bufala.nome_raca || bufala.raca_nome || null;
+          
+          // Buscar ultima_ordenha em diferentes níveis
+          let ultimaOrdenha = bufala.producao_atual?.ultima_ordenha || bufala.ultima_ordenha || null;
+          
+          // Usar o campo correto de ID (tentar múltiplas opções)
+          const bufalaId = bufala.id || bufala.id_bufalo || bufala.id_animal;
+          
+          return {
+            posicao: index + 1,
+            id_bufala: bufalaId, // ID da búfala para abrir o modal
+            nome_bufala: bufala.nome,
+            brinco: brinco,
+            raca: raca,
+            dias_em_lactacao: bufala.ciclo_atual?.dias_em_lactacao,
+            media_lactacao: bufala.producao_atual?.media_diaria,
+            lactacao_total: bufala.producao_atual?.total_produzido,
+            ultima_ordenha: ultimaOrdenha,
+          };
+        }),
+      });
+    } catch (error) {
+      console.error("Erro ao carregar búfalas em lactação:", error);
+      setLactacaoError("Erro ao carregar búfalas em lactação.");
+      setLactacaoStats(null);
+    } finally {
+      setLactacaoLoading(false);
+    }
+  }, [propriedadeId]);
 
   // Buscar estatísticas dos ciclos de lactação
   useEffect(() => {
@@ -458,8 +489,9 @@ export default function Lactacao() {
   useEffect(() => {
     if (propriedadeId) {
       fetchLactacaoStats(selectedYear);
+      fetchFemeasEmLactacao(); // Buscar búfalas em lactação
     }
-  }, [propriedadeId, selectedYear]);
+    }, [propriedadeId, selectedYear, fetchFemeasEmLactacao, fetchLactacaoStats]);
 
   // Indicadores
   const totalCiclos = estatisticasCiclos?.total_ciclos || 0;
@@ -479,6 +511,8 @@ export default function Lactacao() {
       posicao: index + 1,
       id_bufala: ciclo.id_bufala,
       nome_bufala: ciclo.nome_bufala,
+      brinco: ciclo.brinco,
+      raca: ciclo.raca,
       numero_parto: ciclo.numero_parto,
       dt_parto: ciclo.dt_parto,
       dt_secagem_real: ciclo.dt_secagem_real,
@@ -486,6 +520,7 @@ export default function Lactacao() {
       media_lactacao: ciclo.media_lactacao,
       lactacao_total: ciclo.lactacao_total,
       classificacao: ciclo.classificacao, // 'Ótima', 'Boa', 'Mediana', 'Ruim'
+      ultima_ordenha: ciclo.ultima_ordenha,
     }));
   }, [lactacaoStats]);
 
@@ -807,191 +842,101 @@ export default function Lactacao() {
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
               Búfalas em Lactação
             </h2>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Ano:</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="border rounded px-2 py-1 text-sm"
-              >
-                {Array.from({ length: 5 }).map((_, i) => {
-                  const y = currentYear - i;
-                  return (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
           </div>
-          {lactacaoStats?.media_rebanho_ano && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <span className="text-sm font-semibold text-blue-800">
-                Média do Rebanho ({selectedYear}):{" "}
-              </span>
-              <span className="text-lg font-bold text-blue-900">
-                {lactacaoStats.media_rebanho_ano.toFixed(2)} L
-              </span>
-            </div>
-          )}
           <p className="text-gray-600">
             {lactacaoLoading
               ? "Carregando..."
               : lactacaoError
               ? lactacaoError
-              : `Lista completa de búfalas em lactação com ${lactacaoMeta.total} animais.`}
+              : `Lista completa de búfalas em lactação com ${paginatedRanking.length} animais.`}
           </p>
           <div className="overflow-x-auto w-full">
-            <table className="w-full border-collapse min-w-[650px] bg-white rounded-lg overflow-hidden shadow-sm">
+            <table className="w-full border-collapse min-w-[800px] bg-white rounded-lg overflow-hidden shadow-sm">
               <thead className="bg-[#f0f0f0]">
                 <tr>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
-                    Nome
-                  </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
-                    Parto
-                  </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
-                    Data Parto
-                  </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
-                    Data Secagem
-                  </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
-                    Dias em Lactação
-                  </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
-                    Média Lactação
-                  </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
-                    Total Lactação
-                  </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
-                    Classificação
-                  </th>
-                  <th className="p-3 text-center font-medium text-gray-800 text-base">
-                    Prontuário
-                  </th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Nome</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Brinco</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Raça</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Dias em Lactação</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Produção Total</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Média Diária</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Última Ordenha</th>
+                  <th className="p-3 text-center font-medium text-gray-800 text-base">Ações</th>
                 </tr>
               </thead>
-              <tbody>
-                {paginatedRanking.map((ciclo, idx) => {
-                  // Definir cor da classificação
-                  const getClassificacaoColor = (classificacao) => {
-                    switch (classificacao) {
-                      case "Ótima":
-                        return "bg-green-100 text-green-800 border border-green-300";
-                      case "Boa":
-                        return "bg-blue-100 text-blue-800 border border-blue-300";
-                      case "Mediana":
-                        return "bg-yellow-100 text-yellow-800 border border-yellow-300";
-                      case "Ruim":
-                        return "bg-red-100 text-red-800 border border-red-300";
-                      default:
-                        return "bg-gray-100 text-gray-800 border border-gray-300";
-                    }
-                  };
-
-                  return (
-                    /* compute a stable key: prefer id_ciclo_lactacao, fallback to id_bufala + index */
+              <tbody className="divide-y divide-gray-200">
+                {lactacaoLoading ? (
+                  <tr>
+                    <td colSpan="8" className="text-center p-6 text-gray-500">Carregando búfalas...</td>
+                  </tr>
+                ) : paginatedRanking.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="text-center p-6 text-gray-500">Nenhuma búfala em lactação encontrada</td>
+                  </tr>
+                ) : (
+                  paginatedRanking.map((bufala, idx) => (
                     <tr
-                      key={
-                        ciclo.id_ciclo_lactacao ??
-                        `${ciclo.id_bufala ?? "buf"}-${
-                          (lactacaoMeta.page - 1) * lactacaoLimit + idx
-                        }`
-                      }
-                      className={idx % 2 === 0 ? "bg-[#fafafa]" : "bg-white"}
+                      key={bufala.id_bufala || `row-${idx}`}
+                      className="odd:bg-white even:bg-[#fafafa]"
                     >
                       <td className="p-3 text-center text-gray-800 text-base font-medium">
-                        {ciclo.nome_bufala}
+                        {bufala.nome_bufala || "-"}
                       </td>
                       <td className="p-3 text-center text-gray-800 text-base">
-                        {ciclo.numero_parto}
+                        {bufala.brinco || "-"}
                       </td>
                       <td className="p-3 text-center text-gray-800 text-base">
-                        {ciclo.dt_parto}
+                        {bufala.raca || "-"}
                       </td>
                       <td className="p-3 text-center text-gray-800 text-base">
-                        {ciclo.dt_secagem_real || "-"}
+                        {bufala.dias_em_lactacao || "-"}
                       </td>
                       <td className="p-3 text-center text-gray-800 text-base">
-                        {ciclo.dias_em_lactacao}
+                        {bufala.lactacao_total ? bufala.lactacao_total.toFixed(2) : "-"} L
                       </td>
                       <td className="p-3 text-center text-gray-800 text-base">
-                        {ciclo.media_lactacao?.toFixed(2)} L
+                        {bufala.media_lactacao ? bufala.media_lactacao.toFixed(2) : "-"} L
                       </td>
                       <td className="p-3 text-center text-gray-800 text-base">
-                        {ciclo.lactacao_total?.toFixed(2)} L
+                        {bufala.ultima_ordenha?.quantidade ? bufala.ultima_ordenha.quantidade.toFixed(2) + " L" : "-"}
                       </td>
-                      <td className="p-3 text-center text-base">
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-semibold ${getClassificacaoColor(
-                            ciclo.classificacao
-                          )}`}
-                        >
-                          {ciclo.classificacao}
-                        </span>
-                      </td>
-                      <td className="p-3 text-center text-base">
+                      <td className="p-3 text-center">
                         <button
-                          onClick={() => abrirModalProducao(ciclo.id_bufala)}
-                          className="bg-[#FFCF78] border-none text-gray-800 py-2 px-3.5 rounded-lg cursor-pointer text-sm font-bold hover:bg-[#F2B84D] transition-colors"
+                          onClick={() => abrirModalProducao(bufala.id_bufala)}
+                          className="bg-[#FFCF78] hover:bg-[#F2B84D] text-black px-3 py-1 rounded-lg text-sm font-medium"
                         >
-                          Prontuário
+                          Produção
                         </button>
                       </td>
                     </tr>
-                  );
-                })}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-          {/* Paginação similar à tela Rebanho */}
-          {lactacaoMeta && lactacaoMeta.totalPages > 1 && (
+          {/* Paginação igual à tela de rebanho */}
+          {lactacaoMeta.totalPages > 1 && (
             <div className="flex justify-center items-center space-x-2 mt-4">
               <button
                 onClick={() => setLactacaoPage((p) => Math.max(1, p - 1))}
                 disabled={lactacaoMeta.page <= 1}
-                className={`px-4 py-2 rounded-lg font-medium ${
-                  lactacaoMeta.page <= 1
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium ${lactacaoMeta.page <= 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
               >
                 Anterior
               </button>
-
-              {Array.from(
-                { length: lactacaoMeta.totalPages },
-                (_, i) => i + 1
-              ).map((p) => (
+              {Array.from({ length: lactacaoMeta.totalPages }, (_, i) => i + 1).map((p) => (
                 <button
-                  key={`lapage-${p}`}
+                  key={p}
                   onClick={() => setLactacaoPage(p)}
-                  className={`w-10 h-10 rounded-lg font-medium ${
-                    lactacaoMeta.page === p
-                      ? "bg-[#CE7D0A] text-white"
-                      : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
-                  }`}
+                  className={`w-10 h-10 rounded-lg font-medium ${lactacaoMeta.page === p ? "bg-[#CE7D0A] text-white" : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"}`}
                 >
                   {p}
                 </button>
               ))}
-
               <button
-                onClick={() =>
-                  setLactacaoPage((p) =>
-                    Math.min(lactacaoMeta.totalPages, p + 1)
-                  )
-                }
+                onClick={() => setLactacaoPage((p) => Math.min(lactacaoMeta.totalPages, p + 1))}
                 disabled={lactacaoMeta.page >= lactacaoMeta.totalPages}
-                className={`px-4 py-2 rounded-lg font-medium ${
-                  lactacaoMeta.page >= lactacaoMeta.totalPages
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium ${lactacaoMeta.page >= lactacaoMeta.totalPages ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"}`}
               >
                 Próximo
               </button>
@@ -1000,18 +945,30 @@ export default function Lactacao() {
         </div>
       </div>
 
-      {/* Modal de Produção */}
+      {/* Modais */}
       <ProducaoModal
         open={modalProducaoOpen}
         onClose={fecharModalProducao}
         idBufala={bufalaIdSelecionada}
+        propriedadeId={propriedadeId}
+        onSuccess={() => {
+          fecharModalProducao();
+          // Recarregar dados após ação bem-sucedida no modal
+          fetchProducaoMensal();
+          fetchAlertasProducao();
+          fetchFemeasEmLactacao();
+        }}
       />
-
-      {/* Modal de Detalhes do Alerta */}
       <AlertaDetalhesModal
         open={modalAlertaOpen}
         onClose={fecharModalAlerta}
         idAlerta={alertaIdSelecionado}
+        bufaloNamesCache={bufaloNamesCache}
+        onSuccess={() => {
+          fecharModalAlerta();
+          // Recarregar alertas após ação no modal
+          fetchAlertasProducao();
+        }}
       />
     </>
   );
