@@ -1,64 +1,42 @@
-// pages/auth/login.tsx
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { signin } from "@/services/authService";
 import styles from "@/styles/Login.module.css";
 import Button from "@/components/Button";
 
-interface Errors {
-  email?: string;
-  password?: string;
-  general?: string;
-}
-
 export default function Login() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<Errors>({});
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  /** Validação simples */
-  const validate = (): boolean => {
-    const newErrors: Errors = {};
+  const validate = () => {
+    const newErrors = {};
     if (!email) newErrors.email = "Email é obrigatório.";
     if (!password) newErrors.password = "Senha é obrigatória.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-
     setLoading(true);
     setErrors({});
-
     try {
       const data = await signin({ email, password });
-
       if (data.access_token) {
         localStorage.setItem("token", data.access_token);
-        if (data.refresh_token)
-          localStorage.setItem("refresh_token", data.refresh_token);
-
-        // Redireciona sem recarregar a página
-        router.push("/");
-        router.refresh(); // opcional – atualiza dados server-side
+        if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
+        window.location.href = "/";
       } else {
         setErrors({ general: "Resposta inesperada do servidor." });
       }
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        setErrors({
-          general: "Credenciais inválidas ou email não confirmado.",
-        });
+    } catch (err) {
+      if (err.response && err.response.status === 401) {
+        setErrors({ general: "Credenciais inválidas ou email não confirmado." });
       } else {
         setErrors({ general: "Erro ao tentar fazer login. Tente novamente." });
       }
@@ -69,16 +47,16 @@ export default function Login() {
 
   return (
     <div className={`${styles.container} ${styles.loginPage}`}>
-      {/* ---------- FORM ---------- */}
       <div className={styles.formSection}>
         <div className={styles.formBox}>
-          {/* LOGO */}
+          
+          {/* Logo adicionado aqui */}
           <div className={styles.logoContainer}>
             <Image
-              src="/images/Logo-buffs.svg"
+              src="/images/Logo-buffs.svg" // Ou o .png que preferir
               alt="Logo Buff's"
-              width={150}
-              height={70}
+              width={150} // Ajuste o tamanho conforme necessário
+              height={70} // Ajuste o tamanho conforme necessário
               priority
             />
           </div>
@@ -89,24 +67,22 @@ export default function Login() {
           </p>
 
           <form className={styles.form} onSubmit={handleSubmit} noValidate>
-            {errors.general && (
-              <div className={styles.error} style={{ marginBottom: 12 }}>
-                {errors.general}
-              </div>
-            )}
 
-            {/* EMAIL */}
+            {errors.general && (
+              <div className={styles.error} style={{ marginBottom: 12 }}>{errors.general}</div>
+            )}
             <div className={styles.inputGroup}>
               <input
                 type="email"
                 id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                name="email"
                 className={styles.input}
                 placeholder=" "
                 autoComplete="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
+                aria-describedby="email-error"
                 disabled={loading}
               />
               <label htmlFor="email" className={styles.label}>
@@ -116,60 +92,46 @@ export default function Login() {
                 <Image src="/images/icon_email.svg" alt="" width={20} height={20} />
               </span>
               {errors.email && (
-                <span id="email-error" className={styles.error}>
-                  {errors.email}
-                </span>
+                <span id="email-error" className={styles.error}>{errors.email}</span>
               )}
             </div>
 
-            {/* PASSWORD */}
             <div className={styles.inputGroup}>
               <input
                 type={showPassword ? "text" : "password"}
                 id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                name="password"
                 className={styles.input}
                 placeholder=" "
                 autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
                 aria-invalid={!!errors.password}
-                aria-describedby={errors.password ? "password-error" : undefined}
+                aria-describedby="password-error"
                 disabled={loading}
               />
               <label htmlFor="password" className={styles.label}>
                 Senha
               </label>
-
               <button
                 type="button"
                 className={styles.icon}
                 aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                 aria-pressed={showPassword}
-                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={0}
+                onClick={() => setShowPassword(v => !v)}
                 disabled={loading}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  cursor: "pointer",
-                }}
+                style={{background: "none", border: "none", padding: 0, cursor: "pointer"}}
               >
                 <Image
-                  src={
-                    showPassword
-                      ? "/images/not-view-password.svg"
-                      : "/images/not-view-password-bloqued.svg"
-                  }
+                  src={showPassword ? "/images/not-view-password.svg" : "/images/not-view-password-bloqued.svg"}
                   alt=""
                   width={20}
                   height={20}
                 />
               </button>
-
               {errors.password && (
-                <span id="password-error" className={styles.error}>
-                  {errors.password}
-                </span>
+                <span id="password-error" className={styles.error}>{errors.password}</span>
               )}
             </div>
 
@@ -178,10 +140,10 @@ export default function Login() {
               variant="primary"
               size="full"
               className={styles.loginButton}
-              disabled={loading}
               aria-busy={loading}
+              disabled={loading}
             >
-              {loading ? "Entrando…" : "Log in"}
+              {loading ? "Entrando..." : "Log in"}
             </Button>
           </form>
 
@@ -189,7 +151,6 @@ export default function Login() {
             <span>ou</span>
           </div>
 
-          {/* GOOGLE */}
           <Button
             type="button"
             variant="secondary"
@@ -205,12 +166,13 @@ export default function Login() {
               padding: 0,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "center"
             }}
           >
-            <Image
-              src="/images/google-icon.svg"
-              alt="Google"
+            <Image 
+              src="/images/google-icon.svg" 
+              alt="Google" 
+              className={styles.googleIcon}
               width={24}
               height={24}
             />
@@ -221,7 +183,7 @@ export default function Login() {
           </Link>
 
           <p className={styles.signupLink}>
-            Não tem uma conta?{" "}
+            Não tem uma conta? 
             <Link href="/auth/register" className={styles.link}>
               Cadastre-se
             </Link>
@@ -229,8 +191,9 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ---------- IMAGEM DE FUNDO (CSS) ---------- */}
-      <div className={styles.imageSection} />
+      {/* SEÇÃO DA IMAGEM (AGORA NA DIREITA) */}
+      {/* Esta div agora servirá apenas como container para o background-image do CSS */}
+      <div className={styles.imageSection}></div>
     </div>
   );
 }
