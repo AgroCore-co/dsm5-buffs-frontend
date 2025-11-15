@@ -1,5 +1,6 @@
 import React from "react";
-import MapaGrupoPiquetes from "@/components/MapaGrupoPiquetes";
+import dynamic from "next/dynamic";
+const MapaGrupoPiquetes = dynamic(() => import("@/components/MapaGrupoPiquetes"), { ssr: false });
 
 export default function GrupoMapaTab({ lotes, loteAtualId, lotesLoading, lotesError }) {
   return (

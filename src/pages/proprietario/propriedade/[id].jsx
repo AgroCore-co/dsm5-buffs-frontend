@@ -135,25 +135,7 @@ export default function PropriedadePage() {
     }
   }
 
-  // Mock para alimentação
-  const alimentacaoMock = [
-    {
-      id: 1,
-      tipo: "Ração Concentrada",
-      quantidade: "500 kg",
-      consumoDiario: "25 kg/dia",
-      estoque: "20 dias",
-      status: "Normal",
-    },
-    {
-      id: 2,
-      tipo: "Silagem de Milho",
-      quantidade: "2000 kg",
-      consumoDiario: "80 kg/dia",
-      estoque: "25 dias",
-      status: "Alerta",
-    },
-  ];
+
 
   // Importação dinâmica para evitar SSR do leaflet
   const MapaPiquetes = dynamic(() => import("@/components/MapaPiquetes"), { ssr: false });
@@ -263,12 +245,8 @@ export default function PropriedadePage() {
     }
 
     // Listen for drawn polygon from MapaPiquetes
-    useEffect(() => {/* Lines 267-278 omitted */}, []);
     useEffect(() => {
-      // Evita erro no servidor
-      if (typeof window === 'undefined') return;
-
-      const handler = (e) => {
+      function handler(e) {
         const geo = e?.detail?.geo_mapa;
         const area_m2 = e?.detail?.area_m2 ?? null;
         if (geo) {
@@ -276,10 +254,12 @@ export default function PropriedadePage() {
           setCreateLoteArea(area_m2);
           setCreateLoteOpen(true);
         }
-      };
-
-      window.addEventListener('mapa:nova-geometria', handler);
-      return () => window.removeEventListener('mapa:nova-geometria', handler);
+      }
+      if (typeof window !== "undefined") {
+        window.addEventListener('mapa:nova-geometria', handler);
+        return () => window.removeEventListener('mapa:nova-geometria', handler);
+      }
+      return undefined;
     }, []);
 
     // Funções para manipular edição/exclusão de grupos

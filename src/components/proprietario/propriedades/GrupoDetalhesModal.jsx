@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import grupoService from "@/services/grupoService";
 import movLoteService from "@/services/movLoteService";
 import loteService from "@/services/loteService";
-import MapaGrupoPiquetes from "@/components/MapaGrupoPiquetes";
+import dynamic from "next/dynamic";
+const MapaGrupoPiquetes = dynamic(() => import("@/components/MapaGrupoPiquetes"), { ssr: false });
 
 import GrupoMapaTab from "@/components/proprietario/propriedades/GrupoMapaTab";
 import GrupoDetalhesTab from "@/components/proprietario/propriedades/GrupoDetalhesTab";

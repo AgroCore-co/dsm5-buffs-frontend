@@ -15,9 +15,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setUser({ token });
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token) {
+        setUser({ token });
+      }
     }
     setLoading(false);
   }, []);
@@ -29,8 +31,10 @@ export function AuthProvider({ children }) {
     } catch (e) {
       // Ignora erro de logout (ex: token já expirado)
     }
-    localStorage.removeItem("token");
-    localStorage.removeItem("refresh_token");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("refresh_token");
+    }
     setUser(null);
     if (typeof window !== "undefined") {
       window.location.href = "/auth/login";
