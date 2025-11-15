@@ -26,8 +26,8 @@ function MapCenterUpdater({ center }) {
   return null;
 }
 
-export default function MapaGrupoPiquetes({ lotes, grupoAtualId, loteDestacadoId, height = "250px" }) {
-  // Processa lotes para garantir coordenadas
+export default function MapaGrupoPiquetes({ lotes, grupoAtualId, loteDestacadoId, height = "100%" }) {
+  // ...existing code...
   const lotesProcessados = (lotes || [])
     .map((lote) => ({
       ...lote,
@@ -36,7 +36,6 @@ export default function MapaGrupoPiquetes({ lotes, grupoAtualId, loteDestacadoId
     }))
     .filter((lote) => lote.coordenadas && lote.coordenadas.length > 2);
 
-  // Calcula centro do mapa
   const calcularCentro = (lotes) => {
     const todasCoords = lotes.flatMap((lote) => lote.coordenadas || []);
     if (todasCoords.length === 0) return [-24.738, -47.86];
@@ -47,15 +46,15 @@ export default function MapaGrupoPiquetes({ lotes, grupoAtualId, loteDestacadoId
   const mapCenter = calcularCentro(lotesProcessados);
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full" style={{height: "100%"}}>
       {lotesProcessados.length === 0 ? (
         <div className="text-center text-gray-500 py-8">Nenhum piquete encontrado para exibir no mapa.</div>
       ) : (
         <MapContainer
           center={mapCenter}
           zoom={15}
-          style={{ height, width: "100%", minWidth: 0 }}
-          className="w-full"
+          style={{ height: "100%", width: "100%", minWidth: 0 }}
+          className="w-full h-full"
         >
           <MapCenterUpdater center={mapCenter} />
           <TileLayer

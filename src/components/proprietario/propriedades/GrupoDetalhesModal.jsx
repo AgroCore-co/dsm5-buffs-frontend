@@ -6,6 +6,10 @@ import movLoteService from "@/services/movLoteService";
 import loteService from "@/services/loteService";
 import MapaGrupoPiquetes from "@/components/MapaGrupoPiquetes";
 
+import GrupoMapaTab from "@/components/proprietario/propriedades/GrupoMapaTab";
+import GrupoDetalhesTab from "@/components/proprietario/propriedades/GrupoDetalhesTab";
+import GrupoMovimentacaoTab from "@/components/proprietario/propriedades/GrupoMovimentacaoTab";
+
 export default function GrupoDetalhesModal({ open, onClose, grupo }) {
   const [grupoInfo, setGrupoInfo] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -14,6 +18,7 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
   const [lotes, setLotes] = useState([]);
   const [lotesLoading, setLotesLoading] = useState(false);
   const [lotesError, setLotesError] = useState("");
+  const [activeTab, setActiveTab] = useState("Mapa");
 
   // Função para converter geo_mapa em coordenadas para o mapa
   const parseGeoJSONPolygon = (geoJson) => {
@@ -88,7 +93,7 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-[min(96vw,1200px)] bg-white rounded-3xl shadow-2xl ring-1 ring-gray-200 flex flex-col overflow-visible">
+      <div className="w-[min(99vw,1600px)] max-h-[98vh] bg-white rounded-3xl shadow-2xl ring-1 ring-gray-200 flex flex-col overflow-visible">
         {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-white rounded-t-3xl">
           <div className="flex items-center justify-between px-6 py-4">
@@ -96,42 +101,18 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">
-                    Grupo •{" "}
-                    {typeof (grupoInfo?.nome_grupo ?? grupo.nome_grupo) ===
-                    "object"
-                      ? JSON.stringify(
-                          grupoInfo?.nome_grupo ?? grupo.nome_grupo
-                        )
+                    Grupo • {typeof (grupoInfo?.nome_grupo ?? grupo.nome_grupo) === "object"
+                      ? JSON.stringify(grupoInfo?.nome_grupo ?? grupo.nome_grupo)
                       : grupoInfo?.nome_grupo ?? grupo.nome_grupo}
                   </h2>
                 </div>
                 <p className="text-sm text-gray-500">
-                  ID:{" "}
-                  {typeof (
-                    grupoInfo?.id_grupo ??
-                    grupo.id_grupo ??
-                    grupo.id ??
-                    grupo._id
-                  ) === "object"
-                    ? JSON.stringify(
-                        grupoInfo?.id_grupo ??
-                          grupo.id_grupo ??
-                          grupo.id ??
-                          grupo._id
-                      )
-                    : grupoInfo?.id_grupo ??
-                      grupo.id_grupo ??
-                      grupo.id ??
-                      grupo._id}
+                  ID: {typeof (grupoInfo?.id_grupo ?? grupo.id_grupo ?? grupo.id ?? grupo._id) === "object"
+                    ? JSON.stringify(grupoInfo?.id_grupo ?? grupo.id_grupo ?? grupo.id ?? grupo._id)
+                    : grupoInfo?.id_grupo ?? grupo.id_grupo ?? grupo.id ?? grupo._id}
                   {" • Propriedade: "}
-                  {typeof (
-                    grupoInfo?.id_propriedade ??
-                    grupo.id_propriedade ??
-                    "-"
-                  ) === "object"
-                    ? JSON.stringify(
-                        grupoInfo?.id_propriedade ?? grupo.id_propriedade ?? "-"
-                      )
+                  {typeof (grupoInfo?.id_propriedade ?? grupo.id_propriedade ?? "-") === "object"
+                    ? JSON.stringify(grupoInfo?.id_propriedade ?? grupo.id_propriedade ?? "-")
                     : grupoInfo?.id_propriedade ?? grupo.id_propriedade ?? "-"}
                 </p>
               </div>
@@ -144,102 +125,43 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
               ×
             </button>
           </div>
+          {/* Tabs */}
+          <div className="flex gap-1 px-3 pb-3">
+            {['Mapa', 'Detalhes', 'Movimentação'].map((label) => (
+              <button
+                key={label}
+                onClick={() => setActiveTab(label)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                  activeTab === label
+                    ? "bg-amber-50 text-amber-900 border-amber-200 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-transparent"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         {/* Conteúdo */}
-        <div className="flex-1 p-6 min-h-[700px] max-h-none overflow-y-visible">
+        <div className="flex-1 p-8 min-h-[700px] max-h-[80vh] overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Carregando informações...
-            </div>
+            <div className="flex items-center justify-center h-full text-gray-500">Carregando informações...</div>
           ) : error ? (
-            <div className="flex items-center justify-center h-full text-red-500">
-              {error}
-            </div>
+            <div className="flex items-center justify-center h-full text-red-500">{error}</div>
           ) : grupoInfo ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-min h-full">
-              {/* Mapa do grupo - fora da coluna lateral, ocupando toda a largura do modal */}
-              <div className="col-span-full w-full mt-2">
-                <section className="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
-                  <h3 className="text-xl font-bold text-green-700 mb-4 border-b border-green-100 pb-2">
-                    Localização Atual do Grupo
-                  </h3>
-                  {lotesLoading ? (
-                    <div className="text-gray-500">Carregando piquetes...</div>
-                  ) : lotesError ? (
-                    <div className="text-red-500">{lotesError}</div>
-                  ) : lotes.length === 0 ? (
-                    <div className="text-gray-500">
-                      Nenhum piquete encontrado para exibir no mapa.
-                    </div>
-                  ) : (
-                    <MapaGrupoPiquetes
-                      lotes={lotes}
-                      loteDestacadoId={loteAtualId}
-                      height="350px"
-                    />
-                  )}
-                </section>
-              </div>
-              {/* Coluna Principal */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Dados Básicos */}
-                <div className="relative rounded-xl border border-gray-200 bg-white">
-                  <div className="absolute left-0 top-0 h-full w-1.5 bg-amber-400 rounded-l-xl" />
-                  <div className="p-5">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      Dados Básicos
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                      <p>
-                        <span className="font-medium text-gray-700">Nome:</span>{" "}
-                        {grupoInfo.nome_grupo ?? "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium text-gray-700">Cor:</span>{" "}
-                        {grupoInfo.color ?? "-"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Coluna Lateral */}
-              <div className="lg:col-span-1 space-y-6">
-                {/* Informações do Sistema */}
-                <div className="relative rounded-xl border border-gray-200 bg-white">
-                  <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-400 rounded-l-xl" />
-                  <div className="p-5">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      Informações do Sistema
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4 text-sm">
-                      <p>
-                        <span className="font-medium text-gray-700">
-                          ID do Grupo:
-                        </span>{" "}
-                        {grupoInfo.id_grupo ?? "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium text-gray-700">
-                          Criado em:
-                        </span>{" "}
-                        {grupoInfo.created_at ?? "-"}
-                      </p>
-                      <p>
-                        <span className="font-medium text-gray-700">
-                          Última Atualização:
-                        </span>{" "}
-                        {grupoInfo.updated_at ?? "-"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <>
+              {activeTab === "Mapa" && (
+                <GrupoMapaTab lotes={lotes} loteAtualId={loteAtualId} lotesLoading={lotesLoading} lotesError={lotesError} />
+              )}
+              {activeTab === "Detalhes" && (
+                <GrupoDetalhesTab grupoInfo={grupoInfo} />
+              )}
+              {activeTab === "Movimentação" && (
+                <GrupoMovimentacaoTab grupoInfo={grupoInfo} />
+              )}
+            </>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Nenhuma informação encontrada.
-            </div>
+            <div className="flex items-center justify-center h-full text-gray-500">Nenhuma informação encontrada.</div>
           )}
         </div>
       </div>
