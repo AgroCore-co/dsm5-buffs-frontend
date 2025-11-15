@@ -32,6 +32,15 @@ export default function Reproducao() {
   const [maleSearch, setMaleSearch] = useState("");
   const [femaleSearch, setFemaleSearch] = useState("");
 
+  // Estado para análise de búfalas (fêmeas disponíveis para reprodução)
+  const [femeasDisponiveis, setFemeasDisponiveis] = useState([]);
+  const [loadingFemeasDisponiveis, setLoadingFemeasDisponiveis] = useState(true);
+
+  // Estado para análise de touros (machos disponíveis para reprodução)
+  const [machosDisponiveis, setMachosDisponiveis] = useState([]);
+  const [loadingMachos, setLoadingMachos] = useState(true);
+  const [errorMachos, setErrorMachos] = useState(null);
+
   const filteredMales = males.filter(
     (m) =>
       (m.nome || m.name || "")
@@ -140,92 +149,76 @@ export default function Reproducao() {
     };
   }, [propriedadeId, page, limit]);
 
-  // Tabela geral (lista base de reproduções)
-  const reproducoesMock = [
-    {
-      tag: "BUF001",
-      vetResponsavel: "Dr. Silva",
-      dataInseminacao: "15/11/2024",
-      tipoInseminacao: "IA",
-      status: "Prenha",
-      dataStatus: "15/12/2024",
-    },
-    {
-      tag: "BUF002",
-      vetResponsavel: "Dra. Santos",
-      dataInseminacao: "10/11/2024",
-      tipoInseminacao: "IA",
-      status: "Prenha",
-      dataStatus: "10/12/2024",
-    },
-    {
-      tag: "BUF003",
-      vetResponsavel: "Dr. Costa",
-      dataInseminacao: "05/11/2024",
-      tipoInseminacao: "Monta",
-      status: "No cio",
-      dataStatus: "05/12/2024",
-    },
-    {
-      tag: "BUF004",
-      vetResponsavel: "Dra. Oliveira",
-      dataInseminacao: "01/11/2024",
-      tipoInseminacao: "IA",
-      status: "No cio",
-      dataStatus: "01/12/2024",
-    },
-    {
-      tag: "BUF005",
-      vetResponsavel: "Dr. Pereira",
-      dataInseminacao: "28/10/2024",
-      tipoInseminacao: "IA",
-      status: "Prenha",
-      dataStatus: "28/11/2024",
-    },
-    {
-      tag: "BUF006",
-      vetResponsavel: "Dra. Ferreira",
-      dataInseminacao: "25/10/2024",
-      tipoInseminacao: "Monta",
-      status: "Em processo",
-      dataStatus: "25/11/2024",
-    },
-    {
-      tag: "BUF007",
-      vetResponsavel: "Dr. Rodrigues",
-      dataInseminacao: "20/10/2024",
-      tipoInseminacao: "IA",
-      status: "Em processo",
-      dataStatus: "20/11/2024",
-    },
-    {
-      tag: "BUF008",
-      vetResponsavel: "Dra. Almeida",
-      dataInseminacao: "15/10/2024",
-      tipoInseminacao: "IA",
-      status: "Prenha",
-      dataStatus: "15/11/2024",
-    },
-  ];
+  // Buscar fêmeas disponíveis para análise de búfalas
+  useEffect(() => {
+    if (!propriedadeId) {
+      setFemeasDisponiveis([]);
+      return;
+    }
+    let ignore = false;
+    async function fetchFemeasDisponiveis() {
+      setLoadingFemeasDisponiveis(true);
+      try {
+        // Busca todas as fêmeas disponíveis para reprodução
+        const res = await coberturaService.listarRecomendacoesFemeas(
+          propriedadeId
+        );
+        if (!ignore) {
+          // O serviço já retorna response.data, então res já é o array
+          const femeas = Array.isArray(res) ? res : [];
 
-  const recommendationsMock = [
-    {
-      male: { tag: "Apolo #1033", symbol: "♂" },
-      female: { tag: "Safira #1048", symbol: "♀" },
-      score: 88,
-    },
-    {
-      male: { tag: "Thor #1028", symbol: "♂" },
-      female: { tag: "Bella #1041", symbol: "♀" },
-      score: 85,
-    },
-    {
-      male: { tag: "Hades #1029", symbol: "♂" },
-      female: { tag: "Jade #1044", symbol: "♀" },
-      score: 79,
-    },
-  ];
+          // Ordenar fêmeas por score (melhor primeiro) e pegar as top 5
+          const femeasOrdenadas = femeas.sort((a, b) => b.score - a.score);
 
+          setFemeasDisponiveis(femeasOrdenadas.slice(0, 5));
+        }
+      } catch (e) {
+        console.error("Erro ao buscar fêmeas disponíveis:", e);
+        if (!ignore) {
+          setFemeasDisponiveis([]);
+        }
+      } finally {
+        if (!ignore) setLoadingFemeasDisponiveis(false);
+      }
+    }
+    fetchFemeasDisponiveis();
+    return () => {
+      ignore = true;
+    };
+  }, [propriedadeId]);
+
+  // Buscar machos disponíveis para análise de touros
+  useEffect(() => {
+    if (!propriedadeId) {
+      setMachosDisponiveis([]);
+      return;
+    }
+    let ignore = false;
+    async function fetchMachosDisponiveis() {
+      setLoadingMachos(true);
+      setErrorMachos(null);
+      try {
+        const response = await coberturaService.listarRecomendacoesMachos(
+          propriedadeId,
+          { limit: 5 }
+        );
+        if (!ignore) {
+          setMachosDisponiveis(response);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setErrorMachos("Erro ao carregar machos disponíveis para reprodução.");
+        }
+      } finally {
+        if (!ignore) setLoadingMachos(false);
+      }
+    }
+    fetchMachosDisponiveis();
+    return () => {
+      ignore = true;
+    };
+  }, [propriedadeId]);
+  
   // Os búfalos disponíveis agora vêm do backend (males, females)
 
   // Função de simulação de acasalamento via backend
@@ -410,117 +403,111 @@ export default function Reproducao() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-gradient-to-br from-white to-orange-50 p-6 rounded-xl shadow border border-orange-200">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                Análise de Búfalas
+                Top 5 Búfalas para Reprodução
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Todas as matrizes — melhor primeiro.
+                Classificadas por prontidão, idade, histórico e período ideal para cobertura.
               </p>
 
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse min-w-[500px] bg-white rounded-lg overflow-hidden shadow-sm">
+                <table className="w-full border-collapse min-w-[650px] bg-white rounded-lg overflow-hidden shadow-sm">
                   <thead className="bg-[#f0f0f0]">
                     <tr>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
+                        Rank
+                      </th>
                       <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                        #
-                      </th>
-                      <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                        TAG
+                        Nome/Brinco
                       </th>
                       <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Tentativas
+                        Idade
                       </th>
                       <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Concepções
-                      </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Taxa
+                        Raça
                       </th>
                       <th className="p-3 text-center font-medium text-gray-800 text-sm">
                         Status
                       </th>
+                      <th className="p-3 text-center">
+                        Score
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      {
-                        tag: "BUF031",
-                        tentativas: 5,
-                        concepcoes: 4,
-                        taxa: 80,
-                        status: "Prenha",
-                      },
-                      {
-                        tag: "BUF022",
-                        tentativas: 4,
-                        concepcoes: 3,
-                        taxa: 75,
-                        status: "Prenha",
-                      },
-                      {
-                        tag: "BUF017",
-                        tentativas: 3,
-                        concepcoes: 2,
-                        taxa: 66.7,
-                        status: "Em processo",
-                      },
-                      {
-                        tag: "BUF043",
-                        tentativas: 6,
-                        concepcoes: 4,
-                        taxa: 66.7,
-                        status: "Prenha",
-                      },
-                      {
-                        tag: "BUF050",
-                        tentativas: 5,
-                        concepcoes: 3,
-                        taxa: 60,
-                        status: "No cio",
-                      },
-                      {
-                        tag: "BUF064",
-                        tentativas: 4,
-                        concepcoes: 2,
-                        taxa: 50,
-                        status: "Em processo",
-                      },
-                    ].map((b, i) => (
-                      <tr
-                        key={b.tag}
-                        className={
-                          i === 0
-                            ? "bg-[#FFF4E0]"
-                            : i % 2 === 0
-                            ? "bg-[#fafafa]"
-                            : "bg-white"
-                        }
-                      >
-                        <td className="p-3 text-left text-gray-800 text-sm font-semibold">
-                          {i + 1}
-                        </td>
-                        <td className="p-3 text-left text-gray-800 text-sm font-semibold">
-                          {b.tag}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {b.tentativas}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {b.concepcoes}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm font-bold">
-                          {b.taxa}%
-                        </td>
-                        <td className="p-3 text-center">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(
-                              b.status
-                            )}`}
-                          >
-                            {b.status}
-                          </span>
+                    {loadingFemeasDisponiveis ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-gray-500">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#CE7D0A]"></div>
+                            <span>Carregando fêmeas disponíveis...</span>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : femeasDisponiveis.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-gray-500">
+                          Nenhuma fêmea disponível para reprodução.
+                        </td>
+                      </tr>
+                    ) : (
+                      femeasDisponiveis.map((femea, i) => {
+                        const rankBadge = i === 0 ? "1º" : i === 1 ? "2º" : i === 2 ? "3º" : `${i + 1}º`;
+                        const rankBadgeColor = 
+                          i === 0 ? "bg-yellow-500 text-white" :
+                          i === 1 ? "bg-gray-400 text-white" :
+                          i === 2 ? "bg-orange-700 text-white" :
+                          "bg-gray-300 text-gray-700";
+                        const scoreColor = 
+                          femea.score >= 80 ? "text-green-600 font-bold" :
+                          femea.score >= 60 ? "text-orange-600 font-semibold" :
+                          "text-gray-600";
+
+                        return (
+                          <tr
+                            key={femea.id_bufalo || i}
+                            className={
+                              i === 0
+                                ? "bg-[#FFF4E0]"
+                                : i % 2 === 0
+                                ? "bg-[#fafafa]"
+                                : "bg-white"
+                            }
+                          >
+                            <td className="p-3 text-center text-gray-800 text-base font-bold">
+                              <div className="flex items-center justify-center">
+                                <span className={`px-2 py-1 rounded-md text-xs font-bold ${rankBadgeColor}`}>
+                                  {rankBadge}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-3 text-left text-gray-800 text-sm font-semibold">
+                              <div>
+                                <div>{femea.nome || `Fêmea #${femea.id_bufalo}`}</div>
+                                {femea.brinco && (
+                                  <div className="text-xs text-gray-500">{femea.brinco}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {femea.idade_meses 
+                                ? `${Math.floor(femea.idade_meses / 12)}a ${femea.idade_meses % 12}m` 
+                                : "-"}
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {femea.raca || "-"}
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {femea.dados_reprodutivos?.status || "-"}
+                            </td>
+                            <td className="p-3 text-center">
+                              <span className={`text-base font-bold ${scoreColor}`}>
+                                {femea.score || 0}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -528,97 +515,103 @@ export default function Reproducao() {
 
             <div className="bg-gradient-to-br from-white to-blue-50 p-6 rounded-xl shadow border border-blue-200">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                Análise de Touros
+                Top 5 Touros para Reprodução
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Todos os touros — melhor primeiro.
+                Classificados por idade, histórico, taxa de sucesso e qualidade genética.
               </p>
 
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse min-w-[520px] bg-white rounded-lg overflow-hidden shadow-sm">
+                <table className="w-full border-collapse min-w-[650px] bg-white rounded-lg overflow-hidden shadow-sm">
                   <thead className="bg-[#f0f0f0]">
                     <tr>
-                      <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                        #
-                      </th>
-                      <th className="p-3 text-left font-medium text-gray-800 text-sm">
-                        Touro
-                      </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Coberturas
-                      </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Prenhezes
-                      </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Taxa
-                      </th>
-                      <th className="p-3 text-center font-medium text-gray-800 text-sm">
-                        Intervalo
-                      </th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Rank</th>
+                      <th className="p-3 text-left font-medium text-gray-800 text-sm">Nome/Brinco</th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Idade</th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Raça</th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Status</th>
+                      <th className="p-3 text-center font-medium text-gray-800 text-sm">Score</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      {
-                        nome: "Touro Titan",
-                        coberturas: 40,
-                        prenhezes: 32,
-                        taxa: 80,
-                        mediaIntervaloDias: 19,
-                      },
-                      {
-                        nome: "Touro Atlas",
-                        coberturas: 36,
-                        prenhezes: 27,
-                        taxa: 75,
-                        mediaIntervaloDias: 21,
-                      },
-                      {
-                        nome: "Touro Brutus",
-                        coberturas: 28,
-                        prenhezes: 20,
-                        taxa: 71.4,
-                        mediaIntervaloDias: 22,
-                      },
-                      {
-                        nome: "Touro Magnus",
-                        coberturas: 25,
-                        prenhezes: 17,
-                        taxa: 68,
-                        mediaIntervaloDias: 23,
-                      },
-                    ].map((t, i) => (
-                      <tr
-                        key={t.nome}
-                        className={
-                          i === 0
-                            ? "bg-[#FFF4E0]"
-                            : i % 2 === 0
-                            ? "bg-[#fafafa]"
-                            : "bg-white"
-                        }
-                      >
-                        <td className="p-3 text-left text-gray-800 text-sm font-semibold">
-                          {i + 1}
-                        </td>
-                        <td className="p-3 text-left text-gray-800 text-sm font-semibold">
-                          {t.nome}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {t.coberturas}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {t.prenhezes}
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm font-bold">
-                          {t.taxa}%
-                        </td>
-                        <td className="p-3 text-center text-gray-800 text-sm">
-                          {t.mediaIntervaloDias} dias
+                    {loadingMachos ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-gray-500">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                            <span>Carregando touros disponíveis...</span>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : errorMachos ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-red-500">
+                          {errorMachos}
+                        </td>
+                      </tr>
+                    ) : machosDisponiveis.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-gray-500">
+                          Nenhum touro disponível para reprodução.
+                        </td>
+                      </tr>
+                    ) : (
+                      machosDisponiveis.map((macho, i) => {
+                        const rankBadgeColor =
+                          i === 0
+                            ? "bg-blue-500 text-white"
+                            : i === 1
+                            ? "bg-blue-400 text-white"
+                            : i === 2
+                            ? "bg-blue-300 text-white"
+                            : "bg-gray-200 text-gray-800";
+
+                        return (
+                          <tr
+                            key={macho.id_bufalo || i}
+                            className={
+                              i === 0
+                                ? "bg-[#E0F7FF]"
+                                : i % 2 === 0
+                                ? "bg-[#fafafa]"
+                                : "bg-white"
+                            }
+                          >
+                            <td className="p-3 text-center text-gray-800 text-base font-bold">
+                              <div className="flex items-center justify-center">
+                                <span className={`px-2 py-1 rounded-md text-xs font-bold ${rankBadgeColor}`}>
+                                  {i + 1}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-3 text-left text-gray-800 text-sm font-semibold">
+                              <div>
+                                <div>{macho.nome || `Touro #${macho.id_bufalo}`}</div>
+                                {macho.brinco && (
+                                  <div className="text-xs text-gray-500">{macho.brinco}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {macho.idade_meses
+                                ? `${Math.floor(macho.idade_meses / 12)}a ${macho.idade_meses % 12}m`
+                                : "-"}
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {macho.raca || "-"}
+                            </td>
+                            <td className="p-3 text-center text-gray-800 text-sm">
+                              {macho.dados_reprodutivos?.status || "-"}
+                            </td>
+                            <td className="p-3 text-center">
+                              <span className="text-base font-bold text-gray-800">
+                                {macho.score}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -826,7 +819,7 @@ export default function Reproducao() {
                   </div>
                 </div>
 
-                {/* <CHANGE> Reorganized metrics with visual indicators and better spacing */}
+                {/* Métricas de Consanguinidade */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 transition-colors">
                     <div className="flex items-center justify-between mb-2">
@@ -838,7 +831,7 @@ export default function Reproducao() {
                       </span>
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.consanguinidade_macho}%
+                      {simulationResult.raw?.consanguinidade_macho ?? 0}%
                     </p>
                   </div>
 
@@ -852,7 +845,7 @@ export default function Reproducao() {
                       </span>
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.consanguinidade_femea}%
+                      {simulationResult.raw?.consanguinidade_femea ?? 0}%
                     </p>
                   </div>
 
@@ -861,11 +854,20 @@ export default function Reproducao() {
                       <span className="text-sm text-gray-600">
                         Parentesco dos Pais
                       </span>
-                      
+                      {simulationResult.raw?.detalhes?.tem_parentesco_direto && (
+                        <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">
+                          ⚠️
+                        </span>
+                      )}
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.parentesco_pais}%
+                      {simulationResult.raw?.parentesco_pais ?? 0}%
                     </p>
+                    {simulationResult.raw?.nivel_parentesco && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        {simulationResult.raw.nivel_parentesco}
+                      </p>
+                    )}
                   </div>
 
                   <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 transition-colors">
@@ -873,23 +875,28 @@ export default function Reproducao() {
                       <span className="text-sm text-gray-600">
                         Consanguinidade da Prole
                       </span>
-                      
+                      {simulationResult.raw?.consanguinidade_prole > 12.5 && (
+                        <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                          Alto
+                        </span>
+                      )}
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.consanguinidade_prole}%
+                      {simulationResult.raw?.consanguinidade_prole ?? 0}%
                     </p>
                   </div>
                 </div>
 
-                {/* <CHANGE> Enhanced recommendation section with prominent styling */}
+                {/* Painel de Risco e Recomendação */}
                 <div className="space-y-4">
                   <div
                     className={`rounded-lg p-5 border-2 ${
                       simulationResult.raw?.risco_consanguinidade === "Baixo"
                         ? "bg-green-50 border-green-300"
-                        : simulationResult.raw?.risco_consanguinidade ===
-                          "Médio"
+                        : simulationResult.raw?.risco_consanguinidade === "Médio"
                         ? "bg-yellow-50 border-yellow-300"
+                        : simulationResult.raw?.risco_consanguinidade === "Alto"
+                        ? "bg-orange-50 border-orange-300"
                         : "bg-red-50 border-red-300"
                     }`}
                   >
@@ -899,44 +906,48 @@ export default function Reproducao() {
                       </span>
                       <span
                         className={`text-lg font-bold px-4 py-1.5 rounded-full ${
-                          simulationResult.raw?.risco_consanguinidade ===
-                          "Baixo"
+                          simulationResult.raw?.risco_consanguinidade === "Baixo"
                             ? "bg-green-600 text-white"
-                            : simulationResult.raw?.risco_consanguinidade ===
-                              "Médio"
+                            : simulationResult.raw?.risco_consanguinidade === "Médio"
                             ? "bg-yellow-600 text-white"
+                            : simulationResult.raw?.risco_consanguinidade === "Alto"
+                            ? "bg-orange-600 text-white"
                             : "bg-red-600 text-white"
                         }`}
                       >
-                        {simulationResult.raw?.risco_consanguinidade}
+                        {simulationResult.raw?.risco_consanguinidade || "Desconhecido"}
                       </span>
                     </div>
                     <div className="flex items-start gap-2">
                       <div className="flex-1">
-                        <p className="text-xs text-gray-600 mb-1 font-medium">
+                        <p className="text-xs text-gray-600 mb-1 font-medium uppercase tracking-wide">
                           Recomendação
                         </p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {simulationResult.raw?.recomendacao}
+                        <p className="text-sm font-semibold text-gray-900 leading-relaxed">
+                          {simulationResult.raw?.recomendacao || "Sem recomendação disponível"}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {simulationResult.raw?.predicao_producao_femea &&
-                    simulationResult.raw.predicao_producao_femea !== "-" && (
-                      <div className="bg-white rounded-lg p-5 border border-indigo-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg">📊</span>
-                          <span className="text-sm font-medium text-gray-700">
-                            Predição de Produção da Fêmea
-                          </span>
-                        </div>
-                        <p className="text-xl font-bold text-indigo-600 ml-7">
-                          {simulationResult.raw.predicao_producao_femea}
-                        </p>
+                 
+
+                  {/* Predição de Produção */}
+                  {simulationResult.raw?.predicao_producao_femea && (
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-5 border border-indigo-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span className="text-sm font-semibold text-gray-700">
+                          Predição de Produção da Fêmea
+                        </span>
                       </div>
-                    )}
+                      <p className="text-xl font-bold text-indigo-600 ml-7">
+                        {simulationResult.raw.predicao_producao_femea}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

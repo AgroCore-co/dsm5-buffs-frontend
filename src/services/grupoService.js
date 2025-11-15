@@ -62,11 +62,23 @@ const removerGrupo = async (id) => {
   }
 };
 
+/**
+ * Busca um grupo específico pelo ID
+ * @param {string} id - ID do grupo
+ * @returns {Promise<Object>} Dados do grupo
+ */
+const buscarGrupoPorId = async (id) => {
+  if (!id) throw new Error('ID do grupo é obrigatório');
+  const response = await get(`/grupos/${id}`);
+  return response.data;
+};
+
 const grupoService = {
   listarGruposPorPropriedade,
   criarGrupo,
   atualizarGrupo,
   removerGrupo,
+  buscarGrupoPorId,
 };
 
 export default grupoService;
