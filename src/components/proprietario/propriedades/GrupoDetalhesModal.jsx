@@ -144,7 +144,7 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
           </div>
         </div>
         {/* Conteúdo */}
-        <div className="flex-1 p-8 min-h-[700px] max-h-[80vh] overflow-y-auto">
+        <div className="flex-1 p-4 sm:p-8 min-h-[60vh] max-h-[calc(100vh-100px)] overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full text-gray-500">Carregando informações...</div>
           ) : error ? (
@@ -155,7 +155,9 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
                 <GrupoMapaTab lotes={lotes} loteAtualId={loteAtualId} lotesLoading={lotesLoading} lotesError={lotesError} />
               )}
               {activeTab === "Detalhes" && (
-                <GrupoDetalhesTab grupoInfo={grupoInfo} />
+                <div className="h-full min-h-[40vh] max-h-[calc(100vh-200px)] overflow-y-auto">
+                  <GrupoDetalhesTab grupoInfo={grupoInfo} />
+                </div>
               )}
               {activeTab === "Movimentação" && (
                 <GrupoMovimentacaoTab grupoInfo={grupoInfo} />
