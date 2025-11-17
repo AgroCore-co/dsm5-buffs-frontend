@@ -122,6 +122,38 @@ const filtrarBufalosAvancado = async ({
 };
 
 /**
+ * Filtra búfalos por maturidade, propriedade e status.
+ * GET /bufalos/filtro/maturidade/{nivel_maturidade}/propriedade/{id_propriedade}/status/{status}?page={page}&limit={limit}
+ *
+ * @param {string} nivelMaturidade - Nível de maturidade (ex: "N")
+ * @param {string} idPropriedade - ID da propriedade (UUID)
+ * @param {string|boolean} status - Status do búfalo (true ou false)
+ * @param {number} [page=1] - Número da página (inicia em 1)
+ * @param {number} [limit=10] - Itens por página (máximo 100)
+ * @returns {Promise<{ data: Array, meta: Object }>} Retorna o payload completo do endpoint
+ */
+const filtrarBufalosPorMaturidadeStatusPropriedade = async (
+  nivelMaturidade,
+  idPropriedade,
+  status,
+  page = 1,
+  limit = 10
+) => {
+  if (!nivelMaturidade) throw new Error("Nível de maturidade é obrigatório");
+  if (!idPropriedade) throw new Error("ID da propriedade é obrigatório");
+  if (typeof status === "undefined") throw new Error("Status do búfalo é obrigatório");
+
+  const safePage = Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+  let safeLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 10;
+  if (safeLimit > 100) safeLimit = 100;
+
+  const response = await get(
+    `/bufalos/filtro/maturidade/${nivelMaturidade}/propriedade/${idPropriedade}/status/${status}?page=${safePage}&limit=${safeLimit}`
+  );
+  return response.data;
+};
+
+/**
  * Cria um novo búfalo.
  * POST /bufalos
  *
@@ -141,6 +173,7 @@ const bufaloService = {
   filtrarBufalosPorSexoStatusPropriedade,
   filtrarBufalosAvancado,
   criarBufalo,
+  filtrarBufalosPorMaturidadeStatusPropriedade,
 };
 
 export default bufaloService;
