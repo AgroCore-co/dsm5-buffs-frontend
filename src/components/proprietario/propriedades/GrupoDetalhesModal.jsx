@@ -4,12 +4,14 @@ import React, { useEffect, useState } from "react";
 import grupoService from "@/services/grupoService";
 import movLoteService from "@/services/movLoteService";
 import loteService from "@/services/loteService";
+import bufaloService from "@/services/bufaloService";
 import dynamic from "next/dynamic";
 const MapaGrupoPiquetes = dynamic(() => import("@/components/MapaGrupoPiquetes"), { ssr: false });
 
 import GrupoMapaTab from "@/components/proprietario/propriedades/GrupoMapaTab";
 import GrupoDetalhesTab from "@/components/proprietario/propriedades/GrupoDetalhesTab";
 import GrupoMovimentacaoTab from "@/components/proprietario/propriedades/GrupoMovimentacaoTab";
+import GrupoBufalosTab from "@/components/proprietario/propriedades/GrupoBufalosTab";
 
 export default function GrupoDetalhesModal({ open, onClose, grupo }) {
   const [grupoInfo, setGrupoInfo] = useState(null);
@@ -86,6 +88,46 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
     }
   }, [open, grupoInfo]);
 
+  // Novo: buscar quantidade de búfalos ativos no grupo
+  const [totalBufalosGrupo, setTotalBufalosGrupo] = useState(null);
+  useEffect(() => {
+    async function fetchTotalBufalosGrupo() {
+      if (open && grupoInfo && grupoInfo.id_grupo) {
+        try {
+          const res = await bufaloService.listarBufalosPorGrupo(grupoInfo.id_grupo, 1, 1);
+          setTotalBufalosGrupo(res.meta?.total ?? null);
+        } catch (e) {
+          setTotalBufalosGrupo(null);
+        }
+      } else {
+        setTotalBufalosGrupo(null);
+      }
+    }
+    fetchTotalBufalosGrupo();
+  }, [open, grupoInfo]);
+
+  // Função para atualizar dados do grupo e dependências
+  const atualizarGrupoInfo = async () => {
+    if (!grupo) return;
+    setLoading(true);
+    setError("");
+    try {
+      const data = await grupoService.buscarGrupoPorId(grupo.id_grupo ?? grupo.id ?? grupo._id);
+      setGrupoInfo(data);
+      // Atualiza localização atual
+      const res = await movLoteService.verificarStatusGrupo(grupo.id_grupo ?? grupo.id ?? grupo._id);
+      if (res.localizacao_atual && res.localizacao_atual.id_lote) {
+        setLoteAtualId(res.localizacao_atual.id_lote);
+      } else {
+        setLoteAtualId(null);
+      }
+    } catch {
+      setError("Erro ao buscar informações do grupo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!open || !grupo) return null;
 
   return (
@@ -115,6 +157,9 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
                   {typeof (grupoInfo?.id_propriedade ?? grupo.id_propriedade ?? "-") === "object"
                     ? JSON.stringify(grupoInfo?.id_propriedade ?? grupo.id_propriedade ?? "-")
                     : grupoInfo?.id_propriedade ?? grupo.id_propriedade ?? "-"}
+                  {totalBufalosGrupo !== null && (
+                    <span className="ml-2 text-blue-700 font-semibold">• {totalBufalosGrupo} búfalo(s) no grupo</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -128,7 +173,7 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
           </div>
           {/* Tabs */}
           <div className="flex gap-1 px-3 pb-3">
-            {['Mapa', 'Detalhes', 'Movimentação'].map((label) => (
+            {["Mapa", "Detalhes", "Movimentação", "Búfalos"].map((label) => (
               <button
                 key={label}
                 onClick={() => setActiveTab(label)}
@@ -152,15 +197,18 @@ export default function GrupoDetalhesModal({ open, onClose, grupo }) {
           ) : grupoInfo ? (
             <>
               {activeTab === "Mapa" && (
-                <GrupoMapaTab lotes={lotes} loteAtualId={loteAtualId} lotesLoading={lotesLoading} lotesError={lotesError} />
+                <GrupoMapaTab lotes={lotes} loteAtualId={loteAtualId} lotesLoading={lotesLoading} lotesError={lotesError} atualizarGrupoInfo={atualizarGrupoInfo} />
               )}
               {activeTab === "Detalhes" && (
                 <div className="h-full min-h-[40vh] max-h-[calc(100vh-200px)] overflow-y-auto">
-                  <GrupoDetalhesTab grupoInfo={grupoInfo} />
+                  <GrupoDetalhesTab grupoInfo={grupoInfo} atualizarGrupoInfo={atualizarGrupoInfo} />
                 </div>
               )}
               {activeTab === "Movimentação" && (
-                <GrupoMovimentacaoTab grupoInfo={grupoInfo} />
+                <GrupoMovimentacaoTab grupoInfo={grupoInfo} atualizarGrupoInfo={atualizarGrupoInfo} />
+              )}
+              {activeTab === "Búfalos" && (
+                <GrupoBufalosTab grupoInfo={grupoInfo} />
               )}
             </>
           ) : (

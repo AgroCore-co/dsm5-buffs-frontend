@@ -220,6 +220,24 @@ const filtrarBufalosPorStatusPropriedade = async (
   return response.data;
 };
 
+/**
+ * Lista búfalos ativos de um grupo de manejo específico, ordenados por data de nascimento (mais antigos primeiro).
+ * GET /bufalos/grupo/{id_grupo}?page={page}&limit={limit}
+ *
+ * @param {string} idGrupo - ID do grupo de manejo (UUID)
+ * @param {number} [page=1] - Número da página (inicia em 1)
+ * @param {number} [limit=10] - Itens por página (máximo 100)
+ * @returns {Promise<{ data: Array, meta: Object }>} Lista paginada de búfalos do grupo
+ */
+const listarBufalosPorGrupo = async (idGrupo, page = 1, limit = 10) => {
+  if (!idGrupo) throw new Error("ID do grupo de manejo é obrigatório");
+  const safePage = Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+  let safeLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 10;
+  if (safeLimit > 100) safeLimit = 100;
+  const response = await get(`/bufalos/grupo/${idGrupo}?page=${safePage}&limit=${safeLimit}`);
+  return response.data;
+};
+
 const bufaloService = {
   listarBufalosPorPropriedade,
   buscarBufaloPorId,
@@ -230,6 +248,7 @@ const bufaloService = {
   filtrarBufalosPorMaturidadeStatusPropriedade,
   filtrarBufalosPorRacaPropriedade,
   filtrarBufalosPorStatusPropriedade,
+  listarBufalosPorGrupo,
 };
 
 export default bufaloService;

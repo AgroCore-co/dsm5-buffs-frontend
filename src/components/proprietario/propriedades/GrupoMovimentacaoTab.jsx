@@ -4,7 +4,7 @@ import movLoteService from "@/services/movLoteService";
 import toast from "react-hot-toast";
 import { Loader2, MapPin, Package, Move } from "lucide-react";
 
-export default function GrupoMovimentacaoTab({ grupoInfo }) {
+export default function GrupoMovimentacaoTab({ grupoInfo, atualizarGrupoInfo }) {
   const [lotes, setLotes] = useState([]);
   const [loteAtualId, setLoteAtualId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -72,10 +72,8 @@ export default function GrupoMovimentacaoTab({ grupoInfo }) {
       toast.error("Selecione um lote de destino");
       return;
     }
-
     const idPropriedade = grupoInfo.id_propriedade?.id_propriedade || grupoInfo.id_propriedade;
     const idGrupo = grupoInfo.id_grupo ?? grupoInfo.id;
-
     const payload = {
       id_propriedade: idPropriedade,
       id_grupo: idGrupo,
@@ -84,13 +82,13 @@ export default function GrupoMovimentacaoTab({ grupoInfo }) {
       dt_saida: null,
       ...(loteAtualId && { id_lote_anterior: loteAtualId }),
     };
-
-    console.log("Payload enviado para /mov-lote:", payload);
-
     try {
       await movLoteService.registrarMovimentacaoGrupo(payload);
       setLoteAtualId(targetLoteId);
       toast.success("Grupo movido com sucesso!");
+      if (typeof atualizarGrupoInfo === "function") {
+        atualizarGrupoInfo(); // Atualiza dados do grupo no modal
+      }
     } catch (err) {
       console.error("Erro na API:", err.response?.data || err);
       const msg = Array.isArray(err.response?.data?.message)
