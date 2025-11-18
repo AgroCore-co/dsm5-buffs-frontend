@@ -2,7 +2,7 @@
 
 import Head from "next/head";
 import { useState, useEffect } from "react";
-import { getMyProfile } from "@/services/userService";
+import { getMyProfile, updateUser } from "@/services/userService";
 
 export default function Perfil() {
   // Dados do usuário vindos da API
@@ -21,11 +21,19 @@ export default function Perfil() {
     setEditedData(userData);
   };
 
-  const handleSave = () => {
-    setUserData(editedData);
-    setIsEditing(false);
-    // Aqui você faria a chamada para a API para salvar os dados
-    console.log("Dados salvos:", editedData);
+  const handleSave = async () => {
+    try {
+      // Chama a API para atualizar o usuário
+      await updateUser(userData.id_usuario, {
+        nome: editedData.nome,
+        telefone: editedData.telefone,
+        id_endereco: editedData.id_endereco
+      });
+      setUserData(editedData);
+      setIsEditing(false);
+    } catch (error) {
+      alert("Erro ao atualizar usuário. Tente novamente.");
+    }
   };
 
   const handleChange = (field, value) => {

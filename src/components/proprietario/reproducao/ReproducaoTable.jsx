@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { usePropriedade } from "@/contexts/propriedadeContext";
 import coberturaService from "@/services/coberturaService";
+import CoberturaModal from "./CoberturaModal";
 
 export default function ReproducaoTable() {
   const { propriedadeId } = usePropriedade();
@@ -9,6 +10,8 @@ export default function ReproducaoTable() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [meta, setMeta] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCoberturaId, setSelectedCoberturaId] = useState(null);
 
   useEffect(() => {
     if (!propriedadeId) return;
@@ -59,8 +62,8 @@ export default function ReproducaoTable() {
               registros.map((r) => (
                 <tr key={r.id_reproducao} className="odd:bg-white even:bg-[#fafafa]">
                   <td className="p-3 text-center text-gray-800 text-base font-medium">{r.dt_evento ? new Date(r.dt_evento).toLocaleDateString() : '-'}</td>
-                  <td className="p-3 text-center text-gray-800 text-base">{r.id_bufala || '-'}</td>
-                  <td className="p-3 text-center text-gray-800 text-base">{r.id_bufalo || '-'}</td>
+                  <td className="p-3 text-center text-gray-800 text-base">{r.brinco_femea || '-'}</td>
+                  <td className="p-3 text-center text-gray-800 text-base">{r.brinco_macho || '-'}</td>
                   <td className="p-3 text-center text-gray-800 text-base">{r.tipo_inseminacao || '-'}</td>
                   <td className="p-3 text-center text-gray-800 text-base">
                     <span
@@ -76,7 +79,15 @@ export default function ReproducaoTable() {
                     <td className="px-4 py-2 whitespace-nowrap">{r.tipo_parto || '-'}</td>
                     <td className="px-4 py-2 whitespace-nowrap">{r.ocorrencia || '-'}</td>
                     <td className="p-3 text-center">
-                      <button className="bg-[#FFCF78] hover:bg-[#F2B84D] text-black px-3 py-1 rounded-lg text-sm font-medium">Detalhes</button>
+                      <button
+                        className="bg-[#FFCF78] hover:bg-[#F2B84D] text-black px-3 py-1 rounded-lg text-sm font-medium"
+                        onClick={() => {
+                          setSelectedCoberturaId(r.id_reproducao);
+                          setModalOpen(true);
+                        }}
+                      >
+                        Detalhes
+                      </button>
                     </td>
                 </tr>
               ))
@@ -110,6 +121,13 @@ export default function ReproducaoTable() {
             Próximo
           </button>
         </div>
+      )}
+      {modalOpen && (
+        <CoberturaModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          idCobertura={selectedCoberturaId}
+        />
       )}
     </div>
   );
