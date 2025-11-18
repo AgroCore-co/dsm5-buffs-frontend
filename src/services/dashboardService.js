@@ -31,6 +31,15 @@ const dashboardService = {
       throw error;
     }
   },
+
+  async getReproducaoStatsByPropriedadeId(idPropriedade) {
+    try {
+      const response = await apiClient.get(`/dashboard/reproducao/${idPropriedade}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 export default dashboardService;

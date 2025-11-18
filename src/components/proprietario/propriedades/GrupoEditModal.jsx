@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import grupoService from '@/services/grupoService';
 
 export default function GrupoEditModal({ isOpen, onClose, grupoId, initialData = {}, onUpdated }) {
-  const [form, setForm] = useState({ nome_grupo: '', color: '#ffffff', nivel_maturidade: '' });
+  const [form, setForm] = useState({ nome_grupo: '', color: '#ffffff' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -15,8 +15,7 @@ export default function GrupoEditModal({ isOpen, onClose, grupoId, initialData =
     if (isOpen && initialData) {
       setForm({
         nome_grupo: initialData.nome_grupo || '',
-        color: initialData.color || '#ffffff',
-        nivel_maturidade: initialData.nivel_maturidade || ''
+        color: initialData.color || '#ffffff'
       });
     }
   }, [isOpen, initialData]);
@@ -79,21 +78,7 @@ export default function GrupoEditModal({ isOpen, onClose, grupoId, initialData =
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nível de Maturidade</label>
-            <select
-              value={form.nivel_maturidade}
-              onChange={e => setForm(f => ({ ...f, nivel_maturidade: e.target.value }))}
-              className="w-full border border-gray-300 rounded px-3 py-2"
-            >
-              <option value="">Selecione...</option>
-              <option value="B">Bezerro (B)</option>
-              <option value="N">Novilha (N)</option>
-              <option value="V">Vaca (V)</option>
-              <option value="T">Touro (T)</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">Os valores enviados ao backend são: B, N, V, T.</p>
-          </div>
+          {/* Campo de nível de maturidade removido */}
 
           {error && <p className="text-red-600 text-sm">{error}</p>}
 
