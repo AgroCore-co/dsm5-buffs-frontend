@@ -11,22 +11,13 @@ import SimulacaoAcasalamentoPanel from "@/components/proprietario/reproducao/Sim
 
 export default function Reproducao() {
   const { propriedadeId } = usePropriedade();
+  
+  // Estados visuais e de Dashboard
   const [viewMode, setViewMode] = useState("monthly"); // 'monthly' | 'yearly'
   const [reproStats, setReproStats] = useState(null);
   const [loadingReproStats, setLoadingReproStats] = useState(false);
-  useEffect(() => {
-    if (!propriedadeId) return;
-    setLoadingReproStats(true);
-    import("@/services/dashboardService")
-      .then(({ default: dashboardService }) => {
-        dashboardService
-          .getReproducaoStatsByPropriedadeId(propriedadeId)
-          .then((data) => setReproStats(data))
-          .catch(() => setReproStats(null))
-          .finally(() => setLoadingReproStats(false));
-      })
-      .catch(() => setLoadingReproStats(false));
-  }, [propriedadeId]);
+
+  // Estados da Simulação e Seleção de Animais (Vindo da branch dev)
   const [selectedMale, setSelectedMale] = useState("");
   const [selectedFemale, setSelectedFemale] = useState("");
   const [simulationResult, setSimulationResult] = useState(null);
@@ -35,7 +26,14 @@ export default function Reproducao() {
   const [loadingBufalos, setLoadingBufalos] = useState(true);
   const [loadingSimulacao, setLoadingSimulacao] = useState(false);
 
-  // Paginação e filtro para touros e matrizes
+  // Estados da Tabela de Registros (Vindo da branch main)
+  const [reproducaoRegistros, setReproducaoRegistros] = useState([]);
+  const [metaReproducao, setMetaReproducao] = useState(null);
+  const [loadingReproducao, setLoadingReproducao] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  // Paginação e filtro para touros e matrizes (Modais de busca)
   const MALES_PER_PAGE = 5;
   const FEMALES_PER_PAGE = 5;
   const [malePage, setMalePage] = useState(1);
@@ -43,16 +41,14 @@ export default function Reproducao() {
   const [maleSearch, setMaleSearch] = useState("");
   const [femaleSearch, setFemaleSearch] = useState("");
 
-  // Estado para análise de búfalas (fêmeas disponíveis para reprodução)
+  // Estados para análises unitárias (Cards de Top 5)
   const [femeasDisponiveis, setFemeasDisponiveis] = useState([]);
-  const [loadingFemeasDisponiveis, setLoadingFemeasDisponiveis] =
-    useState(true);
-
-  // Estado para análise de touros (machos disponíveis para reprodução)
+  const [loadingFemeasDisponiveis, setLoadingFemeasDisponiveis] = useState(true);
   const [machosDisponiveis, setMachosDisponiveis] = useState([]);
   const [loadingMachos, setLoadingMachos] = useState(true);
   const [errorMachos, setErrorMachos] = useState(null);
 
+  // --- Lógica de Filtros Locais ---
   const filteredMales = males.filter(
     (m) =>
       (m.nome || m.name || "")
@@ -89,64 +85,115 @@ export default function Reproducao() {
     femalePage * FEMALES_PER_PAGE
   );
 
+  // --- EFFECT 1: Carregar Estatísticas do Dashboard ---
   useEffect(() => {
-      const fetchBufalos = async () => {
-        setLoadingBufalos(true);
-        try {
-          if (!propriedadeId) {
-            setMales([]);
-            setFemales([]);
-            setLoadingBufalos(false);
-            return;
-          }
-          // Touros: maturidade T, sexo M, ativos
-          const resTouros = await bufaloService.filtrarBufalosPorMaturidadeStatusPropriedade(
-            "T",
+    if (!propriedadeId) return;
+    setLoadingReproStats(true);
+    import("@/services/dashboardService")
+      .then(({ default: dashboardService }) => {
+        dashboardService
+          .getReproducaoStatsByPropriedadeId(propriedadeId)
+          .then((data) => setReproStats(data))
+          .catch(() => setReproStats(null))
+          .finally(() => setLoadingReproStats(false));
+      })
+      .catch(() => setLoadingReproStats(false));
+  }, [propriedadeId]);
+
+  // --- EFFECT 2: Carregar Búfalos para Simulação (Origem: DEV branch) ---
+  useEffect(() => {
+    const fetchBufalos = async () => {
+      setLoadingBufalos(true);
+      try {
+        if (!propriedadeId) {
+          setMales([]);
+          setFemales([]);
+          setLoadingBufalos(false);
+          return;
+        }
+        // Touros: maturidade T, sexo M, ativos
+        const resTouros = await bufaloService.filtrarBufalosPorMaturidadeStatusPropriedade(
+          "T",
+          propriedadeId,
+          true,
+          1,
+          100
+        );
+        const touros = Array.isArray(resTouros?.data)
+          ? resTouros.data.filter((b) => b.sexo === "M")
+          : [];
+        setMales(touros);
+
+        // Bufalas: maturidade V e N, sexo F, ativos
+        const [resVacas, resNovilhas] = await Promise.all([
+          bufaloService.filtrarBufalosPorMaturidadeStatusPropriedade(
+            "V",
             propriedadeId,
             true,
             1,
             100
-          );
-          const touros = Array.isArray(resTouros?.data)
-            ? resTouros.data.filter((b) => b.sexo === "M")
-            : [];
-          setMales(touros);
+          ),
+          bufaloService.filtrarBufalosPorMaturidadeStatusPropriedade(
+            "N",
+            propriedadeId,
+            true,
+            1,
+            100
+          ),
+        ]);
+        const vacas = Array.isArray(resVacas?.data)
+          ? resVacas.data.filter((b) => b.sexo === "F")
+          : [];
+        const novilhas = Array.isArray(resNovilhas?.data)
+          ? resNovilhas.data.filter((b) => b.sexo === "F")
+          : [];
+        setFemales([...vacas, ...novilhas]);
+      } catch (err) {
+        setMales([]);
+        setFemales([]);
+      } finally {
+        setLoadingBufalos(false);
+      }
+    };
+    fetchBufalos();
+  }, [propriedadeId]);
 
-          // Bufalas: maturidade V e N, sexo F, ativos
-          const [resVacas, resNovilhas] = await Promise.all([
-            bufaloService.filtrarBufalosPorMaturidadeStatusPropriedade(
-              "V",
-              propriedadeId,
-              true,
-              1,
-              100
-            ),
-            bufaloService.filtrarBufalosPorMaturidadeStatusPropriedade(
-              "N",
-              propriedadeId,
-              true,
-              1,
-              100
-            ),
-          ]);
-          const vacas = Array.isArray(resVacas?.data)
-            ? resVacas.data.filter((b) => b.sexo === "F")
-            : [];
-          const novilhas = Array.isArray(resNovilhas?.data)
-            ? resNovilhas.data.filter((b) => b.sexo === "F")
-            : [];
-          setFemales([...vacas, ...novilhas]);
-        } catch (err) {
-          setMales([]);
-          setFemales([]);
-        } finally {
-          setLoadingBufalos(false);
+  // --- EFFECT 3: Carregar Registros de Reprodução (Origem: MAIN branch) ---
+  useEffect(() => {
+    if (!propriedadeId) {
+      setReproducaoRegistros([]);
+      setMetaReproducao(null);
+      return;
+    }
+    let ignore = false;
+    async function fetchReproducao() {
+      setLoadingReproducao(true);
+      try {
+        const res = await coberturaService.listarCoberturasPorPropriedade(
+          propriedadeId,
+          page,
+          limit
+        );
+        if (!ignore) {
+          setReproducaoRegistros(Array.isArray(res.data) ? res.data : []);
+          setMetaReproducao(res.meta || null);
         }
-      };
-      fetchBufalos();
-    }, [propriedadeId]);
+      } catch (e) {
+        if (!ignore) {
+          setReproducaoRegistros([]);
+          setMetaReproducao(null);
+        }
+      } finally {
+        if (!ignore) setLoadingReproducao(false);
+      }
+    }
+    fetchReproducao();
+    return () => {
+      ignore = true;
+    };
+  }, [propriedadeId, page, limit]);
 
-  // Buscar fêmeas disponíveis para análise de búfalas
+  // --- EFFECT 4: Buscar Fêmeas Disponíveis (Recomendação) ---
   useEffect(() => {
     if (!propriedadeId) {
       setFemeasDisponiveis([]);
@@ -156,17 +203,12 @@ export default function Reproducao() {
     async function fetchFemeasDisponiveis() {
       setLoadingFemeasDisponiveis(true);
       try {
-        // Busca todas as fêmeas disponíveis para reprodução
         const res = await coberturaService.listarRecomendacoesFemeas(
           propriedadeId
         );
         if (!ignore) {
-          // O serviço já retorna response.data, então res já é o array
           const femeas = Array.isArray(res) ? res : [];
-
-          // Ordenar fêmeas por score (melhor primeiro) e pegar as top 5
           const femeasOrdenadas = femeas.sort((a, b) => b.score - a.score);
-
           setFemeasDisponiveis(femeasOrdenadas.slice(0, 5));
         }
       } catch (e) {
@@ -184,7 +226,7 @@ export default function Reproducao() {
     };
   }, [propriedadeId]);
 
-  // Buscar machos disponíveis para análise de touros
+  // --- EFFECT 5: Buscar Machos Disponíveis (Recomendação) ---
   useEffect(() => {
     if (!propriedadeId) {
       setMachosDisponiveis([]);
@@ -218,9 +260,7 @@ export default function Reproducao() {
     };
   }, [propriedadeId]);
 
-  // Os búfalos disponíveis agora vêm do backend (males, females)
-
-  // Função de simulação de acasalamento via backend
+  // --- Função de Simulação ---
   const handleSimulation = async () => {
     if (!selectedMale || !selectedFemale) return;
     setSimulationResult(null);
@@ -263,31 +303,29 @@ export default function Reproducao() {
       case "prenha":
       case "confirmada":
       case "confirmado":
-        return "bg-[#9DFFBE] text-gray-800"; // verde claro
+        return "bg-[#9DFFBE] text-gray-800";
       case "em andamento":
       case "em processo":
-        return "bg-[#F2B84D] text-gray-800"; // amarelo
+        return "bg-[#F2B84D] text-gray-800";
       case "no cio":
-        return "bg-[#FFCF78] text-gray-800"; // laranja claro
+        return "bg-[#FFCF78] text-gray-800";
       case "abortada":
       case "abortado":
-        return "bg-red-200 text-red-800"; // vermelho claro
+        return "bg-red-200 text-red-800";
       case "falha":
       case "falhou":
-        return "bg-red-100 text-red-700"; // vermelho
+        return "bg-red-100 text-red-700";
       case "normal":
-        return "bg-blue-100 text-blue-800"; // azul
+        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const formatStatus = (status) => status || "Desconhecido";
-
   const getScoreColor = (score) => {
-    if (score >= 90) return "#CE7D0A"; // Using consistent orange theme
-    if (score >= 80) return "#FFCF78"; // Using consistent orange theme
-    return "#ef4444"; // red
+    if (score >= 90) return "#CE7D0A";
+    if (score >= 80) return "#FFCF78";
+    return "#ef4444";
   };
 
   return (
@@ -678,7 +716,12 @@ export default function Reproducao() {
         {/* Painel de Simulação de Acasalamento componentizado */}
         <SimulacaoAcasalamentoPanel propriedadeId={propriedadeId} />
 
-        <ReproducaoTable />
+        <ReproducaoTable 
+          registros={reproducaoRegistros} 
+          loading={loadingReproducao}
+          page={page}
+          setPage={setPage}
+        />
       </div>
     </>
   );
