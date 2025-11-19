@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import movLoteService from "@/services/movLoteService";
 import loteService from "@/services/loteService";
+import bufaloService from "@/services/bufaloService";
 
 function formatDate(dateStr) {
   if (!dateStr) return "-";
@@ -13,6 +14,8 @@ export default function GrupoDetalhesTab({ grupoInfo }) {
   const [historico, setHistorico] = useState([]);
   const [loteAtualInfo, setLoteAtualInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Novo: buscar quantidade de búfalos ativos no grupo
+  const [totalBufalosGrupo, setTotalBufalosGrupo] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -44,6 +47,22 @@ export default function GrupoDetalhesTab({ grupoInfo }) {
       }
     }
     if (grupoInfo?.id_grupo || grupoInfo?.id) fetchData();
+  }, [grupoInfo]);
+
+  useEffect(() => {
+    async function fetchTotalBufalosGrupo() {
+      if (grupoInfo?.id_grupo) {
+        try {
+          const res = await bufaloService.listarBufalosPorGrupo(grupoInfo.id_grupo, 1, 1);
+          setTotalBufalosGrupo(res.meta?.total ?? null);
+        } catch (e) {
+          setTotalBufalosGrupo(null);
+        }
+      } else {
+        setTotalBufalosGrupo(null);
+      }
+    }
+    fetchTotalBufalosGrupo();
   }, [grupoInfo]);
 
   // Status visual
@@ -86,12 +105,11 @@ export default function GrupoDetalhesTab({ grupoInfo }) {
                 <span className="font-medium text-gray-700">Cor:</span>{" "}
                 {grupoInfo.color ?? "-"}
               </p>
-              
               <p>
                 <span className="font-medium text-gray-700">
                   Total de Animais:
                 </span>{" "}
-                {totalAnimais}
+                {totalBufalosGrupo !== null ? totalBufalosGrupo : "-"}
               </p>
             </div>
 
