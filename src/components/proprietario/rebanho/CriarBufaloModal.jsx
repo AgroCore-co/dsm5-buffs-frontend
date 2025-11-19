@@ -164,7 +164,7 @@ export default function CriarBufaloModal({ open, onClose, propriedadeId, onSucce
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[1001] p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header do Modal */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800">Novo Búfalo</h2>
@@ -177,7 +177,7 @@ export default function CriarBufaloModal({ open, onClose, propriedadeId, onSucce
         </div>
 
         {/* Formulário */}
-        <form className="p-6" onSubmit={handleSubmit}>
+            <form className="p-6 flex-1" onSubmit={handleSubmit}>
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
               Dados do Búfalo
@@ -391,8 +391,8 @@ export default function CriarBufaloModal({ open, onClose, propriedadeId, onSucce
             </div>
           </div>
           {error && <div className="text-red-500 mt-4">{error}</div>}
-          {/* Botões */}
-          <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+              {/* Botões fixos na base do modal */}
+              <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
