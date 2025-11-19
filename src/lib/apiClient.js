@@ -45,9 +45,9 @@ const pruneExpiredCache = () => {
 // Espera 2 segundos de inatividade nas requisições para salvar.
 const scheduleSaveToDisk = () => {
   if (typeof window === "undefined" || !memoryCache) return;
-  
+   
   if (saveTimeout) clearTimeout(saveTimeout);
-  
+   
   saveTimeout = setTimeout(() => {
     pruneExpiredCache(); // Limpa lixo antes de salvar
     try {
@@ -82,7 +82,7 @@ apiClient.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
-      
+       
       // --- CORREÇÃO: Filtro de rotas públicas ---
       // Não envia token para login/signin/register para evitar problemas de CORS
       // se o servidor não esperar Authorization nessas rotas.
@@ -136,7 +136,7 @@ apiClient.interceptors.response.use(
 // --- Função PEEK (Espiar) ---
 const peek = (url, config = {}, ttl = DEFAULT_TTL) => {
   const { forceRefresh, ...axiosConfig } = config;
-  
+   
   const cacheKey = `${url}_${JSON.stringify(axiosConfig)}`;
   const cache = loadCacheToMemory();
   const cachedItem = cache[cacheKey];
@@ -151,7 +151,7 @@ const peek = (url, config = {}, ttl = DEFAULT_TTL) => {
 // --- Função GET Inteligente ---
 const get = async (url, config = {}, ttl = DEFAULT_TTL) => {
   const { forceRefresh, ...axiosConfig } = config;
-  
+   
   const cacheKey = `${url}_${JSON.stringify(axiosConfig)}`;
   const now = Date.now();
 
