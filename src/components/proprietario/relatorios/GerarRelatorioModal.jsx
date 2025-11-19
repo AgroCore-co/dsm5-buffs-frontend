@@ -199,31 +199,6 @@ export default function GerarRelatorioModal({
           {/* Botões de Ação */}
           <div className="px-6 pb-4 flex gap-3 justify-end">
             <button
-              onClick={() => {
-                console.log("Botão Imprimir clicado");
-                console.log("componentRef.current:", componentRef.current);
-                console.log("dadosRelatorio:", dadosRelatorio);
-                handlePrint();
-              }}
-              disabled={loading || !dadosRelatorio}
-              className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-4 rounded-xl border border-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                />
-              </svg>
-              Imprimir
-            </button>
-            <button
               onClick={handleGeneratePDF}
               disabled={loading || generatingPDF || !dadosRelatorio}
               className="flex items-center gap-2 bg-[#CE7D0A] hover:bg-[#B86D09] text-white font-medium py-2.5 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"

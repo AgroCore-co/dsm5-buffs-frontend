@@ -124,11 +124,28 @@ const listarRecomendacoesMachos = async (idPropriedade, limit) => {
   return response.data;
 };
 
+/**
+ * Busca cobertura por ID.
+ * GET /cobertura/{id}
+ *
+ * @param {string} idCobertura - ID da cobertura (obrigatório)
+ * @returns {Promise<Object>} Dados da cobertura
+ *
+ * @example
+ * const cobertura = await getCoberturaById('a567e702-f686-4baa-bd92-2223e06b261a');
+ */
+const getCoberturaById = async (idCobertura) => {
+  if (!idCobertura) throw new Error("ID da cobertura é obrigatório");
+  const response = await get(`/cobertura/${idCobertura}`);
+  return response.data;
+};
+
 const coberturaService = {
   listarCoberturasPorPropriedade,
   listarFemeasDisponiveisReproducao,
   listarRecomendacoesFemeas,
   listarRecomendacoesMachos,
+  getCoberturaById,
 };
 
 export default coberturaService;
