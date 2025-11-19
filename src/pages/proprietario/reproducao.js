@@ -78,42 +78,61 @@ export default function Reproducao() {
   );
 
   useEffect(() => {
-    const fetchBufalos = async () => {
-      setLoadingBufalos(true);
-      try {
-        if (!propriedadeId) {
+      const fetchBufalos = async () => {
+        setLoadingBufalos(true);
+        try {
+          if (!propriedadeId) {
+            setMales([]);
+            setFemales([]);
+            setLoadingBufalos(false);
+            return;
+          }
+          // Touros: maturidade T, sexo M, ativos
+          const resTouros = await bufaloService.filtrarBufalosPorMaturidadeStatusPropriedade(
+            "T",
+            propriedadeId,
+            true,
+            1,
+            100
+          );
+          const touros = Array.isArray(resTouros?.data)
+            ? resTouros.data.filter((b) => b.sexo === "M")
+            : [];
+          setMales(touros);
+
+          // Bufalas: maturidade V e N, sexo F, ativos
+          const [resVacas, resNovilhas] = await Promise.all([
+            bufaloService.filtrarBufalosPorMaturidadeStatusPropriedade(
+              "V",
+              propriedadeId,
+              true,
+              1,
+              100
+            ),
+            bufaloService.filtrarBufalosPorMaturidadeStatusPropriedade(
+              "N",
+              propriedadeId,
+              true,
+              1,
+              100
+            ),
+          ]);
+          const vacas = Array.isArray(resVacas?.data)
+            ? resVacas.data.filter((b) => b.sexo === "F")
+            : [];
+          const novilhas = Array.isArray(resNovilhas?.data)
+            ? resNovilhas.data.filter((b) => b.sexo === "F")
+            : [];
+          setFemales([...vacas, ...novilhas]);
+        } catch (err) {
           setMales([]);
           setFemales([]);
+        } finally {
           setLoadingBufalos(false);
-          return;
         }
-        // Busca até 100 touros ativos
-        const resMacho = await bufaloService.filtrarBufalosPorSexoStatusPropriedade(
-          "M",
-          propriedadeId,
-          true,
-          1,
-          100
-        );
-        // Busca até 100 matrizes ativas
-        const resFemea = await bufaloService.filtrarBufalosPorSexoStatusPropriedade(
-          "F",
-          propriedadeId,
-          true,
-          1,
-          100
-        );
-        setMales(Array.isArray(resMacho?.data) ? resMacho.data : []);
-        setFemales(Array.isArray(resFemea?.data) ? resFemea.data : []);
-      } catch (err) {
-        setMales([]);
-        setFemales([]);
-      } finally {
-        setLoadingBufalos(false);
-      }
-    };
-    fetchBufalos();
-  }, [propriedadeId]);
+      };
+      fetchBufalos();
+    }, [propriedadeId]);
 
   useEffect(() => {
     if (!propriedadeId) {

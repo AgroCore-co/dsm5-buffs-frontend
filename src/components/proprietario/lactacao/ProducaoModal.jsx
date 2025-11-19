@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import {
   FaCalendarAlt,
   FaTint,
@@ -33,6 +34,40 @@ export default function ProducaoModal({ open, onClose, idBufala }) {
   const [ordenhasLimit, setOrdenhasLimit] = useState(5);
   const [ciclosPage, setCiclosPage] = useState(1);
   const [ciclosLimit, setCiclosLimit] = useState(10);
+  // Estado para dropdown de ciclos e ordenhas
+  const [cicloDropdownOpen, setCicloDropdownOpen] = useState({});
+  const [cicloOrdenhas, setCicloOrdenhas] = useState({});
+  const [cicloOrdenhasLoading, setCicloOrdenhasLoading] = useState({});
+  const [cicloOrdenhasError, setCicloOrdenhasError] = useState({});
+  const [cicloOrdenhasPage, setCicloOrdenhasPage] = useState({});
+  const ordenhasPorPagina = 5;
+
+  // Função para abrir/fechar dropdown e buscar ordenhas se abrir
+  const handleToggleCicloDropdown = (ciclo) => {
+    setCicloDropdownOpen((prev) => ({ ...prev, [ciclo.id_ciclo_lactacao]: !prev[ciclo.id_ciclo_lactacao] }));
+    if (!cicloDropdownOpen[ciclo.id_ciclo_lactacao]) {
+      buscarOrdenhasCiclo(ciclo.id_ciclo_lactacao, 1);
+    }
+  };
+
+  // Buscar ordenhas de um ciclo específico
+  const buscarOrdenhasCiclo = (idCiclo, page) => {
+    setCicloOrdenhasLoading((prev) => ({ ...prev, [idCiclo]: true }));
+    setCicloOrdenhasError((prev) => ({ ...prev, [idCiclo]: null }));
+    lactacaoService
+      .buscarOrdenhasPorCiclo(idCiclo, page, ordenhasPorPagina)
+      .then((res) => {
+        setCicloOrdenhas((prev) => ({ ...prev, [idCiclo]: res }));
+        setCicloOrdenhasPage((prev) => ({ ...prev, [idCiclo]: page }));
+      })
+      .catch(() => {
+        setCicloOrdenhasError((prev) => ({ ...prev, [idCiclo]: "Erro ao buscar ordenhas." }));
+        setCicloOrdenhas((prev) => ({ ...prev, [idCiclo]: null }));
+      })
+      .finally(() => {
+        setCicloOrdenhasLoading((prev) => ({ ...prev, [idCiclo]: false }));
+      });
+  };
 
   useEffect(() => {
     if (open && idBufala) {
@@ -41,16 +76,16 @@ export default function ProducaoModal({ open, onClose, idBufala }) {
       lactacaoService
         .buscarResumoProducaoPorBufala(idBufala)
         .then((data) => {
-          console.log('📊 Dados de produção recebidos:', data);
           setProducaoData(data);
         })
         .catch((error) => {
-          console.error("Erro ao buscar resumo de produção:", error);
           setError("Não foi possível carregar os dados de produção.");
         })
         .finally(() => setLoading(false));
     }
   }, [open, idBufala]);
+
+  // (Removido: useEffect e estados antigos de ordenhas históricas)
 
   // Buscar ordenhas quando a aba de Ordenhas ou Gráfico for ativada ou a página mudar
   useEffect(() => {
@@ -339,40 +374,139 @@ export default function ProducaoModal({ open, onClose, idBufala }) {
                     </div>
                   </div>
 
-                  {/* Tabela de Ciclos */}
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
-                    <table className="w-full border-collapse bg-white">
-                      <thead>
-                        <tr className="bg-gray-100 border-b border-gray-200">
-                          <th className="p-2.5 text-left font-semibold text-gray-700 text-xs">Ciclo</th>
-                          <th className="p-2.5 text-left font-semibold text-gray-700 text-xs">Data Parto</th>
-                          <th className="p-2.5 text-left font-semibold text-gray-700 text-xs">Data Secagem</th>
-                          <th className="p-2.5 text-center font-semibold text-gray-700 text-xs">Duração</th>
-                          <th className="p-2.5 text-right font-semibold text-gray-700 text-xs">Total Produzido</th>
-                          <th className="p-2.5 text-right font-semibold text-gray-700 text-xs">Média Diária</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ciclosPaginados.map((ciclo, idx) => (
-                          <tr key={ciclo.numero_ciclo} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${idx % 2 === 0 ? "" : "bg-gray-50/50"}`}>
-                            <td className="p-2.5 text-gray-900 text-xs font-semibold">
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#CE7D0A] text-white text-xs font-bold">
-                                {ciclo.numero_ciclo}
-                              </span>
-                            </td>
-                            <td className="p-2.5 text-gray-800 text-xs">{formatDate(ciclo.dt_parto)}</td>
-                            <td className="p-2.5 text-gray-800 text-xs">{formatDate(ciclo.dt_secagem)}</td>
-                            <td className="p-2.5 text-center text-gray-900 text-xs font-medium">
-                              <span className="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs">{ciclo.duracao_dias} dias</span>
-                            </td>
-                            <td className="p-2.5 text-right text-gray-900 text-xs font-bold">{ciclo.total_produzido.toFixed(2)} L</td>
-                            <td className="p-2.5 text-right text-gray-700 text-xs font-medium">{ciclo.media_diaria.toFixed(2)} L/dia</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  {/* Lista de ciclos com dropdown para ordenhas */}
+                  <div className="space-y-4">
+                    {ciclosPaginados.map((ciclo, idx) => (
+                      <div key={ciclo.id_ciclo_lactacao || ciclo.numero_ciclo} className="border rounded-lg bg-white shadow-sm">
+                        <button
+                          className="w-full flex justify-between items-center px-4 py-3 text-left focus:outline-none"
+                          onClick={() => handleToggleCicloDropdown(ciclo)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#CE7D0A] text-white text-base font-bold">
+                              {ciclo.numero_ciclo}
+                            </span>
+                            <span className="font-semibold text-gray-900">Parto: {formatDate(ciclo.dt_parto)}</span>
+                            <span className="text-gray-500 text-sm">Secagem: {formatDate(ciclo.dt_secagem)}</span>
+                            <span className="text-gray-700 text-sm">{ciclo.duracao_dias} dias</span>
+                            <span className="text-gray-900 font-bold text-sm">{ciclo.total_produzido.toFixed(2)} L</span>
+                            <span className="text-gray-700 text-sm">{ciclo.media_diaria.toFixed(2)} L/dia</span>
+                          </div>
+                          <span className="ml-2">
+                            {cicloDropdownOpen[ciclo.id_ciclo_lactacao] ? <FaChevronUp /> : <FaChevronDown />}
+                          </span>
+                        </button>
+                        {cicloDropdownOpen[ciclo.id_ciclo_lactacao] && (
+                          <div className="border-t px-4 py-3 bg-gray-50">
+                            {cicloOrdenhasLoading[ciclo.id_ciclo_lactacao] ? (
+                              <div className="text-gray-600">Carregando ordenhas...</div>
+                            ) : cicloOrdenhasError[ciclo.id_ciclo_lactacao] ? (
+                              <div className="text-red-500">{cicloOrdenhasError[ciclo.id_ciclo_lactacao]}</div>
+                            ) : cicloOrdenhas[ciclo.id_ciclo_lactacao] && cicloOrdenhas[ciclo.id_ciclo_lactacao].data && cicloOrdenhas[ciclo.id_ciclo_lactacao].data.length > 0 ? (
+                              <div>
+                                <table className="w-full border-collapse bg-white mb-2">
+                                  <thead>
+                                    <tr className="bg-gray-100 border-b border-gray-200">
+                                      <th className="p-2 text-left font-semibold text-gray-700 text-xs">Data da Ordenha</th>
+                                      <th className="p-2 text-center font-semibold text-gray-700 text-xs">Período</th>
+                                      <th className="p-2 text-right font-semibold text-gray-700 text-xs">Quantidade (L)</th>
+                                      <th className="p-2 text-center font-semibold text-gray-700 text-xs">Ocorrência</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {cicloOrdenhas[ciclo.id_ciclo_lactacao].data
+                                      .sort((a, b) => new Date(b.dt_ordenha) - new Date(a.dt_ordenha))
+                                      .map((ordenha, idx) => (
+                                        <tr key={ordenha.id_lact} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${idx % 2 === 0 ? "" : "bg-gray-50/50"}`}>
+                                          <td className="p-2 text-gray-900 text-xs">
+                                            <div className="flex items-center gap-2">
+                                              <FaCalendarAlt className="text-gray-400 text-xs" />
+                                              <span className="font-medium">{formatDate(ordenha.dt_ordenha)}</span>
+                                            </div>
+                                          </td>
+                                          <td className="p-2 text-center">
+                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                                              ordenha.periodo === 'M' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                                              ordenha.periodo === 'T' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
+                                              'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                                            }`}>
+                                              {ordenha.periodo === 'M' ? 'Manhã' : ordenha.periodo === 'T' ? 'Tarde' : 'Noite'}
+                                            </span>
+                                          </td>
+                                          <td className="p-2 text-right">
+                                            <span className="font-bold text-gray-900 text-base">{ordenha.qt_ordenha.toFixed(2)}</span>
+                                            <span className="text-xs text-gray-500">L</span>
+                                          </td>
+                                          <td className="p-2 text-center">
+                                            {ordenha.ocorrencia ? (
+                                              <span className="inline-block bg-red-100 text-red-800 border border-red-200 px-2 py-1 rounded text-xs font-medium">
+                                                {ordenha.ocorrencia}
+                                              </span>
+                                            ) : (
+                                              <span className="text-gray-400 text-xs">-</span>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                  </tbody>
+                                </table>
+                                {/* Paginação das ordenhas do ciclo */}
+                                {cicloOrdenhas[ciclo.id_ciclo_lactacao].pagination && cicloOrdenhas[ciclo.id_ciclo_lactacao].pagination.totalPages > 1 && (
+                                  <div className="flex justify-center items-center space-x-2 py-2">
+                                    <button
+                                      onClick={() => buscarOrdenhasCiclo(ciclo.id_ciclo_lactacao, Math.max(1, (cicloOrdenhasPage[ciclo.id_ciclo_lactacao] || 1) - 1))}
+                                      disabled={(cicloOrdenhasPage[ciclo.id_ciclo_lactacao] || 1) <= 1}
+                                      className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                                        (cicloOrdenhasPage[ciclo.id_ciclo_lactacao] || 1) <= 1
+                                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                          : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+                                      }`}
+                                    >
+                                      Anterior
+                                    </button>
+                                    {Array.from({ length: cicloOrdenhas[ciclo.id_ciclo_lactacao].pagination.totalPages }, (_, i) => i + 1).map((p) => (
+                                      <button
+                                        key={p}
+                                        onClick={() => buscarOrdenhasCiclo(ciclo.id_ciclo_lactacao, p)}
+                                        className={`w-8 h-8 rounded-lg font-medium transition-colors ${
+                                          (cicloOrdenhasPage[ciclo.id_ciclo_lactacao] || 1) === p
+                                            ? "bg-[#CE7D0A] text-white"
+                                            : "bg-gray-200 hover:bg-[#FFCF78] text-gray-800"
+                                        }`}
+                                      >
+                                        {p}
+                                      </button>
+                                    ))}
+                                    <button
+                                      onClick={() => buscarOrdenhasCiclo(
+                                        ciclo.id_ciclo_lactacao,
+                                        Math.min(
+                                          cicloOrdenhas[ciclo.id_ciclo_lactacao].pagination.totalPages,
+                                          (cicloOrdenhasPage[ciclo.id_ciclo_lactacao] || 1) + 1
+                                        )
+                                      )}
+                                      disabled={(cicloOrdenhasPage[ciclo.id_ciclo_lactacao] || 1) >= cicloOrdenhas[ciclo.id_ciclo_lactacao].pagination.totalPages}
+                                      className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                                        (cicloOrdenhasPage[ciclo.id_ciclo_lactacao] || 1) >= cicloOrdenhas[ciclo.id_ciclo_lactacao].pagination.totalPages
+                                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                          : "bg-[#FFCF78] hover:bg-[#F2B84D] text-gray-800"
+                                      }`}
+                                    >
+                                      Próximo
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-gray-500">Nenhuma ordenha encontrada neste ciclo.</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  {/* Paginação igual à tela de rebanho */}
+
+                  {/* Paginação dos ciclos */}
                   {totalPagesCiclos > 1 && (
                     <div className="flex justify-center items-center space-x-2 mt-4">
                       <button
