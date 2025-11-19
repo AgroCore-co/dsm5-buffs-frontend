@@ -7,22 +7,26 @@ import { usePropriedade } from "@/contexts/propriedadeContext";
 import coberturaService from "@/services/coberturaService";
 import bufaloService from "@/services/bufaloService";
 import * as simulacaoService from "@/services/simulacaoService";
+import SimulacaoAcasalamentoPanel from "@/components/proprietario/reproducao/SimulacaoAcasalamentoPanel";
 
 export default function Reproducao() {
   const { propriedadeId } = usePropriedade();
   const [viewMode, setViewMode] = useState("monthly"); // 'monthly' | 'yearly'
   const [reproStats, setReproStats] = useState(null);
   const [loadingReproStats, setLoadingReproStats] = useState(false);
-    useEffect(() => {
-      if (!propriedadeId) return;
-      setLoadingReproStats(true);
-      import("@/services/dashboardService").then(({ default: dashboardService }) => {
-        dashboardService.getReproducaoStatsByPropriedadeId(propriedadeId)
+  useEffect(() => {
+    if (!propriedadeId) return;
+    setLoadingReproStats(true);
+    import("@/services/dashboardService")
+      .then(({ default: dashboardService }) => {
+        dashboardService
+          .getReproducaoStatsByPropriedadeId(propriedadeId)
           .then((data) => setReproStats(data))
           .catch(() => setReproStats(null))
           .finally(() => setLoadingReproStats(false));
-      });
-    }, [propriedadeId]);
+      })
+      .catch(() => setLoadingReproStats(false));
+  }, [propriedadeId]);
   const [selectedMale, setSelectedMale] = useState("");
   const [selectedFemale, setSelectedFemale] = useState("");
   const [simulationResult, setSimulationResult] = useState(null);
@@ -314,49 +318,74 @@ export default function Reproducao() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Reproduções em Andamento</h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">Status</span>
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Reproduções em Andamento
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Status
+                </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                {loadingReproStats ? '...' : reproStats?.totalEmAndamento ?? '-'}
+                {loadingReproStats ? "..." : reproStats?.totalEmAndamento ?? "-"}
               </p>
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Reproduções não concluídas</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                Reproduções não concluídas
+              </p>
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Reproduções Confirmadas</h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">Status</span>
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Reproduções Confirmadas
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Status
+                </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                {loadingReproStats ? '...' : reproStats?.totalConfirmada ?? '-'}
+                {loadingReproStats ? "..." : reproStats?.totalConfirmada ?? "-"}
               </p>
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Gestação confirmada</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                Gestação confirmada
+              </p>
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Reproduções com Falha</h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">Status</span>
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Reproduções com Falha
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Status
+                </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                {loadingReproStats ? '...' : reproStats?.totalFalha ?? '-'}
+                {loadingReproStats ? "..." : reproStats?.totalFalha ?? "-"}
               </p>
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Falha na reprodução</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                Falha na reprodução
+              </p>
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow border border-[#e0e0e0]">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">Última Reprodução</h2>
-                <span className="text-xs font-medium text-[var(--color-primary-dark)]">Data</span>
+                <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Última Reprodução
+                </h2>
+                <span className="text-xs font-medium text-[var(--color-primary-dark)]">
+                  Data
+                </span>
               </div>
               <p className="text-4xl font-extrabold tracking-tight text-[var(--color-text-dark)]">
-                { loadingReproStats ? '...' : (reproStats?.ultimaDataReproducao ? new Date(reproStats.ultimaDataReproducao).toLocaleDateString() : '-')}
+                {loadingReproStats ? "..." : reproStats?.ultimaDataReproducao
+                  ? new Date(reproStats.ultimaDataReproducao).toLocaleDateString()
+                  : "-"}
               </p>
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Data da última reprodução</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                Data da última reprodução
+              </p>
             </div>
           </div>
-
         </div>
 
         <div className="w-full flex flex-col bg-white rounded-xl p-5 gap-6 box-border border border-[#e0e0e0] shadow-sm">
@@ -647,317 +676,9 @@ export default function Reproducao() {
           </div>
         </div>
 
-        <div className="w-full flex flex-col bg-white rounded-2xl p-8 gap-8 border border-gray-200 shadow-sm">
-          {/* Header */}
-          <header className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Simulação de Acasalamento
-            </h2>
-            <p className="text-gray-600 text-sm mt-2">
-              Escolha o reprodutor e a matriz para visualizar predições
-              genéticas
-            </p>
-          </header>
+        {/* Painel de Simulação de Acasalamento componentizado */}
+        <SimulacaoAcasalamentoPanel propriedadeId={propriedadeId} />
 
-          {/* Painel de Seleção */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Macho */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Touro / Reprodutor
-              </h3>
-              <div className="space-y-3">
-                <select
-                  value={selectedMale}
-                  onChange={(e) => setSelectedMale(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                >
-                  <option value="">Selecione um touro...</option>
-                  {males.map((male) => {
-                    const id = String(male.id_bufalo || male.id);
-                    return (
-                      <option key={id} value={id}>
-                        {male.nome || male.name}{" "}
-                        {male.brinco ? `- ${male.brinco}` : ""}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            </div>
-
-            {/* Fêmea */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Matriz / Receptora
-              </h3>
-              <div className="space-y-3">
-                <select
-                  value={selectedFemale}
-                  onChange={(e) => setSelectedFemale(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
-                >
-                  <option value="">Selecione uma matriz...</option>
-                  {females.map((female) => {
-                    const id = String(female.id_bufalo || female.id);
-                    return (
-                      <option key={id} value={id}>
-                        {female.nome || female.name}{" "}
-                        {female.brinco ? `- ${female.brinco}` : ""}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            </div>
-          </section>
-
-          {/* Botão */}
-          <div className="text-center">
-            <button
-              onClick={handleSimulation}
-              disabled={!selectedMale || !selectedFemale}
-              className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed
-        text-white py-3 px-8 rounded-lg font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-            >
-              Simular Acasalamento
-            </button>
-          </div>
-
-          {/* Painel de Resultados */}
-          <section>
-            {loadingSimulacao ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-400 mb-4"></div>
-                <p className="text-orange-600 font-semibold text-lg">
-                  Processando simulação...
-                </p>
-              </div>
-            ) : simulationResult ? (
-              <div className="bg-gradient-to-br from-white to-orange-50 rounded-xl p-8 border border-orange-200 shadow-lg">
-                <div className="flex items-center justify-center gap-2 mb-6">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  <h3 className="text-xl font-bold text-gray-900 text-center">
-                    Resultado da Simulação
-                  </h3>
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                </div>
-
-                {/* <CHANGE> Added parent animals section with better visual hierarchy */}
-                <div className="bg-white rounded-lg p-5 mb-6 border border-orange-100 shadow-sm">
-                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-                    Animais Selecionados
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-blue-600 font-bold text-sm">
-                          ♂
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 mb-1">Macho</p>
-                        <p className="font-semibold text-gray-900 truncate">
-                          {(() => {
-                            const macho = males.find(
-                              (m) =>
-                                String(m.id_bufalo || m.id) ===
-                                String(simulationResult.raw?.macho_id)
-                            );
-                            return macho
-                              ? `${macho.nome || macho.name}${
-                                  macho.brinco ? ` - ${macho.brinco}` : ""
-                                }`
-                              : "-";
-                          })()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-pink-600 font-bold text-sm">
-                          ♀
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 mb-1">Fêmea</p>
-                        <p className="font-semibold text-gray-900 truncate">
-                          {(() => {
-                            const femea = females.find(
-                              (f) =>
-                                String(f.id_bufalo || f.id) ===
-                                String(simulationResult.raw?.femea_id)
-                            );
-                            return femea
-                              ? `${femea.nome || femea.name}${
-                                  femea.brinco ? ` - ${femea.brinco}` : ""
-                                }`
-                              : "-";
-                          })()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Métricas de Consanguinidade */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">
-                        Consanguinidade Macho
-                      </span>
-                      <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                        ♂
-                      </span>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.consanguinidade_macho ?? 0}%
-                    </p>
-                  </div>
-
-                  <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">
-                        Consanguinidade Fêmea
-                      </span>
-                      <span className="text-xs font-medium text-pink-600 bg-pink-50 px-2 py-1 rounded">
-                        ♀
-                      </span>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.consanguinidade_femea ?? 0}%
-                    </p>
-                  </div>
-
-                  <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">
-                        Parentesco dos Pais
-                      </span>
-                      {simulationResult.raw?.detalhes
-                        ?.tem_parentesco_direto && (
-                        <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">
-                          ⚠️
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.parentesco_pais ?? 0}%
-                    </p>
-                    {simulationResult.raw?.nivel_parentesco && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        {simulationResult.raw.nivel_parentesco}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-orange-300 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">
-                        Consanguinidade da Prole
-                      </span>
-                      {simulationResult.raw?.consanguinidade_prole > 12.5 && (
-                        <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                          Alto
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {simulationResult.raw?.consanguinidade_prole ?? 0}%
-                    </p>
-                  </div>
-                </div>
-
-                {/* Painel de Risco e Recomendação */}
-                <div className="space-y-4">
-                  <div
-                    className={`rounded-lg p-5 border-2 ${
-                      simulationResult.raw?.risco_consanguinidade === "Baixo"
-                        ? "bg-green-50 border-green-300"
-                        : simulationResult.raw?.risco_consanguinidade ===
-                          "Médio"
-                        ? "bg-yellow-50 border-yellow-300"
-                        : simulationResult.raw?.risco_consanguinidade === "Alto"
-                        ? "bg-orange-50 border-orange-300"
-                        : "bg-red-50 border-red-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-gray-700">
-                        Risco de Consanguinidade
-                      </span>
-                      <span
-                        className={`text-lg font-bold px-4 py-1.5 rounded-full ${
-                          simulationResult.raw?.risco_consanguinidade ===
-                          "Baixo"
-                            ? "bg-green-600 text-white"
-                            : simulationResult.raw?.risco_consanguinidade ===
-                              "Médio"
-                            ? "bg-yellow-600 text-white"
-                            : simulationResult.raw?.risco_consanguinidade ===
-                              "Alto"
-                            ? "bg-orange-600 text-white"
-                            : "bg-red-600 text-white"
-                        }`}
-                      >
-                        {simulationResult.raw?.risco_consanguinidade ||
-                          "Desconhecido"}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-600 mb-1 font-medium uppercase tracking-wide">
-                          Recomendação
-                        </p>
-                        <p className="text-sm font-semibold text-gray-900 leading-relaxed">
-                          {simulationResult.raw?.recomendacao ||
-                            "Sem recomendação disponível"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Predição de Produção */}
-                  {simulationResult.raw?.predicao_producao_femea !== null &&
-                    simulationResult.raw?.predicao_producao_femea !==
-                      undefined && (
-                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-5 border border-indigo-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <svg
-                            className="w-5 h-5 text-indigo-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                            />
-                          </svg>
-                          <span className="text-sm font-semibold text-gray-700">
-                            Predição de Produção da Fêmea
-                          </span>
-                        </div>
-                        <p className="text-xl font-bold text-indigo-600 ml-7">
-                          {simulationResult.raw.predicao_producao_femea}
-                        </p>
-                      </div>
-                    )}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gray-50 rounded-xl p-6 text-center border border-gray-200">
-                <p className="text-gray-600">
-                  Selecione um touro e uma matriz para ver a predição do
-                  acasalamento
-                </p>
-              </div>
-            )}
-          </section>
-        </div>
         <ReproducaoTable />
       </div>
     </>
