@@ -1,5 +1,4 @@
-import { get, post } from "@/lib/apiClient";
-import { patch } from "@/lib/apiClient";
+import { get, post, patch } from "@/lib/apiClient";
 
 /**
  * Lista búfalos de uma propriedade com paginação.
