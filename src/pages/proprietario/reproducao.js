@@ -642,7 +642,7 @@ export default function Reproducao() {
                         </td>
                       </tr>
                     ) : (
-                      machosDisponiveis.map((macho, i) => {
+                      machosDisponiveis.slice(0, 5).map((macho, i) => {
                         const rankBadgeColor =
                           i === 0
                             ? "bg-blue-500 text-white"
