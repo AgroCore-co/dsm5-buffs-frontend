@@ -323,10 +323,17 @@ export default function Lactacao() {
       return [];
     }
 
-    return producaoMensal.serie_historica.map((item) => {
-      const mesFormatado = new Date(item.mes + "-01").toLocaleString("pt-BR", {
-        month: "short",
-      });
+    // Ordena os meses corretamente (caso a API não garanta)
+    const mesesOrdenados = [...producaoMensal.serie_historica].sort((a, b) => {
+      return a.mes.localeCompare(b.mes);
+    });
+
+    return mesesOrdenados.map((item) => {
+      // Extrai apenas o número do mês
+      const [ano, mes] = item.mes.split("-");
+      // Array de meses abreviados
+      const mesesAbrev = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+      const mesFormatado = mesesAbrev[parseInt(mes, 10) - 1] + "/" + ano.slice(2);
       return {
         mes: mesFormatado,
         litros: item.total_litros,
