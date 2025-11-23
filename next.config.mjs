@@ -3,12 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
 };
 
-// --- ANIMAÇÃO BUFFS (LOGO ÚNICA COR + CORREÇÃO DE DUPLICIDADE) ---
 if (process.env.NODE_ENV === 'development') {
-  // O Next.js carrega este arquivo múltiplas vezes. 
-  // Usamos uma variável global para garantir que o logo só apareça uma vez.
-  if (!global.hasBuffsLog) {
-    global.hasBuffsLog = true;
+  if (!process.env.BUFFS_LOGO_SHOWN) {
+    process.env.BUFFS_LOGO_SHOWN = 'true';
 
     const logoArt = [
       "           ░░░░░░░░░                                                   ░░░░░░░░░           ",
