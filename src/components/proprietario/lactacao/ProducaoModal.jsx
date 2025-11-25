@@ -282,16 +282,16 @@ export default function ProducaoModal({ open, onClose, idBufala }) {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ciclo Nº</span>
-                      <p className="text-2xl font-bold text-[#CE7D0A] mt-1">{ciclo_atual.numero_ciclo}</p>
+                      <p className="text-2xl font-bold text-[#CE7D0A] mt-1">{ciclo_atual ? ciclo_atual.numero_ciclo : '--'}</p>
                     </div>
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dias em Lactação</span>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{ciclo_atual.dias_em_lactacao}</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{ciclo_atual ? ciclo_atual.dias_em_lactacao : '--'}</p>
                       <span className="text-xs text-gray-500 mt-0.5 block">dias</span>
                     </div>
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Produzido</span>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{ciclo_atual.total_produzido.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{ciclo_atual ? ciclo_atual.total_produzido?.toFixed(2) : '--'}</p>
                       <span className="text-xs text-gray-500 mt-0.5 block">litros</span>
                     </div>
                   </div>
@@ -304,30 +304,30 @@ export default function ProducaoModal({ open, onClose, idBufala }) {
                         <div className="w-1.5 h-1.5 bg-[#CE7D0A] rounded-full mt-2"></div>
                         <div className="flex-1">
                           <span className="text-xs font-medium text-gray-500 block">Data do Parto</span>
-                          <span className="text-sm font-semibold text-gray-900">{formatDate(ciclo_atual.dt_parto)}</span>
+                          <span className="text-sm font-semibold text-gray-900">{ciclo_atual ? formatDate(ciclo_atual.dt_parto) : '--'}</span>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
                         <div className="w-1.5 h-1.5 bg-[#CE7D0A] rounded-full mt-2"></div>
                         <div className="flex-1">
                           <span className="text-xs font-medium text-gray-500 block">Previsão de Secagem</span>
-                          <span className="text-sm font-semibold text-gray-900">{formatDate(ciclo_atual.dt_secagem_prevista)}</span>
+                          <span className="text-sm font-semibold text-gray-900">{ciclo_atual ? formatDate(ciclo_atual.dt_secagem_prevista) : '--'}</span>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
                         <div className="w-1.5 h-1.5 bg-[#CE7D0A] rounded-full mt-2"></div>
                         <div className="flex-1">
                           <span className="text-xs font-medium text-gray-500 block">Média Diária</span>
-                          <span className="text-sm font-semibold text-gray-900">{ciclo_atual.media_diaria.toFixed(2)} L/dia</span>
+                          <span className="text-sm font-semibold text-gray-900">{ciclo_atual ? ciclo_atual.media_diaria?.toFixed(2) : '--'} L/dia</span>
                         </div>
                       </div>
-                      {ciclo_atual.ultima_ordenha && (
+                      {ciclo_atual?.ultima_ordenha && (
                         <div className="flex items-start gap-3">
                           <div className="w-1.5 h-1.5 bg-[#CE7D0A] rounded-full mt-2"></div>
                           <div className="flex-1">
                             <span className="text-xs font-medium text-gray-500 block">Última Ordenha</span>
                             <span className="text-sm font-semibold text-gray-900">
-                              {formatDate(ciclo_atual.ultima_ordenha.data)} • {ciclo_atual.ultima_ordenha.quantidade.toFixed(2)} L
+                              {formatDate(ciclo_atual.ultima_ordenha.data)} • {ciclo_atual.ultima_ordenha.quantidade?.toFixed(2)} L
                             </span>
                             <span className="inline-block mt-1 text-xs bg-white px-2 py-1 rounded border border-gray-200 font-medium text-gray-700">
                               {ciclo_atual.ultima_ordenha.periodo === 'M' ? 'Manhã' : ciclo_atual.ultima_ordenha.periodo === 'T' ? 'Tarde' : 'Noite'}
